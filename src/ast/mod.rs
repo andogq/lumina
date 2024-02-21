@@ -1,4 +1,4 @@
-use crate::token::{IdentToken, IntToken, LetToken, ReturnToken};
+use crate::token::{BangToken, IdentToken, IntToken, LetToken, MinusToken, PlusToken, ReturnToken};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Program {
@@ -38,7 +38,22 @@ pub struct IntegerLiteral {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PrefixToken {
+    Plus(PlusToken),
+    Minus(MinusToken),
+    Bang(BangToken),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PrefixExpression {
+    pub prefix_token: PrefixToken,
+    pub operator: String,
+    pub right: Box<Expression>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {
     Identifier(Identifier),
     Integer(IntegerLiteral),
+    Prefix(PrefixExpression),
 }

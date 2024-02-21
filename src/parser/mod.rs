@@ -2,7 +2,8 @@ use std::iter::Peekable;
 
 use crate::{
     ast::{
-        Expression, Identifier, IntegerLiteral, LetStatement, Program, ReturnStatement, Statement,
+        Expression, Identifier, IntegerLiteral, LetStatement, PrefixExpression, PrefixToken,
+        Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::Token,
@@ -172,9 +173,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expression_statement(&mut self) -> Result<Expression, String> {
-        let expression = self
-            .parse_expression(Precedence::Lowest)?
-            .ok_or_else(|| "expression must be present in statement".to_string())?;
+        let expression = self.parse_expression(Precedence::Lowest)?;
 
         // Advance past semicolon, if present
         self.lexer
@@ -221,33 +220,52 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_prefix(&mut self) -> Result<Option<Expression>, String> {
+    pub fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, String> {
+        let (prefix_token, operator) = match self
+            .lexer
+            .next()
+            .ok_or_else(|| "expected prefix operator".to_string())?
+        {
+            Token::Plus(token) => Ok((PrefixToken::Plus(token), "+".to_string())),
+            Token::Minus(token) => Ok((PrefixToken::Minus(token), "-".to_string())),
+            Token::Bang(token) => Ok((PrefixToken::Bang(token), "!".to_string())),
+            token => Err(format!("unknown prefix operator: {token:?}")),
+        }?;
+
+        let right = self.parse_expression(Precedence::Prefix)?;
+
+        Ok(PrefixExpression {
+            prefix_token,
+            operator,
+            right: Box::new(right),
+        })
+    }
+
+    pub fn parse_prefix(&mut self) -> Result<Expression, String> {
         match self
             .lexer
             .peek()
             .ok_or_else(|| "expected token for prefix expression".to_string())?
         {
-            Token::Ident(_) => Ok(Some(Expression::Identifier(self.parse_identifier()?))),
-            Token::Int(_) => Ok(Some(Expression::Integer(self.parse_integer_literal()?))),
-            _ => Ok(None),
+            Token::Ident(_) => Ok(Expression::Identifier(self.parse_identifier()?)),
+            Token::Int(_) => Ok(Expression::Integer(self.parse_integer_literal()?)),
+            Token::Bang(_) | Token::Minus(_) => {
+                Ok(Expression::Prefix(self.parse_prefix_expression()?))
+            }
+            token => Err(format!("no prefix parse function found for {token:?}")),
         }
     }
 
-    pub fn parse_expression(
-        &mut self,
-        precedence: Precedence,
-    ) -> Result<Option<Expression>, String> {
-        let Some(left_expression) = self.parse_prefix()? else {
-            return Ok(None);
-        };
+    pub fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, String> {
+        let left_expression = self.parse_prefix()?;
 
-        Ok(Some(left_expression))
+        Ok(left_expression)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Statement;
+    use crate::ast::{PrefixExpression, Statement};
 
     use super::*;
 
@@ -344,5 +362,36 @@ mod test {
         if let Statement::Expression(Expression::Integer(integer)) = statement {
             assert_eq!(integer.value, 5);
         }
+    }
+
+    #[test]
+    fn parse_prefix_expressions() {
+        [("!5;", "!", 5), ("-15;", "-", 15)].into_iter().for_each(
+            |(input, operator, integer_value)| {
+                let lexer = Lexer::new(input);
+                let mut parser = Parser::new(lexer);
+
+                let program = parser.parse_program();
+
+                assert!(dbg!(parser.errors).is_empty());
+
+                assert_eq!(program.statements.len(), 1);
+
+                let statement = &program.statements[0];
+                assert!(matches!(
+                    statement,
+                    Statement::Expression(Expression::Prefix(_))
+                ));
+
+                if let Statement::Expression(Expression::Prefix(prefix_expression)) = statement {
+                    assert_eq!(prefix_expression.operator, operator);
+                    assert!(matches!(*prefix_expression.right, Expression::Integer(_)));
+
+                    if let Expression::Integer(ref integer_literal) = *prefix_expression.right {
+                        assert_eq!(integer_value, integer_literal.value);
+                    }
+                }
+            },
+        );
     }
 }
