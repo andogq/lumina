@@ -8,12 +8,14 @@ use crate::{
 
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
+    errors: Vec<String>,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(mut lexer: Lexer<'a>) -> Self {
         Self {
             lexer: lexer.peekable(),
+            errors: Vec::new(),
         }
     }
 
@@ -26,7 +28,15 @@ impl<'a> Parser<'a> {
             .map(|token| matches!(token, Token::EOF(_)))
             .unwrap_or(true)
         {
-            statements.push(self.parse_statement()?);
+            match self.parse_statement() {
+                Ok(statment) => {
+                    statements.push(statment);
+                }
+                Err(error) => {
+                    self.errors.push(error);
+                    self.lexer.next();
+                }
+            }
         }
 
         Ok(Program { statements })
@@ -128,11 +138,10 @@ mod test {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
-        let program = parser.parse_program().unwrap();
-
+        let program = parser.parse_program();
         let statements = program
-            .statements
             .into_iter()
+            .flat_map(|program| program.statements)
             .filter_map(|statement| {
                 if let Statement::Let(let_statement) = statement {
                     Some(let_statement.name.value)
@@ -141,6 +150,8 @@ mod test {
                 }
             })
             .collect::<Vec<_>>();
+
+        assert_eq!(parser.errors.len(), 0);
 
         assert_eq!(
             vec!["x".to_string(), "y".to_string(), "foobar".to_string()],
