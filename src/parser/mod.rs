@@ -37,6 +37,10 @@ impl Precedence {
     }
 }
 
+pub trait Node: Sized {
+    fn parse(tokens: &mut Peekable<Lexer<'_>>) -> Result<Self, String>;
+}
+
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
     errors: Vec<String>,
@@ -48,6 +52,10 @@ impl<'a> Parser<'a> {
             lexer: lexer.peekable(),
             errors: Vec::new(),
         }
+    }
+
+    pub fn parse<N: Node>(&mut self) -> Result<N, String> {
+        N::parse(&mut self.lexer)
     }
 
     pub fn parse_program(&mut self) -> Program {
