@@ -9,6 +9,7 @@ pub struct Program {
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
+    Expression(Expression),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,4 +32,6 @@ pub struct Identifier {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Expression;
+pub enum Expression {
+    Identifier(Identifier),
+}

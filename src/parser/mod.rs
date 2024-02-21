@@ -6,6 +6,17 @@ use crate::{
     token::Token,
 };
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
+}
+
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
     errors: Vec<String>,
@@ -50,9 +61,7 @@ impl<'a> Parser<'a> {
         {
             Token::Let(_) => Ok(Statement::Let(self.parse_let_statement()?)),
             Token::Return(_) => Ok(Statement::Return(self.parse_return_statement()?)),
-            token => Err(format!(
-                "unknown token encountered instead of statement: {token:?}"
-            )),
+            _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
 
@@ -118,7 +127,7 @@ impl<'a> Parser<'a> {
         Ok(LetStatement {
             let_token,
             name,
-            value: Expression,
+            value: todo!(),
         })
     }
 
@@ -156,8 +165,58 @@ impl<'a> Parser<'a> {
 
         Ok(ReturnStatement {
             return_token,
-            value: Expression,
+            value: todo!(),
         })
+    }
+
+    pub fn parse_expression_statement(&mut self) -> Result<Expression, String> {
+        let expression = self
+            .parse_expression(Precedence::Lowest)?
+            .ok_or_else(|| "expression must be present in statement".to_string())?;
+
+        // Advance past semicolon, if present
+        self.lexer
+            .next_if(|token| matches!(token, Token::Semicolon(_)));
+
+        Ok(expression)
+    }
+
+    pub fn parse_identifier(&mut self) -> Result<Identifier, String> {
+        self.lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Ident(ident_token) = token {
+                    Some(Identifier {
+                        value: ident_token.literal.clone(),
+                        ident_token,
+                    })
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected identifier".to_string())
+    }
+
+    pub fn parse_prefix(&mut self) -> Result<Option<Expression>, String> {
+        match self
+            .lexer
+            .peek()
+            .ok_or_else(|| "expected token for prefix expression".to_string())?
+        {
+            Token::Ident(_) => Ok(Some(Expression::Identifier(self.parse_identifier()?))),
+            _ => Ok(None),
+        }
+    }
+
+    pub fn parse_expression(
+        &mut self,
+        precedence: Precedence,
+    ) -> Result<Option<Expression>, String> {
+        let Some(left_expression) = self.parse_prefix()? else {
+            return Ok(None);
+        };
+
+        Ok(Some(left_expression))
     }
 }
 
@@ -212,5 +271,29 @@ mod test {
 
         assert!(parser.errors.is_empty());
         assert_eq!(program.statements.len(), 3);
+    }
+
+    #[test]
+    fn identifier_expression() {
+        let input = "foobar;";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert!(parser.errors.is_empty());
+
+        assert_eq!(program.statements.len(), 1);
+
+        let statement = &program.statements[0];
+        assert!(matches!(
+            statement,
+            Statement::Expression(Expression::Identifier(_))
+        ));
+
+        if let Statement::Expression(Expression::Identifier(identifier)) = statement {
+            assert_eq!(identifier.value, "foobar".to_string());
+        }
     }
 }
