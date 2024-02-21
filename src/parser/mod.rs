@@ -1,11 +1,7 @@
 use std::iter::Peekable;
 
 use crate::{
-    ast::{
-        BooleanLiteral, BooleanToken, Expression, Identifier, InfixExpression, InfixOperatorToken,
-        IntegerLiteral, LetStatement, PrefixExpression, PrefixToken, Program, ReturnStatement,
-        Statement,
-    },
+    ast::{Program, Statement},
     lexer::Lexer,
     token::Token,
 };
@@ -37,7 +33,7 @@ impl Precedence {
     }
 }
 
-pub trait Node: Sized {
+pub trait Node: ToString + Sized {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String>;
 }
 
@@ -84,7 +80,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Statement;
+    use crate::ast::{Expression, Statement};
 
     use super::*;
 
@@ -282,5 +278,14 @@ mod test {
                     assert_eq!(integer.value, value);
                 }
             })
+    }
+
+    #[test]
+    fn random() {
+        let lexer = Lexer::new("a + b * c + d / e - f");
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        println!("{}", program.to_string());
     }
 }

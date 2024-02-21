@@ -27,3 +27,13 @@ impl Node for Statement {
         }
     }
 }
+
+impl ToString for Statement {
+    fn to_string(&self) -> String {
+        match self {
+            Statement::Let(let_statement) => let_statement.to_string(),
+            Statement::Return(return_statement) => return_statement.to_string(),
+            Statement::Expression(expression) => expression.to_string(),
+        }
+    }
+}

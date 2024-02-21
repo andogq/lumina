@@ -48,3 +48,9 @@ impl Node for ReturnStatement {
         })
     }
 }
+
+impl ToString for ReturnStatement {
+    fn to_string(&self) -> String {
+        format!("return {};", self.value.to_string())
+    }
+}

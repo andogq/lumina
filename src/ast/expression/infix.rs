@@ -86,3 +86,14 @@ impl InfixExpression {
         })
     }
 }
+
+impl ToString for InfixExpression {
+    fn to_string(&self) -> String {
+        format!(
+            "({} {} {})",
+            self.left.to_string(),
+            self.operator,
+            self.right.to_string()
+        )
+    }
+}

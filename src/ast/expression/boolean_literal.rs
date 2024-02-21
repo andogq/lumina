@@ -36,6 +36,15 @@ impl Node for BooleanLiteral {
     }
 }
 
+impl ToString for BooleanLiteral {
+    fn to_string(&self) -> String {
+        match self.value {
+            true => "true".to_string(),
+            false => "false".to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::token::{EOFToken, SemicolonToken};

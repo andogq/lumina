@@ -37,6 +37,18 @@ impl Node for Expression {
     }
 }
 
+impl ToString for Expression {
+    fn to_string(&self) -> String {
+        match self {
+            Expression::Identifier(identifier) => identifier.to_string(),
+            Expression::Integer(integer) => integer.to_string(),
+            Expression::Boolean(boolean) => boolean.to_string(),
+            Expression::Prefix(prefix) => prefix.to_string(),
+            Expression::Infix(infix) => infix.to_string(),
+        }
+    }
+}
+
 fn parse_expression(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
     precedence: Precedence,

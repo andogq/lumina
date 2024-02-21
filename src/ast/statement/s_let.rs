@@ -75,3 +75,13 @@ impl Node for LetStatement {
         })
     }
 }
+
+impl ToString for LetStatement {
+    fn to_string(&self) -> String {
+        format!(
+            "let {} = {};",
+            self.name.to_string(),
+            self.value.to_string()
+        )
+    }
+}

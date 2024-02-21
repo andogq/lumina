@@ -29,6 +29,12 @@ impl Node for Identifier {
     }
 }
 
+impl ToString for Identifier {
+    fn to_string(&self) -> String {
+        self.value.clone()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::token::{EOFToken, SemicolonToken};

@@ -43,3 +43,9 @@ impl Node for PrefixExpression {
         })
     }
 }
+
+impl ToString for PrefixExpression {
+    fn to_string(&self) -> String {
+        format!("{}{}", self.operator, self.right.to_string())
+    }
+}

@@ -34,6 +34,12 @@ impl Node for IntegerLiteral {
     }
 }
 
+impl ToString for IntegerLiteral {
+    fn to_string(&self) -> String {
+        self.value.to_string()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::token::{EOFToken, SemicolonToken};
