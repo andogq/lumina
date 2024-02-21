@@ -1,6 +1,6 @@
 use crate::token::{
-    AsteriskToken, BangToken, EqToken, IdentToken, IntToken, LeftAngleToken, LetToken, MinusToken,
-    NotEqToken, PlusToken, ReturnToken, RightAngleToken, SlashToken, Token,
+    AsteriskToken, BangToken, EqToken, FalseToken, IdentToken, IntToken, LeftAngleToken, LetToken,
+    MinusToken, NotEqToken, PlusToken, ReturnToken, RightAngleToken, SlashToken, Token, TrueToken,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -38,6 +38,18 @@ pub struct Identifier {
 pub struct IntegerLiteral {
     pub token: IntToken,
     pub value: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BooleanToken {
+    True(TrueToken),
+    False(FalseToken),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BooleanLiteral {
+    pub token: BooleanToken,
+    pub value: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -96,6 +108,7 @@ pub struct InfixExpression {
 pub enum Expression {
     Identifier(Identifier),
     Integer(IntegerLiteral),
+    Boolean(BooleanLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
 }

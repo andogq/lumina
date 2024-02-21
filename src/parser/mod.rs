@@ -2,8 +2,9 @@ use std::iter::Peekable;
 
 use crate::{
     ast::{
-        Expression, Identifier, InfixExpression, InfixOperatorToken, IntegerLiteral, LetStatement,
-        PrefixExpression, PrefixToken, Program, ReturnStatement, Statement,
+        BooleanLiteral, BooleanToken, Expression, Identifier, InfixExpression, InfixOperatorToken,
+        IntegerLiteral, LetStatement, PrefixExpression, PrefixToken, Program, ReturnStatement,
+        Statement,
     },
     lexer::Lexer,
     token::Token,
@@ -236,6 +237,23 @@ impl<'a> Parser<'a> {
         })
     }
 
+    pub fn parse_boolean_literal(&mut self) -> Result<BooleanLiteral, String> {
+        self.lexer
+            .next()
+            .and_then(|token| match token {
+                Token::True(true_token) => Some(BooleanLiteral {
+                    token: BooleanToken::True(true_token),
+                    value: true,
+                }),
+                Token::False(false_token) => Some(BooleanLiteral {
+                    token: BooleanToken::False(false_token),
+                    value: false,
+                }),
+                _ => None,
+            })
+            .ok_or_else(|| "expected boolean".to_string())
+    }
+
     pub fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, String> {
         let (prefix_token, operator) = match self
             .lexer
@@ -269,10 +287,10 @@ impl<'a> Parser<'a> {
                 match &token {
                     Token::Plus(_) => Ok("+".to_string()),
                     Token::Minus(_) => Ok("-".to_string()),
-                    Token::Asterisk(_) => Ok(("*".to_string())),
+                    Token::Asterisk(_) => Ok("*".to_string()),
                     Token::Slash(_) => Ok("/".to_string()),
-                    Token::LeftAngle(_) => Ok(("<".to_string())),
-                    Token::RightAngle(_) => Ok((">".to_string())),
+                    Token::LeftAngle(_) => Ok("<".to_string()),
+                    Token::RightAngle(_) => Ok(">".to_string()),
                     Token::Eq(_) => Ok("==".to_string()),
                     Token::NotEq(_) => Ok("!=".to_string()),
                     token => Err(format!("unknown infix operator: {token:?}")),
@@ -299,6 +317,9 @@ impl<'a> Parser<'a> {
         {
             Token::Ident(_) => Ok(Expression::Identifier(self.parse_identifier()?)),
             Token::Int(_) => Ok(Expression::Integer(self.parse_integer_literal()?)),
+            Token::True(_) | Token::False(_) => {
+                Ok(Expression::Boolean(self.parse_boolean_literal()?))
+            }
             Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
                 Ok(Expression::Prefix(self.parse_prefix_expression()?))
             }
@@ -508,5 +529,31 @@ mod test {
                 }
             }
         });
+    }
+
+    #[test]
+    fn parse_boolean_expression() {
+        [("true;", true), ("false;", false)]
+            .into_iter()
+            .for_each(|(input, value)| {
+                let lexer = Lexer::new(input);
+                let mut parser = Parser::new(lexer);
+
+                let program = parser.parse_program();
+
+                assert!(parser.errors.is_empty());
+
+                assert_eq!(program.statements.len(), 1);
+
+                let statement = &program.statements[0];
+                assert!(matches!(
+                    statement,
+                    Statement::Expression(Expression::Boolean(_))
+                ));
+
+                if let Statement::Expression(Expression::Boolean(integer)) = statement {
+                    assert_eq!(integer.value, value);
+                }
+            })
     }
 }
