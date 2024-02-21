@@ -1,7 +1,9 @@
 use std::iter::Peekable;
 
 use crate::{
-    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
+    ast::{
+        Expression, Identifier, IntegerLiteral, LetStatement, Program, ReturnStatement, Statement,
+    },
     lexer::Lexer,
     token::Token,
 };
@@ -197,6 +199,28 @@ impl<'a> Parser<'a> {
             .ok_or_else(|| "expected identifier".to_string())
     }
 
+    pub fn parse_integer_literal(&mut self) -> Result<IntegerLiteral, String> {
+        let int_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Int(int_token) = token {
+                    Some(int_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected integer".to_string())?;
+
+        Ok(IntegerLiteral {
+            value: int_token
+                .literal
+                .parse::<i64>()
+                .map_err(|e| e.to_string())?,
+            token: int_token,
+        })
+    }
+
     pub fn parse_prefix(&mut self) -> Result<Option<Expression>, String> {
         match self
             .lexer
@@ -204,6 +228,7 @@ impl<'a> Parser<'a> {
             .ok_or_else(|| "expected token for prefix expression".to_string())?
         {
             Token::Ident(_) => Ok(Some(Expression::Identifier(self.parse_identifier()?))),
+            Token::Int(_) => Ok(Some(Expression::Integer(self.parse_integer_literal()?))),
             _ => Ok(None),
         }
     }
@@ -294,6 +319,30 @@ mod test {
 
         if let Statement::Expression(Expression::Identifier(identifier)) = statement {
             assert_eq!(identifier.value, "foobar".to_string());
+        }
+    }
+
+    #[test]
+    fn integer_literal_expression() {
+        let input = "5;";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert!(parser.errors.is_empty());
+
+        assert_eq!(program.statements.len(), 1);
+
+        let statement = &program.statements[0];
+        assert!(matches!(
+            statement,
+            Statement::Expression(Expression::Integer(_))
+        ));
+
+        if let Statement::Expression(Expression::Integer(integer)) = statement {
+            assert_eq!(integer.value, 5);
         }
     }
 }
