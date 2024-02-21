@@ -38,7 +38,7 @@ impl Precedence {
 }
 
 pub trait Node: Sized {
-    fn parse(tokens: &mut Peekable<Lexer<'_>>) -> Result<Self, String>;
+    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String>;
 }
 
 pub struct Parser<'a> {
@@ -207,61 +207,6 @@ impl<'a> Parser<'a> {
         Ok(expression)
     }
 
-    pub fn parse_identifier(&mut self) -> Result<Identifier, String> {
-        self.lexer
-            .next()
-            .and_then(|token| {
-                if let Token::Ident(ident_token) = token {
-                    Some(Identifier {
-                        value: ident_token.literal.clone(),
-                        ident_token,
-                    })
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected identifier".to_string())
-    }
-
-    pub fn parse_integer_literal(&mut self) -> Result<IntegerLiteral, String> {
-        let int_token = self
-            .lexer
-            .next()
-            .and_then(|token| {
-                if let Token::Int(int_token) = token {
-                    Some(int_token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected integer".to_string())?;
-
-        Ok(IntegerLiteral {
-            value: int_token
-                .literal
-                .parse::<i64>()
-                .map_err(|e| e.to_string())?,
-            token: int_token,
-        })
-    }
-
-    pub fn parse_boolean_literal(&mut self) -> Result<BooleanLiteral, String> {
-        self.lexer
-            .next()
-            .and_then(|token| match token {
-                Token::True(true_token) => Some(BooleanLiteral {
-                    token: BooleanToken::True(true_token),
-                    value: true,
-                }),
-                Token::False(false_token) => Some(BooleanLiteral {
-                    token: BooleanToken::False(false_token),
-                    value: false,
-                }),
-                _ => None,
-            })
-            .ok_or_else(|| "expected boolean".to_string())
-    }
-
     pub fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, String> {
         let (prefix_token, operator) = match self
             .lexer
@@ -323,10 +268,10 @@ impl<'a> Parser<'a> {
             .peek()
             .ok_or_else(|| "expected token for prefix expression".to_string())?
         {
-            Token::Ident(_) => Ok(Expression::Identifier(self.parse_identifier()?)),
-            Token::Int(_) => Ok(Expression::Integer(self.parse_integer_literal()?)),
+            Token::Ident(_) => Ok(Expression::Identifier(self.parse::<Identifier>()?)),
+            Token::Int(_) => Ok(Expression::Integer(self.parse::<IntegerLiteral>()?)),
             Token::True(_) | Token::False(_) => {
-                Ok(Expression::Boolean(self.parse_boolean_literal()?))
+                Ok(Expression::Boolean(self.parse::<BooleanLiteral>()?))
             }
             Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
                 Ok(Expression::Prefix(self.parse_prefix_expression()?))
