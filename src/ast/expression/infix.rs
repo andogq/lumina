@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::{
     ast::Expression,
-    parser::{Node, Precedence},
+    parser::Precedence,
     token::{
         AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
         SlashToken, Token,

@@ -83,7 +83,7 @@ fn parse_prefix(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Ex
 fn parse_grouped_expression(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
 ) -> Result<Expression, String> {
-    let left_paren_token = tokens
+    let _left_paren_token = tokens
         .next()
         .and_then(|token| {
             if let Token::LeftParen(token) = token {
@@ -96,7 +96,7 @@ fn parse_grouped_expression(
 
     let expression = parse_expression(tokens, Precedence::Lowest)?;
 
-    let right_paren_token = tokens
+    let _right_paren_token = tokens
         .next()
         .and_then(|token| {
             if let Token::RightParen(token) = token {

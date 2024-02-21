@@ -31,7 +31,7 @@ impl Node for ReturnStatement {
             .is_some()
         {}
 
-        let semicolon_token = tokens
+        let _semicolon_token = tokens
             .next()
             .and_then(|token| {
                 if let Token::Semicolon(semicolon_token) = token {

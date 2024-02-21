@@ -40,7 +40,7 @@ impl Node for LetStatement {
             })
             .ok_or_else(|| "expected `ident` token".to_string())?;
 
-        let assign_token = tokens
+        let _assign_token = tokens
             .next()
             .and_then(|token| {
                 if let Token::Assign(assign_token) = token {
@@ -57,7 +57,7 @@ impl Node for LetStatement {
             .is_some()
         {}
 
-        let semicolon_token = tokens
+        let _semicolon_token = tokens
             .next()
             .and_then(|token| {
                 if let Token::Semicolon(semicolon_token) = token {
