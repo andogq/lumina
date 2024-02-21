@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::{lexer::Lexer, token::Token};
+use crate::lexer::Lexer;
 
 pub fn start() {
     loop {
@@ -11,14 +11,8 @@ pub fn start() {
             break;
         };
 
-        let mut lexer = Lexer::new(&line);
-        loop {
-            let token = lexer.next_token();
+        Lexer::new(&line).for_each(|token| {
             println!("{token:?}");
-
-            if matches!(token, Token::EOF(_)) {
-                break;
-            }
-        }
+        });
     }
 }

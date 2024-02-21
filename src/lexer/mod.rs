@@ -9,18 +9,43 @@ use crate::token::{
 
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
+    end: bool,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
             input: input.chars().peekable(),
+            end: false,
         }
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn consume_while(&mut self, condition: fn(char) -> bool, mut value: Option<&mut String>) {
+        while self.input.peek().map(|&c| condition(c)).unwrap_or_default() {
+            let c = self.input.next().expect("character from previous peek");
+
+            if let Some(value) = &mut value {
+                (*value).push(c);
+            }
+        }
+    }
+
+    pub fn consume_whitespace(&mut self) {
+        self.consume_while(char::is_whitespace, None);
+    }
+}
+
+impl Iterator for Lexer<'_> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.end {
+            return None;
+        }
+
         let Some(c) = self.input.next() else {
-            return Token::EOF(EOFToken);
+            self.end = true;
+            return Some(Token::EOF(EOFToken));
         };
 
         let token = match c {
@@ -90,21 +115,7 @@ impl<'a> Lexer<'a> {
 
         self.consume_whitespace();
 
-        token
-    }
-
-    pub fn consume_while(&mut self, condition: fn(char) -> bool, mut value: Option<&mut String>) {
-        while self.input.peek().map(|&c| condition(c)).unwrap_or_default() {
-            let c = self.input.next().expect("character from previous peek");
-
-            if let Some(value) = &mut value {
-                (*value).push(c);
-            }
-        }
-    }
-
-    pub fn consume_whitespace(&mut self) {
-        self.consume_while(char::is_whitespace, None);
+        Some(token)
     }
 }
 
@@ -129,8 +140,9 @@ mod test {
             Token::Semicolon(SemicolonToken),
         ]
         .into_iter()
-        .for_each(|token| {
-            assert_eq!(lexer.next_token(), token);
+        .zip(lexer)
+        .for_each(|(expected, token)| {
+            assert_eq!(expected, token);
         });
     }
 
@@ -281,8 +293,9 @@ mod test {
             Token::EOF(EOFToken),
         ]
         .into_iter()
-        .for_each(|token| {
-            assert_eq!(lexer.next_token(), token);
+        .zip(lexer)
+        .for_each(|(expected, token)| {
+            assert_eq!(expected, token);
         });
     }
 }
