@@ -1,6 +1,11 @@
 use std::{iter::Peekable, str::Chars};
 
-use crate::token::Token;
+use crate::token::{
+    AssignToken, AsteriskToken, BangToken, CommaToken, EOFToken, ElseToken, EqToken, FalseToken,
+    FunctionToken, IdentToken, IfToken, IllegalToken, IntToken, LeftAngleToken, LeftBraceToken,
+    LeftParenToken, LetToken, MinusToken, NotEqToken, PlusToken, ReturnToken, RightAngleToken,
+    RightBraceToken, RightParenToken, SemicolonToken, SlashToken, Token, TrueToken,
+};
 
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
@@ -15,13 +20,13 @@ impl<'a> Lexer<'a> {
 
     pub fn next_token(&mut self) -> Token {
         let Some(c) = self.input.next() else {
-            return Token::EOF;
+            return Token::EOF(EOFToken);
         };
 
         let token = match c {
             '=' => {
                 let op = match self.input.peek() {
-                    Some('=') => Some(Token::Eq),
+                    Some('=') => Some(Token::Eq(EqToken)),
                     _ => None,
                 };
 
@@ -29,14 +34,14 @@ impl<'a> Lexer<'a> {
                     self.input.next().expect("character from previous peek");
                     op
                 } else {
-                    Token::Assign
+                    Token::Assign(AssignToken)
                 }
             }
-            '+' => Token::Plus,
-            '-' => Token::Minus,
+            '+' => Token::Plus(PlusToken),
+            '-' => Token::Minus(MinusToken),
             '!' => {
                 let op = match self.input.peek() {
-                    Some('=') => Some(Token::NotEq),
+                    Some('=') => Some(Token::NotEq(NotEqToken)),
                     _ => None,
                 };
 
@@ -44,19 +49,19 @@ impl<'a> Lexer<'a> {
                     self.input.next().expect("character from previous peek");
                     op
                 } else {
-                    Token::Bang
+                    Token::Bang(BangToken)
                 }
             }
-            '*' => Token::Asterisk,
-            '/' => Token::Slash,
-            '<' => Token::LeftAngle,
-            '>' => Token::RightAngle,
-            ';' => Token::Semicolon,
-            ',' => Token::Comma,
-            '(' => Token::LeftParen,
-            ')' => Token::RightParen,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
+            '*' => Token::Asterisk(AsteriskToken),
+            '/' => Token::Slash(SlashToken),
+            '<' => Token::LeftAngle(LeftAngleToken),
+            '>' => Token::RightAngle(RightAngleToken),
+            ';' => Token::Semicolon(SemicolonToken),
+            ',' => Token::Comma(CommaToken),
+            '(' => Token::LeftParen(LeftParenToken),
+            ')' => Token::RightParen(RightParenToken),
+            '{' => Token::LeftBrace(LeftBraceToken),
+            '}' => Token::RightBrace(RightBraceToken),
             c if c.is_ascii_alphabetic() || c == '_' => {
                 // Continue to read the identifier
                 let mut ident = String::from(c);
@@ -64,23 +69,23 @@ impl<'a> Lexer<'a> {
 
                 // Make sure the ident isn't a key word
                 match ident.as_ref() {
-                    "fn" => Token::Function,
-                    "let" => Token::Let,
-                    "true" => Token::True,
-                    "false" => Token::False,
-                    "if" => Token::If,
-                    "else" => Token::Else,
-                    "return" => Token::Return,
-                    _ => Token::Ident(ident),
+                    "fn" => Token::Function(FunctionToken),
+                    "let" => Token::Let(LetToken),
+                    "true" => Token::True(TrueToken),
+                    "false" => Token::False(FalseToken),
+                    "if" => Token::If(IfToken),
+                    "else" => Token::Else(ElseToken),
+                    "return" => Token::Return(ReturnToken),
+                    _ => Token::Ident(IdentToken { literal: ident }),
                 }
             }
             c if c.is_ascii_digit() => {
                 let mut int = String::from(c);
                 self.consume_while(|c| c.is_ascii_digit(), Some(&mut int));
 
-                Token::Int(int)
+                Token::Int(IntToken { literal: int })
             }
-            _ => Token::Illegal,
+            _ => Token::Illegal(IllegalToken),
         };
 
         self.consume_whitespace();
@@ -114,14 +119,14 @@ mod test {
         let mut lexer = Lexer::new(input);
 
         [
-            Token::Assign,
-            Token::Plus,
-            Token::LeftParen,
-            Token::RightParen,
-            Token::LeftBrace,
-            Token::RightBrace,
-            Token::Comma,
-            Token::Semicolon,
+            Token::Assign(AssignToken),
+            Token::Plus(PlusToken),
+            Token::LeftParen(LeftParenToken),
+            Token::RightParen(RightParenToken),
+            Token::LeftBrace(LeftBraceToken),
+            Token::RightBrace(RightBraceToken),
+            Token::Comma(CommaToken),
+            Token::Semicolon(SemicolonToken),
         ]
         .into_iter()
         .for_each(|token| {
@@ -154,80 +159,126 @@ mod test {
         let mut lexer = Lexer::new(input);
 
         [
-            Token::Let,
-            Token::Ident("five".to_string()),
-            Token::Assign,
-            Token::Int("5".to_string()),
-            Token::Semicolon,
-            Token::Let,
-            Token::Ident("ten".to_string()),
-            Token::Assign,
-            Token::Int("10".to_string()),
-            Token::Semicolon,
-            Token::Let,
-            Token::Ident("add".to_string()),
-            Token::Assign,
-            Token::Function,
-            Token::LeftParen,
-            Token::Ident("x".to_string()),
-            Token::Comma,
-            Token::Ident("y".to_string()),
-            Token::RightParen,
-            Token::LeftBrace,
-            Token::Ident("x".to_string()),
-            Token::Plus,
-            Token::Ident("y".to_string()),
-            Token::Semicolon,
-            Token::RightBrace,
-            Token::Semicolon,
-            Token::Let,
-            Token::Ident("result".to_string()),
-            Token::Assign,
-            Token::Ident("add".to_string()),
-            Token::LeftParen,
-            Token::Ident("five".to_string()),
-            Token::Comma,
-            Token::Ident("ten".to_string()),
-            Token::RightParen,
-            Token::Semicolon,
-            Token::Bang,
-            Token::Minus,
-            Token::Slash,
-            Token::Asterisk,
-            Token::Int("5".to_string()),
-            Token::Semicolon,
-            Token::Int("5".to_string()),
-            Token::LeftAngle,
-            Token::Int("10".to_string()),
-            Token::RightAngle,
-            Token::Int("5".to_string()),
-            Token::Semicolon,
-            Token::If,
-            Token::LeftParen,
-            Token::Int("5".to_string()),
-            Token::LeftAngle,
-            Token::Int("10".to_string()),
-            Token::RightParen,
-            Token::LeftBrace,
-            Token::Return,
-            Token::True,
-            Token::Semicolon,
-            Token::RightBrace,
-            Token::Else,
-            Token::LeftBrace,
-            Token::Return,
-            Token::False,
-            Token::Semicolon,
-            Token::RightBrace,
-            Token::Int("10".to_string()),
-            Token::Eq,
-            Token::Int("10".to_string()),
-            Token::Semicolon,
-            Token::Int("10".to_string()),
-            Token::NotEq,
-            Token::Int("9".to_string()),
-            Token::Semicolon,
-            Token::EOF,
+            Token::Let(LetToken),
+            Token::Ident(IdentToken {
+                literal: "five".to_string(),
+            }),
+            Token::Assign(AssignToken),
+            Token::Int(IntToken {
+                literal: "5".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::Let(LetToken),
+            Token::Ident(IdentToken {
+                literal: "ten".to_string(),
+            }),
+            Token::Assign(AssignToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::Let(LetToken),
+            Token::Ident(IdentToken {
+                literal: "add".to_string(),
+            }),
+            Token::Assign(AssignToken),
+            Token::Function(FunctionToken),
+            Token::LeftParen(LeftParenToken),
+            Token::Ident(IdentToken {
+                literal: "x".to_string(),
+            }),
+            Token::Comma(CommaToken),
+            Token::Ident(IdentToken {
+                literal: "y".to_string(),
+            }),
+            Token::RightParen(RightParenToken),
+            Token::LeftBrace(LeftBraceToken),
+            Token::Ident(IdentToken {
+                literal: "x".to_string(),
+            }),
+            Token::Plus(PlusToken),
+            Token::Ident(IdentToken {
+                literal: "y".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::RightBrace(RightBraceToken),
+            Token::Semicolon(SemicolonToken),
+            Token::Let(LetToken),
+            Token::Ident(IdentToken {
+                literal: "result".to_string(),
+            }),
+            Token::Assign(AssignToken),
+            Token::Ident(IdentToken {
+                literal: "add".to_string(),
+            }),
+            Token::LeftParen(LeftParenToken),
+            Token::Ident(IdentToken {
+                literal: "five".to_string(),
+            }),
+            Token::Comma(CommaToken),
+            Token::Ident(IdentToken {
+                literal: "ten".to_string(),
+            }),
+            Token::RightParen(RightParenToken),
+            Token::Semicolon(SemicolonToken),
+            Token::Bang(BangToken),
+            Token::Minus(MinusToken),
+            Token::Slash(SlashToken),
+            Token::Asterisk(AsteriskToken),
+            Token::Int(IntToken {
+                literal: "5".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::Int(IntToken {
+                literal: "5".to_string(),
+            }),
+            Token::LeftAngle(LeftAngleToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::RightAngle(RightAngleToken),
+            Token::Int(IntToken {
+                literal: "5".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::If(IfToken),
+            Token::LeftParen(LeftParenToken),
+            Token::Int(IntToken {
+                literal: "5".to_string(),
+            }),
+            Token::LeftAngle(LeftAngleToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::RightParen(RightParenToken),
+            Token::LeftBrace(LeftBraceToken),
+            Token::Return(ReturnToken),
+            Token::True(TrueToken),
+            Token::Semicolon(SemicolonToken),
+            Token::RightBrace(RightBraceToken),
+            Token::Else(ElseToken),
+            Token::LeftBrace(LeftBraceToken),
+            Token::Return(ReturnToken),
+            Token::False(FalseToken),
+            Token::Semicolon(SemicolonToken),
+            Token::RightBrace(RightBraceToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::Eq(EqToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::Int(IntToken {
+                literal: "10".to_string(),
+            }),
+            Token::NotEq(NotEqToken),
+            Token::Int(IntToken {
+                literal: "9".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::EOF(EOFToken),
         ]
         .into_iter()
         .for_each(|token| {

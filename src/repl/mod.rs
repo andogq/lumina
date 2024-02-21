@@ -16,7 +16,7 @@ pub fn start() {
             let token = lexer.next_token();
             println!("{token:?}");
 
-            if matches!(token, Token::EOF) {
+            if matches!(token, Token::EOF(_)) {
                 break;
             }
         }
