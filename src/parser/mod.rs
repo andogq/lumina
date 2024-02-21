@@ -17,7 +17,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_program(&mut self) -> Option<Program> {
+    pub fn parse_program(&mut self) -> Result<Program, String> {
         let mut statements = Vec::new();
 
         while !self
@@ -29,43 +29,61 @@ impl<'a> Parser<'a> {
             statements.push(self.parse_statement()?);
         }
 
-        Some(Program { statements })
+        Ok(Program { statements })
     }
 
-    pub fn parse_statement(&mut self) -> Option<Statement> {
-        match self.lexer.peek()? {
-            Token::Let(_) => Some(Statement::Let(self.parse_let_statement()?)),
-            _ => None,
+    pub fn parse_statement(&mut self) -> Result<Statement, String> {
+        match self
+            .lexer
+            .peek()
+            .ok_or_else(|| "expected statement to follow".to_string())?
+        {
+            Token::Let(_) => Ok(Statement::Let(self.parse_let_statement()?)),
+            token => Err(format!(
+                "unknown token encountered instead of statement: {token:?}"
+            )),
         }
     }
 
-    pub fn parse_let_statement(&mut self) -> Option<LetStatement> {
-        let let_token = self.lexer.next().and_then(|token| {
-            if let Token::Let(let_token) = token {
-                Some(let_token)
-            } else {
-                None
-            }
-        })?;
+    pub fn parse_let_statement(&mut self) -> Result<LetStatement, String> {
+        let let_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Let(let_token) = token {
+                    Some(let_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `let` token".to_string())?;
 
-        let name = self.lexer.next().and_then(|token| {
-            if let Token::Ident(name_ident_token) = token {
-                Some(Identifier {
-                    value: name_ident_token.literal.clone(),
-                    ident_token: name_ident_token,
-                })
-            } else {
-                None
-            }
-        })?;
+        let name = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Ident(name_ident_token) = token {
+                    Some(Identifier {
+                        value: name_ident_token.literal.clone(),
+                        ident_token: name_ident_token,
+                    })
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `ident` token".to_string())?;
 
-        let assign_token = self.lexer.next().and_then(|token| {
-            if let Token::Assign(assign_token) = token {
-                Some(assign_token)
-            } else {
-                None
-            }
-        })?;
+        let assign_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Assign(assign_token) = token {
+                    Some(assign_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `assign` token".to_string())?;
 
         // TODO: Read expression instead of skipping to semicolon
         while self
@@ -74,15 +92,19 @@ impl<'a> Parser<'a> {
             .is_some()
         {}
 
-        let semicolon_token = self.lexer.next().and_then(|token| {
-            if let Token::Semicolon(semicolon_token) = token {
-                Some(semicolon_token)
-            } else {
-                None
-            }
-        })?;
+        let semicolon_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Semicolon(semicolon_token) = token {
+                    Some(semicolon_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `semicolon` token".to_string())?;
 
-        Some(LetStatement {
+        Ok(LetStatement {
             let_token,
             name,
             value: Expression,
@@ -106,10 +128,11 @@ mod test {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
+
         let statements = program
+            .statements
             .into_iter()
-            .flat_map(|program| program.statements)
             .filter_map(|statement| {
                 if let Statement::Let(let_statement) = statement {
                     Some(let_statement.name.value)
@@ -122,6 +145,6 @@ mod test {
         assert_eq!(
             vec!["x".to_string(), "y".to_string(), "foobar".to_string()],
             statements
-        )
+        );
     }
 }
