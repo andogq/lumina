@@ -323,6 +323,7 @@ impl<'a> Parser<'a> {
             Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
                 Ok(Expression::Prefix(self.parse_prefix_expression()?))
             }
+            Token::LeftParen(_) => Ok(self.parse_grouped_expression()?),
             token => Err(format!("no prefix parse function found for {token:?}")),
         }
     }
@@ -352,6 +353,36 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left)
+    }
+
+    pub fn parse_grouped_expression(&mut self) -> Result<Expression, String> {
+        let left_paren_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::LeftParen(token) = token {
+                    Some(token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected left parenthesis".to_string())?;
+
+        let expression = self.parse_expression(Precedence::Lowest)?;
+
+        let right_paren_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::RightParen(token) = token {
+                    Some(token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected right parenthesis".to_string())?;
+
+        Ok(expression)
     }
 }
 
