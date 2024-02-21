@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 
 use crate::{
-    ast::{Expression, Identifier, LetStatement, Program, Statement},
+    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::Token,
 };
@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<Program, String> {
+    pub fn parse_program(&mut self) -> Program {
         let mut statements = Vec::new();
 
         while !self
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Ok(Program { statements })
+        Program { statements }
     }
 
     pub fn parse_statement(&mut self) -> Result<Statement, String> {
@@ -49,6 +49,7 @@ impl<'a> Parser<'a> {
             .ok_or_else(|| "expected statement to follow".to_string())?
         {
             Token::Let(_) => Ok(Statement::Let(self.parse_let_statement()?)),
+            Token::Return(_) => Ok(Statement::Return(self.parse_return_statement()?)),
             token => Err(format!(
                 "unknown token encountered instead of statement: {token:?}"
             )),
@@ -120,6 +121,44 @@ impl<'a> Parser<'a> {
             value: Expression,
         })
     }
+
+    pub fn parse_return_statement(&mut self) -> Result<ReturnStatement, String> {
+        let return_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Return(return_token) = token {
+                    Some(return_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `return` token".to_string())?;
+
+        // TODO: Read expression instead of skipping to semicolon
+        while self
+            .lexer
+            .next_if(|token| !matches!(token, Token::Semicolon(_)))
+            .is_some()
+        {}
+
+        let semicolon_token = self
+            .lexer
+            .next()
+            .and_then(|token| {
+                if let Token::Semicolon(semicolon_token) = token {
+                    Some(semicolon_token)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| "expected `semicolon` token".to_string())?;
+
+        Ok(ReturnStatement {
+            return_token,
+            value: Expression,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -140,8 +179,8 @@ mod test {
 
         let program = parser.parse_program();
         let statements = program
+            .statements
             .into_iter()
-            .flat_map(|program| program.statements)
             .filter_map(|statement| {
                 if let Statement::Let(let_statement) = statement {
                     Some(let_statement.name.value)
@@ -151,11 +190,27 @@ mod test {
             })
             .collect::<Vec<_>>();
 
-        assert_eq!(parser.errors.len(), 0);
+        assert!(parser.errors.is_empty());
 
         assert_eq!(
             vec!["x".to_string(), "y".to_string(), "foobar".to_string()],
             statements
         );
+    }
+
+    #[test]
+    fn return_statements() {
+        let input = r#"return 5;
+        return 10;
+        return 993322;
+        "#;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert!(parser.errors.is_empty());
+        assert_eq!(program.statements.len(), 3);
     }
 }

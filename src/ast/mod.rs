@@ -1,4 +1,4 @@
-use crate::token::{IdentToken, LetToken};
+use crate::token::{IdentToken, LetToken, ReturnToken};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Program {
@@ -8,12 +8,19 @@ pub struct Program {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Statement {
     Let(LetStatement),
+    Return(ReturnStatement),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetStatement {
     pub let_token: LetToken,
     pub name: Identifier,
+    pub value: Expression,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReturnStatement {
+    pub return_token: ReturnToken,
     pub value: Expression,
 }
 
