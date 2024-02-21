@@ -1,5 +1,6 @@
 mod boolean_literal;
 mod identifier;
+mod if_expression;
 mod infix;
 mod integer_literal;
 mod prefix;
@@ -8,6 +9,7 @@ use std::iter::Peekable;
 
 pub use boolean_literal::*;
 pub use identifier::*;
+pub use if_expression::*;
 pub use infix::*;
 pub use integer_literal::*;
 pub use prefix::*;
