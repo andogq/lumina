@@ -2,8 +2,8 @@ use std::iter::Peekable;
 
 use crate::{
     ast::{
-        Expression, Identifier, IntegerLiteral, LetStatement, PrefixExpression, PrefixToken,
-        Program, ReturnStatement, Statement,
+        Expression, Identifier, InfixExpression, InfixOperatorToken, IntegerLiteral, LetStatement,
+        PrefixExpression, PrefixToken, Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::Token,
@@ -18,6 +18,22 @@ pub enum Precedence {
     Product,
     Prefix,
     Call,
+}
+
+impl Precedence {
+    fn of(token: &Token) -> Self {
+        match token {
+            Token::Plus(token) => Precedence::Sum,
+            Token::Minus(token) => Precedence::Sum,
+            Token::Asterisk(token) => Precedence::Product,
+            Token::Slash(token) => Precedence::Product,
+            Token::LeftAngle(token) => Precedence::LessGreater,
+            Token::RightAngle(token) => Precedence::LessGreater,
+            Token::Eq(token) => Precedence::Equals,
+            Token::NotEq(token) => Precedence::Equals,
+            token => Precedence::Lowest,
+        }
+    }
 }
 
 pub struct Parser<'a> {
@@ -241,6 +257,40 @@ impl<'a> Parser<'a> {
         })
     }
 
+    pub fn parse_infix_expression(&mut self, left: Expression) -> Result<InfixExpression, String> {
+        let (precedence, operator, operator_token) = {
+            let token = self
+                .lexer
+                .next()
+                .ok_or_else(|| "expected infix operator".to_string())?;
+
+            (
+                Precedence::of(&token),
+                match &token {
+                    Token::Plus(_) => Ok("+".to_string()),
+                    Token::Minus(_) => Ok("-".to_string()),
+                    Token::Asterisk(_) => Ok(("*".to_string())),
+                    Token::Slash(_) => Ok("/".to_string()),
+                    Token::LeftAngle(_) => Ok(("<".to_string())),
+                    Token::RightAngle(_) => Ok((">".to_string())),
+                    Token::Eq(_) => Ok("==".to_string()),
+                    Token::NotEq(_) => Ok("!=".to_string()),
+                    token => Err(format!("unknown infix operator: {token:?}")),
+                }?,
+                InfixOperatorToken::try_from(token)?,
+            )
+        };
+
+        let right = self.parse_expression(precedence)?;
+
+        Ok(InfixExpression {
+            operator_token,
+            operator,
+            left: Box::new(left),
+            right: Box::new(right),
+        })
+    }
+
     pub fn parse_prefix(&mut self) -> Result<Expression, String> {
         match self
             .lexer
@@ -249,7 +299,7 @@ impl<'a> Parser<'a> {
         {
             Token::Ident(_) => Ok(Expression::Identifier(self.parse_identifier()?)),
             Token::Int(_) => Ok(Expression::Integer(self.parse_integer_literal()?)),
-            Token::Bang(_) | Token::Minus(_) => {
+            Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
                 Ok(Expression::Prefix(self.parse_prefix_expression()?))
             }
             token => Err(format!("no prefix parse function found for {token:?}")),
@@ -257,15 +307,36 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, String> {
-        let left_expression = self.parse_prefix()?;
+        let mut left = self.parse_prefix()?;
 
-        Ok(left_expression)
+        while self
+            .lexer
+            .peek()
+            .map(|token| {
+                !matches!(token, Token::Semicolon(_)) && precedence < Precedence::of(token)
+            })
+            .unwrap_or(false)
+        {
+            // Make sure next token is an infix operator
+            if self
+                .lexer
+                .peek()
+                .map(|token| InfixOperatorToken::try_from(token.clone()).is_err())
+                .unwrap_or(true)
+            {
+                break;
+            }
+
+            left = Expression::Infix(self.parse_infix_expression(left)?);
+        }
+
+        Ok(left)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{PrefixExpression, Statement};
+    use crate::ast::Statement;
 
     use super::*;
 
@@ -366,14 +437,15 @@ mod test {
 
     #[test]
     fn parse_prefix_expressions() {
-        [("!5;", "!", 5), ("-15;", "-", 15)].into_iter().for_each(
-            |(input, operator, integer_value)| {
+        [("!5;", "!", 5), ("-15;", "-", 15), ("+10;", "+", 10)]
+            .into_iter()
+            .for_each(|(input, operator, integer_value)| {
                 let lexer = Lexer::new(input);
                 let mut parser = Parser::new(lexer);
 
                 let program = parser.parse_program();
 
-                assert!(dbg!(parser.errors).is_empty());
+                assert!(parser.errors.is_empty());
 
                 assert_eq!(program.statements.len(), 1);
 
@@ -391,7 +463,50 @@ mod test {
                         assert_eq!(integer_value, integer_literal.value);
                     }
                 }
-            },
-        );
+            });
+    }
+
+    #[test]
+    fn parse_infix_expressions() {
+        [
+            ("5 + 5", 5, "+", 5),
+            ("5 - 5", 5, "-", 5),
+            ("5 * 5", 5, "*", 5),
+            ("5 / 5", 5, "/", 5),
+            ("5 > 5", 5, ">", 5),
+            ("5 < 5", 5, "<", 5),
+            ("5 == 5", 5, "==", 5),
+            ("5 != 5", 5, "!=", 5),
+        ]
+        .into_iter()
+        .for_each(|(input, left, operator, right)| {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+
+            let program = parser.parse_program();
+
+            assert!(dbg!(parser.errors).is_empty());
+
+            assert_eq!(program.statements.len(), 1);
+
+            let statement = &program.statements[0];
+            assert!(matches!(
+                statement,
+                Statement::Expression(Expression::Infix(_))
+            ));
+
+            if let Statement::Expression(Expression::Infix(infix_expression)) = statement {
+                assert_eq!(infix_expression.operator, operator);
+                assert!(matches!(*infix_expression.left, Expression::Integer(_)));
+                assert!(matches!(*infix_expression.right, Expression::Integer(_)));
+
+                if let Expression::Integer(ref integer_literal) = *infix_expression.left {
+                    assert_eq!(left, integer_literal.value);
+                }
+                if let Expression::Integer(ref integer_literal) = *infix_expression.right {
+                    assert_eq!(right, integer_literal.value);
+                }
+            }
+        });
     }
 }
