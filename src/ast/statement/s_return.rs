@@ -25,11 +25,7 @@ impl Node for ReturnStatement {
             })
             .ok_or_else(|| "expected `return` token".to_string())?;
 
-        // TODO: Read expression instead of skipping to semicolon
-        while tokens
-            .next_if(|token| !matches!(token, Token::Semicolon(_)))
-            .is_some()
-        {}
+        let value = Expression::parse(tokens)?;
 
         let _semicolon_token = tokens
             .next()
@@ -44,7 +40,7 @@ impl Node for ReturnStatement {
 
         Ok(ReturnStatement {
             return_token,
-            value: todo!(),
+            value,
         })
     }
 }
@@ -52,5 +48,82 @@ impl Node for ReturnStatement {
 impl ToString for ReturnStatement {
     fn to_string(&self) -> String {
         format!("return {};", self.value.to_string())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::token::{EOFToken, IdentToken, SemicolonToken};
+
+    use super::*;
+
+    #[test]
+    fn simple_return() {
+        let mut tokens = [
+            Token::Return(ReturnToken),
+            Token::Ident(IdentToken {
+                literal: "a".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+            Token::EOF(EOFToken),
+        ]
+        .into_iter()
+        .peekable();
+
+        let result = ReturnStatement::parse(&mut tokens);
+
+        assert!(matches!(result, Ok(ReturnStatement { .. })));
+        if let Ok(return_statement) = result {
+            assert!(matches!(return_statement.value, Expression::Identifier(_)));
+
+            if let Expression::Identifier(ident) = return_statement.value {
+                assert_eq!(ident.value, "a");
+            }
+        }
+
+        assert_eq!(tokens.count(), 1);
+    }
+
+    #[test]
+    fn reject_no_return() {
+        let mut tokens = [
+            Token::Ident(IdentToken {
+                literal: "a".to_string(),
+            }),
+            Token::Semicolon(SemicolonToken),
+        ]
+        .into_iter()
+        .peekable();
+
+        let result = ReturnStatement::parse(&mut tokens);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reject_no_value() {
+        let mut tokens = [Token::Return(ReturnToken), Token::Semicolon(SemicolonToken)]
+            .into_iter()
+            .peekable();
+
+        let result = ReturnStatement::parse(&mut tokens);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reject_no_semicolon() {
+        let mut tokens = [
+            Token::Return(ReturnToken),
+            Token::Ident(IdentToken {
+                literal: "a".to_string(),
+            }),
+        ]
+        .into_iter()
+        .peekable();
+
+        let result = ReturnStatement::parse(&mut tokens);
+
+        assert!(result.is_err());
     }
 }
