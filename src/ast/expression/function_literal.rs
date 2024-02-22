@@ -8,7 +8,7 @@ use crate::{
 
 use super::Identifier;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionLiteral {
     pub fn_token: FunctionToken,
     pub parameters: Vec<Identifier>,

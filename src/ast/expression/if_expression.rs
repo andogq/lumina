@@ -8,6 +8,7 @@ use crate::{
 
 use super::Expression;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IfExpression {
     if_token: IfToken,
     condition: Expression,

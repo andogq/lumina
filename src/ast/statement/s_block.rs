@@ -4,7 +4,7 @@ use crate::{parser::Node, token::Token};
 
 use super::Statement;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BlockStatement {
     statements: Vec<Statement>,
 }
