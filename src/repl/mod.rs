@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::{lexer::Lexer, parser::Parser};
+use crate::{ast::AstNode, lexer::Lexer, parser::Parser};
 
 pub fn start() {
     loop {
@@ -21,6 +21,8 @@ pub fn start() {
             .iter()
             .for_each(|err| println!("Error encountered: {err}"));
 
-        println!("{}", program.to_string());
+        if parser.errors.is_empty() {
+            println!("{}", program.evaluate());
+        }
     }
 }

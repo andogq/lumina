@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{AstNode, ParseNode},
-    object::Object,
+    object::{IntegerObject, Object},
     token::{IntToken, Token},
 };
 
@@ -17,7 +17,7 @@ pub struct IntegerLiteral {
 
 impl AstNode for IntegerLiteral {
     fn evaluate(&self) -> Object {
-        todo!()
+        Object::Integer(IntegerObject { value: self.value })
     }
 }
 
@@ -116,5 +116,18 @@ mod test {
             IntegerLiteral::parse(&mut [Token::Semicolon(SemicolonToken)].into_iter().peekable()),
             Err(_)
         ));
+    }
+
+    #[test]
+    fn evaluate() {
+        let lit = IntegerLiteral {
+            token: IntToken {
+                literal: "5".to_string(),
+            },
+            value: 5,
+        };
+        let obj = lit.evaluate();
+
+        assert!(matches!(obj, Object::Integer(IntegerObject { value: 5 })));
     }
 }

@@ -36,7 +36,16 @@ pub enum Expression {
 
 impl AstNode for Expression {
     fn evaluate(&self) -> Object {
-        todo!()
+        match self {
+            Expression::Identifier(e) => e.evaluate(),
+            Expression::Integer(e) => e.evaluate(),
+            Expression::Boolean(e) => e.evaluate(),
+            Expression::Prefix(e) => e.evaluate(),
+            Expression::Infix(e) => e.evaluate(),
+            Expression::If(e) => e.evaluate(),
+            Expression::Function(e) => e.evaluate(),
+            Expression::Call(e) => e.evaluate(),
+        }
     }
 }
 

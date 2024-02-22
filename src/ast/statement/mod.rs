@@ -21,7 +21,11 @@ pub enum Statement {
 
 impl AstNode for Statement {
     fn evaluate(&self) -> Object {
-        todo!()
+        match self {
+            Statement::Let(let_statement) => let_statement.evaluate(),
+            Statement::Return(return_statement) => return_statement.evaluate(),
+            Statement::Expression(expression_statement) => expression_statement.evaluate(),
+        }
     }
 }
 
