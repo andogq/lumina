@@ -2,13 +2,15 @@ mod s_block;
 mod s_let;
 mod s_return;
 
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 pub use s_block::*;
 pub use s_let::*;
 pub use s_return::*;
 
-use crate::{ast::Expression, parser::Node, token::Token};
+use crate::{ast::Expression, object::Object, token::Token};
+
+use super::{AstNode, ParseNode};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Statement {
@@ -17,7 +19,13 @@ pub enum Statement {
     Expression(Expression),
 }
 
-impl Node for Statement {
+impl AstNode for Statement {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for Statement {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         match tokens
             .peek()
@@ -38,12 +46,12 @@ impl Node for Statement {
     }
 }
 
-impl ToString for Statement {
-    fn to_string(&self) -> String {
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Let(let_statement) => let_statement.to_string(),
-            Statement::Return(return_statement) => return_statement.to_string(),
-            Statement::Expression(expression) => expression.to_string(),
+            Statement::Let(let_statement) => let_statement.fmt(f),
+            Statement::Return(return_statement) => return_statement.fmt(f),
+            Statement::Expression(expression) => expression.fmt(f),
         }
     }
 }

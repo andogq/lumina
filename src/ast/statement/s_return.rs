@@ -1,8 +1,11 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    ast::Expression,
-    parser::Node,
+    ast::{AstNode, Expression, ParseNode},
+    object::Object,
     token::{ReturnToken, Token},
 };
 
@@ -12,7 +15,13 @@ pub struct ReturnStatement {
     pub value: Expression,
 }
 
-impl Node for ReturnStatement {
+impl AstNode for ReturnStatement {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for ReturnStatement {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let return_token = tokens
             .next()
@@ -45,9 +54,9 @@ impl Node for ReturnStatement {
     }
 }
 
-impl ToString for ReturnStatement {
-    fn to_string(&self) -> String {
-        format!("return {};", self.value.to_string())
+impl Display for ReturnStatement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "return {};", self.value.to_string())
     }
 }
 

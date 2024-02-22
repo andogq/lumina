@@ -1,8 +1,8 @@
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::BlockStatement,
-    parser::Node,
+    ast::{AstNode, BlockStatement, ParseNode},
+    object::Object,
     token::{IfToken, Token},
 };
 
@@ -16,7 +16,13 @@ pub struct IfExpression {
     alternative: Option<BlockStatement>,
 }
 
-impl Node for IfExpression {
+impl AstNode for IfExpression {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for IfExpression {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let if_token = tokens
             .next()
@@ -72,9 +78,10 @@ impl Node for IfExpression {
     }
 }
 
-impl ToString for IfExpression {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for IfExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "if {} {}{}",
             self.condition.to_string(),
             self.consequence.to_string(),

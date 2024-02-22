@@ -1,8 +1,8 @@
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{Expression, Identifier},
-    parser::Node,
+    ast::{AstNode, Expression, Identifier, ParseNode},
+    object::Object,
     token::{LetToken, Token},
 };
 
@@ -13,7 +13,13 @@ pub struct LetStatement {
     pub value: Expression,
 }
 
-impl Node for LetStatement {
+impl AstNode for LetStatement {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for LetStatement {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let let_token = tokens
             .next()
@@ -72,9 +78,10 @@ impl Node for LetStatement {
     }
 }
 
-impl ToString for LetStatement {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for LetStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "let {} = {};",
             self.name.to_string(),
             self.value.to_string()

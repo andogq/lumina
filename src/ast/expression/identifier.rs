@@ -1,7 +1,10 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    parser::Node,
+    ast::{AstNode, ParseNode},
     token::{IdentToken, Token},
 };
 
@@ -11,7 +14,13 @@ pub struct Identifier {
     pub value: String,
 }
 
-impl Node for Identifier {
+impl AstNode for Identifier {
+    fn evaluate(&self) -> crate::object::Object {
+        todo!()
+    }
+}
+
+impl ParseNode for Identifier {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         tokens
             .next()
@@ -29,9 +38,9 @@ impl Node for Identifier {
     }
 }
 
-impl ToString for Identifier {
-    fn to_string(&self) -> String {
-        self.value.clone()
+impl Display for Identifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
     }
 }
 

@@ -7,7 +7,7 @@ mod infix;
 mod integer_literal;
 mod prefix;
 
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 pub use boolean_literal::*;
 pub use call_expression::*;
@@ -18,10 +18,9 @@ pub use infix::*;
 pub use integer_literal::*;
 pub use prefix::*;
 
-use crate::{
-    parser::{Node, Precedence},
-    token::Token,
-};
+use crate::{object::Object, parser::Precedence, token::Token};
+
+use super::{AstNode, ParseNode};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {
@@ -35,7 +34,13 @@ pub enum Expression {
     Call(CallExpression),
 }
 
-impl Node for Expression {
+impl AstNode for Expression {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for Expression {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let expression = parse_expression(tokens, Precedence::Lowest)?;
 
@@ -43,17 +48,17 @@ impl Node for Expression {
     }
 }
 
-impl ToString for Expression {
-    fn to_string(&self) -> String {
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::Identifier(identifier) => identifier.to_string(),
-            Expression::Integer(integer) => integer.to_string(),
-            Expression::Boolean(boolean) => boolean.to_string(),
-            Expression::Prefix(prefix) => prefix.to_string(),
-            Expression::Infix(infix) => infix.to_string(),
-            Expression::If(if_expression) => if_expression.to_string(),
-            Expression::Function(function) => function.to_string(),
-            Expression::Call(call) => call.to_string(),
+            Expression::Identifier(identifier) => identifier.fmt(f),
+            Expression::Integer(integer) => integer.fmt(f),
+            Expression::Boolean(boolean) => boolean.fmt(f),
+            Expression::Prefix(prefix) => prefix.fmt(f),
+            Expression::Infix(infix) => infix.fmt(f),
+            Expression::If(if_expression) => if_expression.fmt(f),
+            Expression::Function(function) => function.fmt(f),
+            Expression::Call(call) => call.fmt(f),
         }
     }
 }

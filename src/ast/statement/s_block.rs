@@ -1,6 +1,13 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
-use crate::{parser::Node, token::Token};
+use crate::{
+    ast::{AstNode, ParseNode},
+    object::Object,
+    token::Token,
+};
 
 use super::Statement;
 
@@ -9,7 +16,13 @@ pub struct BlockStatement {
     statements: Vec<Statement>,
 }
 
-impl Node for BlockStatement {
+impl AstNode for BlockStatement {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for BlockStatement {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let _l_brace = tokens
             .next()
@@ -47,9 +60,10 @@ impl Node for BlockStatement {
     }
 }
 
-impl ToString for BlockStatement {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for BlockStatement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "{{ {} }}",
             self.statements
                 .iter()

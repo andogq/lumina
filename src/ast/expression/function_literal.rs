@@ -1,8 +1,10 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    ast::BlockStatement,
-    parser::Node,
+    ast::{AstNode, BlockStatement, ParseNode},
     token::{FunctionToken, Token},
 };
 
@@ -15,7 +17,13 @@ pub struct FunctionLiteral {
     pub body: BlockStatement,
 }
 
-impl Node for FunctionLiteral {
+impl AstNode for FunctionLiteral {
+    fn evaluate(&self) -> crate::object::Object {
+        todo!()
+    }
+}
+
+impl ParseNode for FunctionLiteral {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let fn_token = tokens
             .next()
@@ -80,9 +88,10 @@ impl Node for FunctionLiteral {
     }
 }
 
-impl ToString for FunctionLiteral {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for FunctionLiteral {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "fn({}) {}",
             self.parameters
                 .iter()

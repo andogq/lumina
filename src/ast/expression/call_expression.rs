@@ -1,6 +1,13 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
-use crate::{parser::Node, token::Token};
+use crate::{
+    ast::{AstNode, ParseNode},
+    object::Object,
+    token::Token,
+};
 
 use super::{Expression, FunctionLiteral, Identifier};
 
@@ -10,11 +17,11 @@ pub enum CallableFunction {
     FunctionLiteral(FunctionLiteral),
 }
 
-impl ToString for CallableFunction {
-    fn to_string(&self) -> String {
+impl Display for CallableFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            CallableFunction::Identifier(identifier) => identifier.to_string(),
-            CallableFunction::FunctionLiteral(function_literal) => function_literal.to_string(),
+            CallableFunction::Identifier(identifier) => identifier.fmt(f),
+            CallableFunction::FunctionLiteral(function_literal) => function_literal.fmt(f),
         }
     }
 }
@@ -80,9 +87,16 @@ impl CallExpression {
     }
 }
 
-impl ToString for CallExpression {
-    fn to_string(&self) -> String {
-        format!(
+impl AstNode for CallExpression {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "{}({})",
             self.function.to_string(),
             self.arguments

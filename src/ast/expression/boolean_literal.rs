@@ -1,7 +1,11 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    parser::Node,
+    ast::{AstNode, ParseNode},
+    object::Object,
     token::{FalseToken, Token, TrueToken},
 };
 
@@ -17,7 +21,13 @@ pub struct BooleanLiteral {
     pub value: bool,
 }
 
-impl Node for BooleanLiteral {
+impl AstNode for BooleanLiteral {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for BooleanLiteral {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         tokens
             .next()
@@ -36,11 +46,11 @@ impl Node for BooleanLiteral {
     }
 }
 
-impl ToString for BooleanLiteral {
-    fn to_string(&self) -> String {
+impl Display for BooleanLiteral {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.value {
-            true => "true".to_string(),
-            false => "false".to_string(),
+            true => write!(f, "true"),
+            false => write!(f, "false"),
         }
     }
 }

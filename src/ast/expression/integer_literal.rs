@@ -1,7 +1,11 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    parser::Node,
+    ast::{AstNode, ParseNode},
+    object::Object,
     token::{IntToken, Token},
 };
 
@@ -11,7 +15,13 @@ pub struct IntegerLiteral {
     pub value: i64,
 }
 
-impl Node for IntegerLiteral {
+impl AstNode for IntegerLiteral {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for IntegerLiteral {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let int_token = tokens
             .next()
@@ -34,9 +44,9 @@ impl Node for IntegerLiteral {
     }
 }
 
-impl ToString for IntegerLiteral {
-    fn to_string(&self) -> String {
-        self.value.to_string()
+impl Display for IntegerLiteral {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
     }
 }
 

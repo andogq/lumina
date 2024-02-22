@@ -1,7 +1,8 @@
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::Expression,
+    ast::{AstNode, Expression},
+    object::Object,
     parser::Precedence,
     token::{
         AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
@@ -87,9 +88,16 @@ impl InfixExpression {
     }
 }
 
-impl ToString for InfixExpression {
-    fn to_string(&self) -> String {
-        format!(
+impl AstNode for InfixExpression {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl Display for InfixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "({} {} {})",
             self.left.to_string(),
             self.operator,

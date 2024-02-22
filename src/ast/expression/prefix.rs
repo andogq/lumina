@@ -1,8 +1,12 @@
-use std::iter::Peekable;
+use std::{
+    fmt::{Display, Formatter},
+    iter::Peekable,
+};
 
 use crate::{
-    ast::Expression,
-    parser::{Node, Precedence},
+    ast::{AstNode, Expression, ParseNode},
+    object::Object,
+    parser::Precedence,
     token::{BangToken, MinusToken, PlusToken, Token},
 };
 
@@ -22,7 +26,13 @@ pub struct PrefixExpression {
     pub right: Box<Expression>,
 }
 
-impl Node for PrefixExpression {
+impl AstNode for PrefixExpression {
+    fn evaluate(&self) -> Object {
+        todo!()
+    }
+}
+
+impl ParseNode for PrefixExpression {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let (prefix_token, operator) = match tokens
             .next()
@@ -44,8 +54,8 @@ impl Node for PrefixExpression {
     }
 }
 
-impl ToString for PrefixExpression {
-    fn to_string(&self) -> String {
-        format!("{}{}", self.operator, self.right.to_string())
+impl Display for PrefixExpression {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.operator, self.right.to_string())
     }
 }

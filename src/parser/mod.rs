@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 
 use crate::{
-    ast::{Program, Statement},
+    ast::{ParseNode, Program, Statement},
     lexer::Lexer,
     token::Token,
 };
@@ -34,10 +34,6 @@ impl Precedence {
     }
 }
 
-pub trait Node: ToString + Sized {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String>;
-}
-
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
     pub errors: Vec<String>,
@@ -51,7 +47,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse<N: Node>(&mut self) -> Result<N, String> {
+    pub fn parse<N: ParseNode>(&mut self) -> Result<N, String> {
         N::parse(&mut self.lexer)
     }
 
