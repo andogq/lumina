@@ -28,7 +28,7 @@ impl Node for FunctionLiteral {
             })
             .ok_or_else(|| "expected function token".to_string())?;
 
-        let l_paren = tokens
+        let _l_paren = tokens
             .next()
             .and_then(|token| {
                 if let Token::LeftParen(token) = token {

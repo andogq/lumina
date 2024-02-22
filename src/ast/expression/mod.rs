@@ -39,9 +39,6 @@ impl Node for Expression {
     fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
         let expression = parse_expression(tokens, Precedence::Lowest)?;
 
-        // Advance past semicolon, if present
-        tokens.next_if(|token| matches!(token, Token::Semicolon(_)));
-
         Ok(expression)
     }
 }
