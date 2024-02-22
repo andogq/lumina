@@ -20,15 +20,16 @@ pub enum Precedence {
 impl Precedence {
     pub fn of(token: &Token) -> Self {
         match token {
-            Token::Plus(token) => Precedence::Sum,
-            Token::Minus(token) => Precedence::Sum,
-            Token::Asterisk(token) => Precedence::Product,
-            Token::Slash(token) => Precedence::Product,
-            Token::LeftAngle(token) => Precedence::LessGreater,
-            Token::RightAngle(token) => Precedence::LessGreater,
-            Token::Eq(token) => Precedence::Equals,
-            Token::NotEq(token) => Precedence::Equals,
-            token => Precedence::Lowest,
+            Token::Plus(_) => Precedence::Sum,
+            Token::Minus(_) => Precedence::Sum,
+            Token::Asterisk(_) => Precedence::Product,
+            Token::Slash(_) => Precedence::Product,
+            Token::LeftAngle(_) => Precedence::LessGreater,
+            Token::RightAngle(_) => Precedence::LessGreater,
+            Token::Eq(_) => Precedence::Equals,
+            Token::NotEq(_) => Precedence::Equals,
+            Token::LeftParen(_) => Precedence::Call,
+            _ => Precedence::Lowest,
         }
     }
 }
@@ -39,11 +40,11 @@ pub trait Node: ToString + Sized {
 
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
-    errors: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(mut lexer: Lexer<'a>) -> Self {
+    pub fn new(lexer: Lexer<'a>) -> Self {
         Self {
             lexer: lexer.peekable(),
             errors: Vec::new(),
@@ -229,7 +230,7 @@ mod test {
 
             let program = parser.parse_program();
 
-            assert!(dbg!(parser.errors).is_empty());
+            assert!(parser.errors.is_empty());
 
             assert_eq!(program.statements.len(), 1);
 

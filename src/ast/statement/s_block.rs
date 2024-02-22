@@ -50,7 +50,7 @@ impl Node for BlockStatement {
 impl ToString for BlockStatement {
     fn to_string(&self) -> String {
         format!(
-            "{{{}}}",
+            "{{ {} }}",
             self.statements
                 .iter()
                 .map(|s| s.to_string())

@@ -119,13 +119,13 @@ mod test {
         .into_iter()
         .peekable();
 
-        let result = FunctionLiteral::parse(&mut tokens);
+        let result = dbg!(FunctionLiteral::parse(&mut tokens));
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
         if let Ok(func) = result {
             assert!(func.parameters.is_empty());
-            assert_eq!(func.body.to_string(), "{0}");
+            assert_eq!(func.body.to_string(), "{ 0 }");
         }
 
         assert_eq!(tokens.count(), 1);
@@ -157,7 +157,7 @@ mod test {
         if let Ok(func) = result {
             assert_eq!(func.parameters.len(), 1);
             assert_eq!(func.parameters[0].value, "x");
-            assert_eq!(func.body.to_string(), "{x}");
+            assert_eq!(func.body.to_string(), "{ x }");
         }
 
         assert_eq!(tokens.count(), 1);
@@ -190,7 +190,7 @@ mod test {
         if let Ok(func) = result {
             assert_eq!(func.parameters.len(), 1);
             assert_eq!(func.parameters[0].value, "x");
-            assert_eq!(func.body.to_string(), "{x}");
+            assert_eq!(func.body.to_string(), "{ x }");
         }
 
         assert_eq!(tokens.count(), 1);
@@ -227,7 +227,7 @@ mod test {
             assert_eq!(func.parameters.len(), 2);
             assert_eq!(func.parameters[0].value, "x");
             assert_eq!(func.parameters[1].value, "y");
-            assert_eq!(func.body.to_string(), "{x}");
+            assert_eq!(func.body.to_string(), "{ x }");
         }
 
         assert_eq!(tokens.count(), 1);
@@ -265,7 +265,7 @@ mod test {
             assert_eq!(func.parameters.len(), 2);
             assert_eq!(func.parameters[0].value, "x");
             assert_eq!(func.parameters[1].value, "y");
-            assert_eq!(func.body.to_string(), "{x}");
+            assert_eq!(func.body.to_string(), "{ x }");
         }
 
         assert_eq!(tokens.count(), 1);

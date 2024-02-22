@@ -79,7 +79,7 @@ impl ToString for IfExpression {
             self.condition.to_string(),
             self.consequence.to_string(),
             if let Some(alt) = &self.alternative {
-                format!(" {}", alt.to_string())
+                format!(" else {}", alt.to_string())
             } else {
                 String::new()
             }
@@ -130,7 +130,7 @@ mod test {
 
         if let Ok(expr) = result {
             assert_eq!(expr.condition.to_string(), "(x < y)");
-            assert_eq!(expr.consequence.to_string(), "{x}");
+            assert_eq!(expr.consequence.to_string(), "{ x }");
         }
     }
 
@@ -174,10 +174,10 @@ mod test {
 
         if let Ok(expr) = result {
             assert_eq!(expr.condition.to_string(), "(x < y)");
-            assert_eq!(expr.consequence.to_string(), "{x}");
+            assert_eq!(expr.consequence.to_string(), "{ x }");
 
             if let Some(alt) = expr.alternative {
-                assert_eq!(alt.to_string(), "{y}");
+                assert_eq!(alt.to_string(), "{ y }");
             }
         }
     }

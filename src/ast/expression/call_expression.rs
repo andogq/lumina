@@ -69,6 +69,10 @@ impl CallExpression {
             }
         }
 
+        tokens
+            .next_if(|token| matches!(token, Token::RightParen(_)))
+            .ok_or_else(|| "expected right parenthesis to close argument list".to_string())?;
+
         Ok(Self {
             function,
             arguments,
@@ -134,6 +138,8 @@ mod test {
             assert_eq!(ident.value, "add");
             assert!(arguments.is_empty());
         }
+
+        assert_eq!(tokens.count(), 1);
     }
 
     #[test]
@@ -175,6 +181,8 @@ mod test {
             assert_eq!(arguments.len(), 1);
             assert_eq!(arguments[0].to_string(), "1");
         }
+
+        assert_eq!(tokens.count(), 1);
     }
 
     #[test]
@@ -217,6 +225,8 @@ mod test {
             assert_eq!(arguments.len(), 1);
             assert_eq!(arguments[0].to_string(), "1");
         }
+
+        assert_eq!(tokens.count(), 1);
     }
 
     #[test]
@@ -276,6 +286,8 @@ mod test {
             assert_eq!(arguments[1].to_string(), "(2 * 3)");
             assert_eq!(arguments[2].to_string(), "(4 + 5)");
         }
+
+        assert_eq!(tokens.count(), 1);
     }
 
     #[test]
@@ -336,5 +348,7 @@ mod test {
             assert_eq!(arguments[1].to_string(), "(2 * 3)");
             assert_eq!(arguments[2].to_string(), "(4 + 5)");
         }
+
+        assert_eq!(tokens.count(), 1);
     }
 }

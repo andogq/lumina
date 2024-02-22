@@ -127,7 +127,7 @@ mod test {
     #[test]
     fn next_token_simple() {
         let input = "=+(){},;";
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
 
         [
             Token::Assign(AssignToken),
@@ -168,7 +168,7 @@ mod test {
         10 == 10;
         10 != 9;
         "#;
-        let mut lexer = Lexer::new(input);
+        let lexer = Lexer::new(input);
 
         [
             Token::Let(LetToken),

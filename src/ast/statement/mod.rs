@@ -25,7 +25,15 @@ impl Node for Statement {
         {
             Token::Let(_) => Ok(Statement::Let(LetStatement::parse(tokens)?)),
             Token::Return(_) => Ok(Statement::Return(ReturnStatement::parse(tokens)?)),
-            _ => Ok(Statement::Expression(Expression::parse(tokens)?)),
+            _ => {
+                let expression = Expression::parse(tokens)?;
+
+                // Expression statement may end in semicolon, or be ommitted for implicit returns
+                // TODO: Should semicolon checks be done for all statements at this level?
+                tokens.next_if(|token| matches!(token, Token::Semicolon(_)));
+
+                Ok(Statement::Expression(expression))
+            }
         }
     }
 }

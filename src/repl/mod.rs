@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::lexer::Lexer;
+use crate::{lexer::Lexer, parser::Parser};
 
 pub fn start() {
     loop {
@@ -11,8 +11,16 @@ pub fn start() {
             break;
         };
 
-        Lexer::new(&line).for_each(|token| {
-            println!("{token:?}");
-        });
+        let lexer = Lexer::new(&line);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        parser
+            .errors
+            .iter()
+            .for_each(|err| println!("Error encountered: {err}"));
+
+        println!("{}", program.to_string());
     }
 }
