@@ -20,7 +20,7 @@ pub use prefix::*;
 
 use crate::{object::Object, parser::Precedence, token::Token};
 
-use super::{AstNode, ParseNode};
+use super::{AstNode, ParseNode, Return};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {
@@ -35,7 +35,7 @@ pub enum Expression {
 }
 
 impl AstNode for Expression {
-    fn evaluate(&self) -> Object {
+    fn evaluate(&self) -> Return<Object> {
         match self {
             Expression::Identifier(e) => e.evaluate(),
             Expression::Integer(e) => e.evaluate(),

@@ -1,7 +1,7 @@
 use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{AstNode, Expression, Identifier, ParseNode},
+    ast::{AstNode, Expression, Identifier, ParseNode, Return},
     object::Object,
     token::{LetToken, Token},
 };
@@ -14,7 +14,7 @@ pub struct LetStatement {
 }
 
 impl AstNode for LetStatement {
-    fn evaluate(&self) -> Object {
+    fn evaluate(&self) -> Return<Object> {
         todo!()
     }
 }

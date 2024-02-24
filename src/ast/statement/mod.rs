@@ -10,7 +10,7 @@ pub use s_return::*;
 
 use crate::{ast::Expression, object::Object, token::Token};
 
-use super::{AstNode, ParseNode};
+use super::{AstNode, ParseNode, Return};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Statement {
@@ -20,7 +20,7 @@ pub enum Statement {
 }
 
 impl AstNode for Statement {
-    fn evaluate(&self) -> Object {
+    fn evaluate(&self) -> Return<Object> {
         match self {
             Statement::Let(let_statement) => let_statement.evaluate(),
             Statement::Return(return_statement) => return_statement.evaluate(),

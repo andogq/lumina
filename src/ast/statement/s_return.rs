@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode},
+    ast::{AstNode, Expression, ParseNode, Return},
     object::Object,
     token::{ReturnToken, Token},
 };
@@ -16,7 +16,7 @@ pub struct ReturnStatement {
 }
 
 impl AstNode for ReturnStatement {
-    fn evaluate(&self) -> Object {
+    fn evaluate(&self) -> Return<Object> {
         todo!()
     }
 }

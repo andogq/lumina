@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::{ast::Statement, object::Object};
 
-use super::AstNode;
+use super::{AstNode, Return};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Program {
@@ -10,7 +10,7 @@ pub struct Program {
 }
 
 impl AstNode for Program {
-    fn evaluate(&self) -> Object {
+    fn evaluate(&self) -> Return<Object> {
         let mut result = None;
 
         for statement in &self.statements {

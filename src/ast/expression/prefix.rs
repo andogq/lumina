@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode},
-    object::Object,
+    ast::{AstNode, Expression, ParseNode, Return},
+    object::{BooleanObject, NullObject, Object},
     parser::Precedence,
     token::{BangToken, MinusToken, PlusToken, Token},
 };
@@ -27,8 +27,33 @@ pub struct PrefixExpression {
 }
 
 impl AstNode for PrefixExpression {
-    fn evaluate(&self) -> Object {
-        todo!()
+    fn evaluate(&self) -> Return<Object> {
+        let right = self.right.evaluate().value();
+
+        Return::Implicit(match self.prefix_token {
+            PrefixToken::Plus(_) => {
+                if matches!(right, Object::Integer(_)) {
+                    right
+                } else {
+                    Object::Null(NullObject)
+                }
+            }
+            PrefixToken::Minus(_) => match right {
+                Object::Integer(mut int) => {
+                    int.value = -int.value;
+
+                    Object::Integer(int)
+                }
+                _ => Object::Null(NullObject),
+            },
+            PrefixToken::Bang(_) => Object::Boolean(BooleanObject {
+                value: match right {
+                    Object::Boolean(BooleanObject { value }) => !value,
+                    Object::Null(_) => true,
+                    _ => false,
+                },
+            }),
+        })
     }
 }
 

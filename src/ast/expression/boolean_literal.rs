@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, ParseNode},
-    object::Object,
+    ast::{AstNode, ParseNode, Return},
+    object::{BooleanObject, Object},
     token::{FalseToken, Token, TrueToken},
 };
 
@@ -22,8 +22,8 @@ pub struct BooleanLiteral {
 }
 
 impl AstNode for BooleanLiteral {
-    fn evaluate(&self) -> Object {
-        todo!()
+    fn evaluate(&self) -> Return<Object> {
+        Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
     }
 }
 
@@ -99,5 +99,17 @@ mod test {
             BooleanLiteral::parse(&mut [Token::Semicolon(SemicolonToken)].into_iter().peekable()),
             Err(_)
         ));
+    }
+
+    #[test]
+    fn evaluate() {
+        assert!(matches!(
+            BooleanLiteral {
+                token: BooleanToken::True(TrueToken),
+                value: true
+            }
+            .evaluate(),
+            Return::Implicit(Object::Boolean(BooleanObject { value: true }))
+        ))
     }
 }

@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, BlockStatement, ParseNode},
+    ast::{AstNode, BlockStatement, ParseNode, Return},
+    object::Object,
     token::{FunctionToken, Token},
 };
 
@@ -18,7 +19,7 @@ pub struct FunctionLiteral {
 }
 
 impl AstNode for FunctionLiteral {
-    fn evaluate(&self) -> crate::object::Object {
+    fn evaluate(&self) -> Return<Object> {
         todo!()
     }
 }

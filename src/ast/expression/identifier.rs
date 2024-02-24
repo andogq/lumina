@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, ParseNode},
+    ast::{AstNode, ParseNode, Return},
+    object::Object,
     token::{IdentToken, Token},
 };
 
@@ -15,7 +16,7 @@ pub struct Identifier {
 }
 
 impl AstNode for Identifier {
-    fn evaluate(&self) -> crate::object::Object {
+    fn evaluate(&self) -> Return<Object> {
         todo!()
     }
 }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, ParseNode},
+    ast::{AstNode, ParseNode, Return},
     object::Object,
     token::Token,
 };
@@ -17,8 +17,15 @@ pub struct BlockStatement {
 }
 
 impl AstNode for BlockStatement {
-    fn evaluate(&self) -> Object {
-        todo!()
+    fn evaluate(&self) -> Return<Object> {
+        let mut result = None;
+
+        for statement in &self.statements {
+            result = Some(statement.evaluate());
+        }
+
+        // WARN: bad
+        result.unwrap()
     }
 }
 

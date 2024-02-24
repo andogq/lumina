@@ -1,8 +1,8 @@
 use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{AstNode, BlockStatement, ParseNode},
-    object::Object,
+    ast::{AstNode, BlockStatement, ParseNode, Return},
+    object::{BooleanObject, NullObject, Object},
     token::{IfToken, Token},
 };
 
@@ -17,8 +17,16 @@ pub struct IfExpression {
 }
 
 impl AstNode for IfExpression {
-    fn evaluate(&self) -> Object {
-        todo!()
+    fn evaluate(&self) -> Return<Object> {
+        let condition = self.condition.evaluate();
+
+        match (condition.value(), &self.alternative) {
+            (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(),
+            (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
+                alternative.evaluate()
+            }
+            _ => Return::Implicit(Object::Null(NullObject)),
+        }
     }
 }
 

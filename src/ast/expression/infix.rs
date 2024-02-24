@@ -1,8 +1,8 @@
 use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{AstNode, Expression},
-    object::Object,
+    ast::{AstNode, Expression, Return},
+    object::{BooleanObject, IntegerObject, NullObject, Object},
     parser::Precedence,
     token::{
         AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
@@ -89,8 +89,61 @@ impl InfixExpression {
 }
 
 impl AstNode for InfixExpression {
-    fn evaluate(&self) -> Object {
-        todo!()
+    fn evaluate(&self) -> Return<Object> {
+        use InfixOperatorToken::*;
+
+        let left = self.left.evaluate().value();
+        let right = self.right.evaluate().value();
+
+        Return::Implicit(match (&self.operator_token, left, right) {
+            (token, Object::Integer(left), Object::Integer(right)) => {
+                let left = left.value;
+                let right = right.value;
+
+                match token {
+                    Plus(_) | Minus(_) | Asterisk(_) | Slash(_) => Object::Integer(IntegerObject {
+                        value: match token {
+                            Plus(_) => left + right,
+                            Minus(_) => left - right,
+                            Asterisk(_) => left * right,
+                            Slash(_) => left / right,
+                            _ => unreachable!(),
+                        },
+                    }),
+                    LeftAngle(_) | RightAngle(_) | Eq(_) | NotEq(_) => {
+                        Object::Boolean(BooleanObject {
+                            value: match token {
+                                LeftAngle(_) => left < right,
+                                RightAngle(_) => left > right,
+                                Eq(_) => left == right,
+                                NotEq(_) => left != right,
+                                _ => unreachable!(),
+                            },
+                        })
+                    }
+                }
+            }
+            (token, Object::Boolean(left), Object::Boolean(right)) => {
+                let left = left.value;
+                let right = right.value;
+
+                Object::Boolean(BooleanObject {
+                    value: match token {
+                        LeftAngle(_) => left < right,
+                        RightAngle(_) => left > right,
+                        Eq(_) => left == right,
+                        NotEq(_) => left != right,
+                        _ => return Return::Implicit(Object::Null(NullObject)),
+                    },
+                })
+            }
+
+            // If hasn't already been evaluated, left and right aren't equal
+            (Eq(_), _, _) => Object::Boolean(BooleanObject { value: false }),
+            (NotEq(_), _, _) => Object::Boolean(BooleanObject { value: true }),
+
+            _ => Object::Null(NullObject),
+        })
     }
 }
 
