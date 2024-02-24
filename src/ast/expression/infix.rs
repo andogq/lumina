@@ -3,6 +3,7 @@ use std::{fmt::Display, iter::Peekable};
 use crate::{
     ast::{AstNode, Expression},
     interpreter::{
+        error::Error,
         object::{BooleanObject, IntegerObject, NullObject, Object},
         return_value::Return,
     },
@@ -146,7 +147,7 @@ impl AstNode for InfixExpression {
             (Eq(_), _, _) => Object::Boolean(BooleanObject { value: false }),
             (NotEq(_), _, _) => Object::Boolean(BooleanObject { value: true }),
 
-            _ => Object::Null(NullObject),
+            _ => return Error::throw("insupported infix operation"),
         })
     }
 }

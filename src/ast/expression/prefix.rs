@@ -6,7 +6,8 @@ use std::{
 use crate::{
     ast::{AstNode, Expression, ParseNode},
     interpreter::{
-        object::{BooleanObject, NullObject, Object},
+        error::Error,
+        object::{BooleanObject, Object},
         return_value::Return,
     },
     parser::Precedence,
@@ -34,30 +35,22 @@ impl AstNode for PrefixExpression {
     fn evaluate(&self) -> Return<Object> {
         let right = return_value!(self.right.evaluate());
 
-        Return::Implicit(match self.prefix_token {
-            PrefixToken::Plus(_) => {
-                if matches!(right, Object::Integer(_)) {
-                    right
-                } else {
-                    Object::Null(NullObject)
-                }
-            }
-            PrefixToken::Minus(_) => match right {
-                Object::Integer(mut int) => {
+        match (&self.prefix_token, right) {
+            (PrefixToken::Plus(_), Object::Integer(int)) => Return::Implicit(Object::Integer(int)),
+            (PrefixToken::Minus(_), Object::Integer(mut int)) => {
+                Return::Implicit(Object::Integer({
                     int.value = -int.value;
-
-                    Object::Integer(int)
-                }
-                _ => Object::Null(NullObject),
-            },
-            PrefixToken::Bang(_) => Object::Boolean(BooleanObject {
-                value: match right {
-                    Object::Boolean(BooleanObject { value }) => !value,
-                    Object::Null(_) => true,
-                    _ => false,
-                },
-            }),
-        })
+                    int
+                }))
+            }
+            (PrefixToken::Bang(_), Object::Boolean(bool)) => {
+                Return::Implicit(Object::Boolean(BooleanObject { value: !bool.value }))
+            }
+            (PrefixToken::Bang(_), Object::Null(_)) => {
+                Return::Implicit(Object::Boolean(BooleanObject { value: true }))
+            }
+            _ => Error::throw("prefix operation not supported"),
+        }
     }
 }
 

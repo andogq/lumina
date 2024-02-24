@@ -2,7 +2,11 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::Statement,
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{
+        object::{NullObject, Object},
+        return_value::Return,
+    },
+    return_value,
 };
 
 use super::AstNode;
@@ -14,14 +18,13 @@ pub struct Program {
 
 impl AstNode for Program {
     fn evaluate(&self) -> Return<Object> {
-        let mut result = None;
+        let mut result = Object::Null(NullObject);
 
         for statement in &self.statements {
-            result = Some(statement.evaluate());
+            result = return_value!(statement.evaluate());
         }
 
-        // TODO: Dunno what to do here
-        result.unwrap()
+        Return::Implicit(result)
     }
 }
 
