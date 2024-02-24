@@ -5,7 +5,11 @@ use std::{
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{
+        environment::Environment,
+        object::{FunctionObject, Object},
+        return_value::Return,
+    },
     token::{FunctionToken, Token},
 };
 
@@ -19,8 +23,12 @@ pub struct FunctionLiteral {
 }
 
 impl AstNode for FunctionLiteral {
-    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
-        todo!()
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        Return::Implicit(Object::Function(FunctionObject {
+            parameters: self.parameters.clone(),
+            body: self.body.clone(),
+            env: env.clone(),
+        }))
     }
 }
 

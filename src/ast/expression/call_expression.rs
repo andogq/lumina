@@ -5,7 +5,8 @@ use std::{
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
+    return_value,
     token::Token,
 };
 
@@ -88,8 +89,35 @@ impl CallExpression {
 }
 
 impl AstNode for CallExpression {
-    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
-        todo!()
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        let Object::Function(function) = return_value!(match &self.function {
+            CallableFunction::Identifier(ident) => ident.evaluate(env),
+            CallableFunction::FunctionLiteral(lit) => lit.evaluate(env),
+        }) else {
+            return Error::throw("value is not of type function");
+        };
+
+        let mut function_env = env.nest();
+
+        // Evaluate all arguments and set them in the environment
+        for (arg, param) in self
+            .arguments
+            .iter()
+            .map(|arg| arg.evaluate(env))
+            .zip(function.parameters)
+        {
+            match arg {
+                Return::Implicit(value) | Return::Explicit(value) => {
+                    function_env.set(param.value, value)
+                }
+                Return::Error(err) => return Return::Error(err),
+            }
+        }
+
+        match function.body.evaluate(&mut function_env) {
+            Return::Explicit(value) | Return::Implicit(value) => Return::Implicit(value),
+            Return::Error(err) => Return::Error(err),
+        }
     }
 }
 

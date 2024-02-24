@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use super::error::Error;
 
+#[derive(Debug, Clone)]
 pub enum Return<T> {
     Explicit(T),
     Implicit(T),

@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use super::return_value::Return;
 
+#[derive(Debug, Clone)]
 pub struct Error {
     message: String,
 }
