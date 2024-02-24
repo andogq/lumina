@@ -68,7 +68,7 @@ mod test {
     use crate::{
         ast::{IntegerLiteral, Statement},
         interpreter::object::IntegerObject,
-        token::{EOFToken, IdentToken, IntToken, SemicolonToken},
+        token::{EOFToken, IdentToken, SemicolonToken},
     };
 
     use super::*;
@@ -147,12 +147,7 @@ mod test {
     fn return_explicit_value() {
         let result = Statement::Return(ReturnStatement {
             return_token: ReturnToken,
-            value: Expression::Integer(IntegerLiteral {
-                token: IntToken {
-                    literal: "10".to_string(),
-                },
-                value: 10,
-            }),
+            value: Expression::Integer(IntegerLiteral::new(10)),
         })
         .evaluate();
 

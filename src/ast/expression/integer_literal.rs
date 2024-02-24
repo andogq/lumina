@@ -18,6 +18,17 @@ pub struct IntegerLiteral {
     pub value: i64,
 }
 
+impl IntegerLiteral {
+    pub fn new(value: i64) -> Self {
+        Self {
+            token: IntToken {
+                literal: value.to_string(),
+            },
+            value,
+        }
+    }
+}
+
 impl AstNode for IntegerLiteral {
     fn evaluate(&self) -> Return<Object> {
         Return::Implicit(Object::Integer(IntegerObject { value: self.value }))
@@ -123,16 +134,8 @@ mod test {
 
     #[test]
     fn evaluate() {
-        let lit = IntegerLiteral {
-            token: IntToken {
-                literal: "5".to_string(),
-            },
-            value: 5,
-        };
-        let obj = lit.evaluate();
-
         assert!(matches!(
-            obj,
+            IntegerLiteral::new(5).evaluate(),
             Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
     }

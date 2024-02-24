@@ -24,6 +24,18 @@ pub struct BooleanLiteral {
     pub value: bool,
 }
 
+impl BooleanLiteral {
+    pub fn new(value: bool) -> Self {
+        Self {
+            token: match value {
+                true => BooleanToken::True(TrueToken),
+                false => BooleanToken::False(FalseToken),
+            },
+            value,
+        }
+    }
+}
+
 impl AstNode for BooleanLiteral {
     fn evaluate(&self) -> Return<Object> {
         Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
@@ -107,11 +119,7 @@ mod test {
     #[test]
     fn evaluate() {
         assert!(matches!(
-            BooleanLiteral {
-                token: BooleanToken::True(TrueToken),
-                value: true
-            }
-            .evaluate(),
+            BooleanLiteral::new(true).evaluate(),
             Return::Implicit(Object::Boolean(BooleanObject { value: true }))
         ))
     }
