@@ -6,6 +6,7 @@ mod if_expression;
 mod infix;
 mod integer_literal;
 mod prefix;
+mod string_literal;
 
 use std::{fmt::Display, iter::Peekable};
 
@@ -17,6 +18,7 @@ pub use if_expression::*;
 pub use infix::*;
 pub use integer_literal::*;
 pub use prefix::*;
+pub use string_literal::*;
 
 use crate::{
     interpreter::{environment::Environment, object::Object, return_value::Return},
@@ -30,6 +32,7 @@ use super::{AstNode, ParseNode};
 pub enum Expression {
     Identifier(Identifier),
     Integer(IntegerLiteral),
+    String(StringLiteral),
     Boolean(BooleanLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
@@ -44,6 +47,7 @@ impl AstNode for Expression {
             Expression::Identifier(e) => e.evaluate(env),
             Expression::Integer(e) => e.evaluate(env),
             Expression::Boolean(e) => e.evaluate(env),
+            Expression::String(e) => e.evaluate(env),
             Expression::Prefix(e) => e.evaluate(env),
             Expression::Infix(e) => e.evaluate(env),
             Expression::If(e) => e.evaluate(env),
@@ -67,6 +71,7 @@ impl Display for Expression {
             Expression::Identifier(identifier) => identifier.fmt(f),
             Expression::Integer(integer) => integer.fmt(f),
             Expression::Boolean(boolean) => boolean.fmt(f),
+            Expression::String(string) => string.fmt(f),
             Expression::Prefix(prefix) => prefix.fmt(f),
             Expression::Infix(infix) => infix.fmt(f),
             Expression::If(if_expression) => if_expression.fmt(f),
@@ -116,6 +121,7 @@ fn parse_prefix(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Ex
     {
         Token::Ident(_) => Ok(Expression::Identifier(Identifier::parse(tokens)?)),
         Token::Int(_) => Ok(Expression::Integer(IntegerLiteral::parse(tokens)?)),
+        Token::String(_) => Ok(Expression::String(StringLiteral::parse(tokens)?)),
         Token::True(_) | Token::False(_) => Ok(Expression::Boolean(BooleanLiteral::parse(tokens)?)),
         Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
             Ok(Expression::Prefix(PrefixExpression::parse(tokens)?))

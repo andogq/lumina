@@ -5,7 +5,7 @@ use crate::{
     interpreter::{
         environment::Environment,
         error::Error,
-        object::{BooleanObject, IntegerObject, NullObject, Object},
+        object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
         return_value::Return,
     },
     parser::Precedence,
@@ -141,6 +141,11 @@ impl AstNode for InfixExpression {
                         NotEq(_) => left != right,
                         _ => return Return::Implicit(Object::Null(NullObject)),
                     },
+                })
+            }
+            (Plus(_), Object::String(left), Object::String(right)) => {
+                Object::String(StringObject {
+                    value: left.value + &right.value,
                 })
             }
 

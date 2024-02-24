@@ -8,6 +8,7 @@ pub enum Token {
     // Identifiers and literals
     Ident(IdentToken),
     Int(IntToken),
+    String(StringToken),
 
     // Operators
     Assign(AssignToken),
@@ -54,6 +55,10 @@ pub struct IdentToken {
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IntToken {
+    pub literal: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StringToken {
     pub literal: String,
 }
 

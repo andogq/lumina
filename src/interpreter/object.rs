@@ -8,6 +8,7 @@ use super::environment::Environment;
 pub enum Object {
     Integer(IntegerObject),
     Boolean(BooleanObject),
+    String(StringObject),
     Null(NullObject),
     Function(FunctionObject),
 }
@@ -17,6 +18,7 @@ impl Display for Object {
         match self {
             Object::Integer(integer) => integer.fmt(f),
             Object::Boolean(boolean) => boolean.fmt(f),
+            Object::String(string) => string.fmt(f),
             Object::Null(null) => null.fmt(f),
             Object::Function(function) => function.fmt(f),
         }
@@ -40,6 +42,17 @@ pub struct BooleanObject {
 }
 
 impl Display for BooleanObject {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct StringObject {
+    pub value: String,
+}
+
+impl Display for StringObject {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.value.fmt(f)
     }

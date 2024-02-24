@@ -1,11 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-use crate::token::{
-    AssignToken, AsteriskToken, BangToken, CommaToken, EOFToken, ElseToken, EqToken, FalseToken,
-    FunctionToken, IdentToken, IfToken, IllegalToken, IntToken, LeftAngleToken, LeftBraceToken,
-    LeftParenToken, LetToken, MinusToken, NotEqToken, PlusToken, ReturnToken, RightAngleToken,
-    RightBraceToken, RightParenToken, SemicolonToken, SlashToken, Token, TrueToken,
-};
+use crate::token::*;
 
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
@@ -20,7 +15,11 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn consume_while(&mut self, condition: fn(char) -> bool, mut value: Option<&mut String>) {
+    pub fn consume_while(
+        &mut self,
+        mut condition: impl FnMut(char) -> bool,
+        mut value: Option<&mut String>,
+    ) {
         while self.input.peek().map(|&c| condition(c)).unwrap_or_default() {
             let c = self.input.next().expect("character from previous peek");
 
@@ -87,6 +86,26 @@ impl Iterator for Lexer<'_> {
             ')' => Token::RightParen(RightParenToken),
             '{' => Token::LeftBrace(LeftBraceToken),
             '}' => Token::RightBrace(RightBraceToken),
+            '"' => {
+                // Read through the string
+                let mut s = String::new();
+
+                let mut escaped = false;
+                while self.input.peek().map(|&c| c != '"' || escaped).unwrap() {
+                    let c = self.input.next().expect("character from previous peek");
+
+                    escaped = c == '\\';
+
+                    if !escaped {
+                        s.push(c);
+                    }
+                }
+
+                // Eat the closing quote
+                self.input.next();
+
+                Token::String(StringToken { literal: s })
+            }
             c if c.is_ascii_alphabetic() || c == '_' => {
                 // Continue to read the identifier
                 let mut ident = String::from(c);
@@ -290,6 +309,42 @@ mod test {
                 literal: "9".to_string(),
             }),
             Token::Semicolon(SemicolonToken),
+            Token::EOF(EOFToken),
+        ]
+        .into_iter()
+        .zip(lexer)
+        .for_each(|(expected, token)| {
+            assert_eq!(expected, token);
+        });
+    }
+
+    #[test]
+    fn parse_string() {
+        let input = r#""some string""#;
+        let lexer = Lexer::new(input);
+
+        [
+            Token::String(StringToken {
+                literal: "some string".to_string(),
+            }),
+            Token::EOF(EOFToken),
+        ]
+        .into_iter()
+        .zip(lexer)
+        .for_each(|(expected, token)| {
+            assert_eq!(expected, token);
+        });
+    }
+
+    #[test]
+    fn parse_escaped_string() {
+        let input = r#""some \"string\"!""#;
+        let lexer = Lexer::new(input);
+
+        [
+            Token::String(StringToken {
+                literal: r#"some "string"!"#.to_string(),
+            }),
             Token::EOF(EOFToken),
         ]
         .into_iter()
