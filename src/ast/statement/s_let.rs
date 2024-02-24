@@ -19,8 +19,8 @@ pub struct LetStatement {
 }
 
 impl AstNode for LetStatement {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
-        let result = return_value!(self.value.evaluate(env));
+    fn evaluate(&self, env: Environment) -> Return<Object> {
+        let result = return_value!(self.value.evaluate(env.clone()));
         env.set(&self.name.value, result);
 
         Return::Implicit(Object::Null(NullObject))

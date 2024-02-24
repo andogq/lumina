@@ -89,21 +89,21 @@ impl CallExpression {
 }
 
 impl AstNode for CallExpression {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         let Object::Function(function) = return_value!(match &self.function {
-            CallableFunction::Identifier(ident) => ident.evaluate(env),
-            CallableFunction::FunctionLiteral(lit) => lit.evaluate(env),
+            CallableFunction::Identifier(ident) => ident.evaluate(env.clone()),
+            CallableFunction::FunctionLiteral(lit) => lit.evaluate(env.clone()),
         }) else {
             return Error::throw("value is not of type function");
         };
 
-        let mut function_env = env.nest();
+        let function_env = env.nest();
 
         // Evaluate all arguments and set them in the environment
         for (arg, param) in self
             .arguments
             .iter()
-            .map(|arg| arg.evaluate(env))
+            .map(|arg| arg.evaluate(env.clone()))
             .zip(function.parameters)
         {
             match arg {
@@ -114,7 +114,7 @@ impl AstNode for CallExpression {
             }
         }
 
-        match function.body.evaluate(&mut function_env) {
+        match function.body.evaluate(function_env) {
             Return::Explicit(value) | Return::Implicit(value) => Return::Implicit(value),
             Return::Error(err) => Return::Error(err),
         }

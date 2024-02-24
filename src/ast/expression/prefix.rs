@@ -33,7 +33,7 @@ pub struct PrefixExpression {
 }
 
 impl AstNode for PrefixExpression {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         let right = return_value!(self.right.evaluate(env));
 
         match (&self.prefix_token, right) {

@@ -95,10 +95,10 @@ impl InfixExpression {
 }
 
 impl AstNode for InfixExpression {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         use InfixOperatorToken::*;
 
-        let left = return_value!(self.left.evaluate(env));
+        let left = return_value!(self.left.evaluate(env.clone()));
         let right = return_value!(self.right.evaluate(env));
 
         Return::Implicit(match (&self.operator_token, left, right) {

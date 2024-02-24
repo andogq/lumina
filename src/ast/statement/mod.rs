@@ -24,7 +24,7 @@ pub enum Statement {
 }
 
 impl AstNode for Statement {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         match self {
             Statement::Let(let_statement) => let_statement.evaluate(env),
             Statement::Return(return_statement) => return_statement.evaluate(env),

@@ -3,7 +3,7 @@ use std::io::{stdin, stdout, Write};
 use crate::{ast::AstNode, interpreter::environment::Environment, lexer::Lexer, parser::Parser};
 
 pub fn start() {
-    let mut env = Environment::new();
+    let env = Environment::new();
 
     loop {
         print!(">> ");
@@ -24,7 +24,7 @@ pub fn start() {
             .for_each(|err| println!("Error encountered: {err}"));
 
         if parser.errors.is_empty() {
-            println!("{}", program.evaluate(&mut env));
+            println!("{}", program.evaluate(env.clone()));
         }
     }
 }

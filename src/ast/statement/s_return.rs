@@ -16,7 +16,7 @@ pub struct ReturnStatement {
 }
 
 impl AstNode for ReturnStatement {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         match self.value.evaluate(env) {
             Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
             Return::Error(err) => Return::Error(err),
@@ -149,7 +149,7 @@ mod test {
             return_token: ReturnToken,
             value: Expression::Integer(IntegerLiteral::new(10)),
         })
-        .evaluate(&mut Environment::new());
+        .evaluate(Environment::new());
 
         assert!(matches!(
             result,

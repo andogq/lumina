@@ -22,8 +22,8 @@ pub struct IfExpression {
 }
 
 impl AstNode for IfExpression {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
-        let condition = return_value!(self.condition.evaluate(env));
+    fn evaluate(&self, env: Environment) -> Return<Object> {
+        let condition = return_value!(self.condition.evaluate(env.clone()));
 
         match (condition, &self.alternative) {
             (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(env),

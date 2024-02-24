@@ -22,11 +22,11 @@ pub struct BlockStatement {
 }
 
 impl AstNode for BlockStatement {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         let mut result = Object::Null(NullObject);
 
         for statement in &self.statements {
-            result = return_value!(statement.evaluate(env));
+            result = return_value!(statement.evaluate(env.clone()));
         }
 
         Return::Implicit(result)

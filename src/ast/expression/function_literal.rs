@@ -23,7 +23,7 @@ pub struct FunctionLiteral {
 }
 
 impl AstNode for FunctionLiteral {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         Return::Implicit(Object::Function(FunctionObject {
             parameters: self.parameters.clone(),
             body: self.body.clone(),

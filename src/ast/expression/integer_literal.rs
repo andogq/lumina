@@ -31,7 +31,7 @@ impl IntegerLiteral {
 }
 
 impl AstNode for IntegerLiteral {
-    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, _env: Environment) -> Return<Object> {
         Return::Implicit(Object::Integer(IntegerObject { value: self.value }))
     }
 }
@@ -136,7 +136,7 @@ mod test {
     #[test]
     fn evaluate() {
         assert!(matches!(
-            IntegerLiteral::new(5).evaluate(&mut Environment::new()),
+            IntegerLiteral::new(5).evaluate(Environment::new()),
             Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
     }

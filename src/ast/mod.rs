@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub trait AstNode: Display + Sized {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object>;
+    fn evaluate(&self, env: Environment) -> Return<Object>;
 }
 
 pub trait ParseNode: AstNode {

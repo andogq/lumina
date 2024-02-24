@@ -38,7 +38,7 @@ impl BooleanLiteral {
 }
 
 impl AstNode for BooleanLiteral {
-    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, _env: Environment) -> Return<Object> {
         Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
     }
 }
@@ -120,7 +120,7 @@ mod test {
     #[test]
     fn evaluate() {
         assert!(matches!(
-            BooleanLiteral::new(true).evaluate(&mut Environment::new()),
+            BooleanLiteral::new(true).evaluate(Environment::new()),
             Return::Implicit(Object::Boolean(BooleanObject { value: true }))
         ))
     }

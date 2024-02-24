@@ -16,7 +16,7 @@ pub struct Identifier {
 }
 
 impl AstNode for Identifier {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         env.get(&self.value)
             .map(|value| Return::Implicit(value))
             .unwrap_or_else(|| Error::throw(format!("identifier not found: \"{}\"", self.value)))

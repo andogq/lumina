@@ -8,5 +8,5 @@ use rust_script::{
 pub fn run(input: impl AsRef<str>) -> Return<Object> {
     Parser::new(Lexer::new(input.as_ref()))
         .parse_program()
-        .evaluate(&mut Environment::new())
+        .evaluate(Environment::new())
 }

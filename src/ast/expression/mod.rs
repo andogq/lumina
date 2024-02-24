@@ -39,7 +39,7 @@ pub enum Expression {
 }
 
 impl AstNode for Expression {
-    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+    fn evaluate(&self, env: Environment) -> Return<Object> {
         match self {
             Expression::Identifier(e) => e.evaluate(env),
             Expression::Integer(e) => e.evaluate(env),
