@@ -17,7 +17,10 @@ pub struct ReturnStatement {
 
 impl AstNode for ReturnStatement {
     fn evaluate(&self) -> Return<Object> {
-        todo!()
+        match self.value.evaluate() {
+            Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
+            Return::Error(err) => Return::Error(err),
+        }
     }
 }
 
@@ -62,7 +65,11 @@ impl Display for ReturnStatement {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{EOFToken, IdentToken, SemicolonToken};
+    use crate::{
+        ast::{IntegerLiteral, Statement},
+        object::IntegerObject,
+        token::{EOFToken, IdentToken, IntToken, SemicolonToken},
+    };
 
     use super::*;
 
@@ -134,5 +141,24 @@ mod test {
         let result = ReturnStatement::parse(&mut tokens);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn return_explicit_value() {
+        let result = Statement::Return(ReturnStatement {
+            return_token: ReturnToken,
+            value: Expression::Integer(IntegerLiteral {
+                token: IntToken {
+                    literal: "10".to_string(),
+                },
+                value: 10,
+            }),
+        })
+        .evaluate();
+
+        assert!(matches!(
+            result,
+            Return::Explicit(Object::Integer(IntegerObject { value: 10 }))
+        ));
     }
 }
