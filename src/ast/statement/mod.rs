@@ -10,7 +10,7 @@ pub use s_return::*;
 
 use crate::{
     ast::Expression,
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     token::Token,
 };
 
@@ -24,11 +24,11 @@ pub enum Statement {
 }
 
 impl AstNode for Statement {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
         match self {
-            Statement::Let(let_statement) => let_statement.evaluate(),
-            Statement::Return(return_statement) => return_statement.evaluate(),
-            Statement::Expression(expression_statement) => expression_statement.evaluate(),
+            Statement::Let(let_statement) => let_statement.evaluate(env),
+            Statement::Return(return_statement) => return_statement.evaluate(env),
+            Statement::Expression(expression_statement) => expression_statement.evaluate(env),
         }
     }
 }

@@ -3,6 +3,7 @@ use std::{fmt::Display, iter::Peekable};
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
     interpreter::{
+        environment::Environment,
         object::{BooleanObject, NullObject, Object},
         return_value::Return,
     },
@@ -21,13 +22,13 @@ pub struct IfExpression {
 }
 
 impl AstNode for IfExpression {
-    fn evaluate(&self) -> Return<Object> {
-        let condition = return_value!(self.condition.evaluate());
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        let condition = return_value!(self.condition.evaluate(env));
 
         match (condition, &self.alternative) {
-            (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(),
+            (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(env),
             (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
-                alternative.evaluate()
+                alternative.evaluate(env)
             }
             _ => Return::Implicit(Object::Null(NullObject)),
         }

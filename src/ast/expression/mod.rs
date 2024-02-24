@@ -19,7 +19,7 @@ pub use integer_literal::*;
 pub use prefix::*;
 
 use crate::{
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     parser::Precedence,
     token::Token,
 };
@@ -39,16 +39,16 @@ pub enum Expression {
 }
 
 impl AstNode for Expression {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
         match self {
-            Expression::Identifier(e) => e.evaluate(),
-            Expression::Integer(e) => e.evaluate(),
-            Expression::Boolean(e) => e.evaluate(),
-            Expression::Prefix(e) => e.evaluate(),
-            Expression::Infix(e) => e.evaluate(),
-            Expression::If(e) => e.evaluate(),
-            Expression::Function(e) => e.evaluate(),
-            Expression::Call(e) => e.evaluate(),
+            Expression::Identifier(e) => e.evaluate(env),
+            Expression::Integer(e) => e.evaluate(env),
+            Expression::Boolean(e) => e.evaluate(env),
+            Expression::Prefix(e) => e.evaluate(env),
+            Expression::Infix(e) => e.evaluate(env),
+            Expression::If(e) => e.evaluate(env),
+            Expression::Function(e) => e.evaluate(env),
+            Expression::Call(e) => e.evaluate(env),
         }
     }
 }

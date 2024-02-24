@@ -1,8 +1,10 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::{ast::AstNode, lexer::Lexer, parser::Parser};
+use crate::{ast::AstNode, interpreter::environment::Environment, lexer::Lexer, parser::Parser};
 
 pub fn start() {
+    let mut env = Environment::new();
+
     loop {
         print!(">> ");
         stdout().flush().unwrap();
@@ -22,7 +24,7 @@ pub fn start() {
             .for_each(|err| println!("Error encountered: {err}"));
 
         if parser.errors.is_empty() {
-            println!("{}", program.evaluate());
+            println!("{}", program.evaluate(&mut env));
         }
     }
 }

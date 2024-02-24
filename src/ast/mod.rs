@@ -9,12 +9,12 @@ pub use program::*;
 pub use statement::*;
 
 use crate::{
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     token::Token,
 };
 
 pub trait AstNode: Display + Sized {
-    fn evaluate(&self) -> Return<Object>;
+    fn evaluate(&self, env: &mut Environment) -> Return<Object>;
 }
 
 pub trait ParseNode: AstNode {

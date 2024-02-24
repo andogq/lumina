@@ -6,6 +6,7 @@ use std::{
 use crate::{
     ast::{AstNode, Expression, ParseNode},
     interpreter::{
+        environment::Environment,
         error::Error,
         object::{BooleanObject, Object},
         return_value::Return,
@@ -32,8 +33,8 @@ pub struct PrefixExpression {
 }
 
 impl AstNode for PrefixExpression {
-    fn evaluate(&self) -> Return<Object> {
-        let right = return_value!(self.right.evaluate());
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        let right = return_value!(self.right.evaluate(env));
 
         match (&self.prefix_token, right) {
             (PrefixToken::Plus(_), Object::Integer(int)) => Return::Implicit(Object::Integer(int)),

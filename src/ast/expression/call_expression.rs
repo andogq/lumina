@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     token::Token,
 };
 
@@ -88,7 +88,7 @@ impl CallExpression {
 }
 
 impl AstNode for CallExpression {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
         todo!()
     }
 }

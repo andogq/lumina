@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     token::{ReturnToken, Token},
 };
 
@@ -16,8 +16,8 @@ pub struct ReturnStatement {
 }
 
 impl AstNode for ReturnStatement {
-    fn evaluate(&self) -> Return<Object> {
-        match self.value.evaluate() {
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        match self.value.evaluate(env) {
             Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
             Return::Error(err) => Return::Error(err),
         }
@@ -149,7 +149,7 @@ mod test {
             return_token: ReturnToken,
             value: Expression::Integer(IntegerLiteral::new(10)),
         })
-        .evaluate();
+        .evaluate(&mut Environment::new());
 
         assert!(matches!(
             result,

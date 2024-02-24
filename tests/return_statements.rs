@@ -1,16 +1,15 @@
-use rust_script::{
-    ast::AstNode,
-    interpreter::{
-        object::{IntegerObject, Object},
-        return_value::Return,
-    },
-    lexer::Lexer,
-    parser::Parser,
+mod common;
+
+use rust_script::interpreter::{
+    object::{IntegerObject, Object},
+    return_value::Return,
 };
+
+use crate::common::run;
 
 #[test]
 fn return_in_nested_if() {
-    let program = r#"
+    let result = run(r#"
     if (10 > 1) {
         if (10 > 1) {
             return 10;
@@ -18,9 +17,7 @@ fn return_in_nested_if() {
 
         return 1;
     }
-    "#;
-
-    let result = Parser::new(Lexer::new(program)).parse_program().evaluate();
+    "#);
 
     assert!(matches!(
         result,

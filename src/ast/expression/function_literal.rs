@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, object::Object, return_value::Return},
     token::{FunctionToken, Token},
 };
 
@@ -19,7 +19,7 @@ pub struct FunctionLiteral {
 }
 
 impl AstNode for FunctionLiteral {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
         todo!()
     }
 }

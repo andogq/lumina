@@ -2,7 +2,12 @@ use std::{fmt::Display, iter::Peekable};
 
 use crate::{
     ast::{AstNode, Expression, Identifier, ParseNode},
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{
+        environment::Environment,
+        object::{NullObject, Object},
+        return_value::Return,
+    },
+    return_value,
     token::{LetToken, Token},
 };
 
@@ -14,8 +19,11 @@ pub struct LetStatement {
 }
 
 impl AstNode for LetStatement {
-    fn evaluate(&self) -> Return<Object> {
-        todo!()
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        let result = return_value!(self.value.evaluate(env));
+        env.insert(self.name.value.clone(), result);
+
+        Return::Implicit(Object::Null(NullObject))
     }
 }
 

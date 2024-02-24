@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{object::Object, return_value::Return},
+    interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
     token::{IdentToken, Token},
 };
 
@@ -16,8 +16,11 @@ pub struct Identifier {
 }
 
 impl AstNode for Identifier {
-    fn evaluate(&self) -> Return<Object> {
-        todo!()
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
+        env.get(&self.value)
+            .cloned()
+            .map(|value| Return::Implicit(value.clone()))
+            .unwrap_or_else(|| Error::throw(format!("identifier not found: \"{}\"", self.value)))
     }
 }
 

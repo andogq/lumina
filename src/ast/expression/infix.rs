@@ -3,6 +3,7 @@ use std::{fmt::Display, iter::Peekable};
 use crate::{
     ast::{AstNode, Expression},
     interpreter::{
+        environment::Environment,
         error::Error,
         object::{BooleanObject, IntegerObject, NullObject, Object},
         return_value::Return,
@@ -94,11 +95,11 @@ impl InfixExpression {
 }
 
 impl AstNode for InfixExpression {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
         use InfixOperatorToken::*;
 
-        let left = return_value!(self.left.evaluate());
-        let right = return_value!(self.right.evaluate());
+        let left = return_value!(self.left.evaluate(env));
+        let right = return_value!(self.right.evaluate(env));
 
         Return::Implicit(match (&self.operator_token, left, right) {
             (token, Object::Integer(left), Object::Integer(right)) => {

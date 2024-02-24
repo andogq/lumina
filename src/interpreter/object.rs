@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Object {
     Integer(IntegerObject),
     Boolean(BooleanObject),
@@ -17,7 +17,7 @@ impl Display for Object {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct IntegerObject {
     pub value: i64,
 }
@@ -28,7 +28,7 @@ impl Display for IntegerObject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BooleanObject {
     pub value: bool,
 }
@@ -39,7 +39,7 @@ impl Display for BooleanObject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NullObject;
 
 impl Display for NullObject {

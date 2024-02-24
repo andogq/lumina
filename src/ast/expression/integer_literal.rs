@@ -6,6 +6,7 @@ use std::{
 use crate::{
     ast::{AstNode, ParseNode},
     interpreter::{
+        environment::Environment,
         object::{IntegerObject, Object},
         return_value::Return,
     },
@@ -30,7 +31,7 @@ impl IntegerLiteral {
 }
 
 impl AstNode for IntegerLiteral {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, _env: &mut Environment) -> Return<Object> {
         Return::Implicit(Object::Integer(IntegerObject { value: self.value }))
     }
 }
@@ -135,7 +136,7 @@ mod test {
     #[test]
     fn evaluate() {
         assert!(matches!(
-            IntegerLiteral::new(5).evaluate(),
+            IntegerLiteral::new(5).evaluate(&mut Environment::new()),
             Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
     }

@@ -6,6 +6,7 @@ use std::{
 use crate::{
     ast::{AstNode, ParseNode},
     interpreter::{
+        environment::Environment,
         object::{NullObject, Object},
         return_value::Return,
     },
@@ -21,11 +22,11 @@ pub struct BlockStatement {
 }
 
 impl AstNode for BlockStatement {
-    fn evaluate(&self) -> Return<Object> {
+    fn evaluate(&self, env: &mut Environment) -> Return<Object> {
         let mut result = Object::Null(NullObject);
 
         for statement in &self.statements {
-            result = return_value!(statement.evaluate());
+            result = return_value!(statement.evaluate(env));
         }
 
         Return::Implicit(result)
