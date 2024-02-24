@@ -1,8 +1,11 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{ast::Statement, object::Object};
+use crate::{
+    ast::Statement,
+    interpreter::{object::Object, return_value::Return},
+};
 
-use super::{AstNode, Return};
+use super::AstNode;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Program {

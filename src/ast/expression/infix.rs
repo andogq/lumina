@@ -1,9 +1,13 @@
 use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{AstNode, Expression, Return},
-    object::{BooleanObject, IntegerObject, NullObject, Object},
+    ast::{AstNode, Expression},
+    interpreter::{
+        object::{BooleanObject, IntegerObject, NullObject, Object},
+        return_value::Return,
+    },
     parser::Precedence,
+    return_value,
     token::{
         AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
         SlashToken, Token,
@@ -92,8 +96,8 @@ impl AstNode for InfixExpression {
     fn evaluate(&self) -> Return<Object> {
         use InfixOperatorToken::*;
 
-        let left = self.left.evaluate().value();
-        let right = self.right.evaluate().value();
+        let left = return_value!(self.left.evaluate());
+        let right = return_value!(self.right.evaluate());
 
         Return::Implicit(match (&self.operator_token, left, right) {
             (token, Object::Integer(left), Object::Integer(right)) => {

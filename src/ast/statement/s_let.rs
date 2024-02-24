@@ -1,8 +1,8 @@
 use std::{fmt::Display, iter::Peekable};
 
 use crate::{
-    ast::{AstNode, Expression, Identifier, ParseNode, Return},
-    object::Object,
+    ast::{AstNode, Expression, Identifier, ParseNode},
+    interpreter::{object::Object, return_value::Return},
     token::{LetToken, Token},
 };
 

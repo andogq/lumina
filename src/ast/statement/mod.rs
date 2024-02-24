@@ -8,9 +8,13 @@ pub use s_block::*;
 pub use s_let::*;
 pub use s_return::*;
 
-use crate::{ast::Expression, object::Object, token::Token};
+use crate::{
+    ast::Expression,
+    interpreter::{object::Object, return_value::Return},
+    token::Token,
+};
 
-use super::{AstNode, ParseNode, Return};
+use super::{AstNode, ParseNode};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Statement {

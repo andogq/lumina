@@ -4,9 +4,13 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode, Return},
-    object::{BooleanObject, NullObject, Object},
+    ast::{AstNode, Expression, ParseNode},
+    interpreter::{
+        object::{BooleanObject, NullObject, Object},
+        return_value::Return,
+    },
     parser::Precedence,
+    return_value,
     token::{BangToken, MinusToken, PlusToken, Token},
 };
 
@@ -28,7 +32,7 @@ pub struct PrefixExpression {
 
 impl AstNode for PrefixExpression {
     fn evaluate(&self) -> Return<Object> {
-        let right = self.right.evaluate().value();
+        let right = return_value!(self.right.evaluate());
 
         Return::Implicit(match self.prefix_token {
             PrefixToken::Plus(_) => {

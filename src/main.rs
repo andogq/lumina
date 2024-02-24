@@ -1,9 +1,4 @@
-mod ast;
-mod lexer;
-mod object;
-mod parser;
-mod repl;
-mod token;
+use rust_script::repl;
 
 fn main() {
     repl::start();

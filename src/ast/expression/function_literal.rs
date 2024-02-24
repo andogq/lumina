@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, BlockStatement, ParseNode, Return},
-    object::Object,
+    ast::{AstNode, BlockStatement, ParseNode},
+    interpreter::{object::Object, return_value::Return},
     token::{FunctionToken, Token},
 };
 

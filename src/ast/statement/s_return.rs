@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode, Return},
-    object::Object,
+    ast::{AstNode, Expression, ParseNode},
+    interpreter::{object::Object, return_value::Return},
     token::{ReturnToken, Token},
 };
 
@@ -67,7 +67,7 @@ impl Display for ReturnStatement {
 mod test {
     use crate::{
         ast::{IntegerLiteral, Statement},
-        object::IntegerObject,
+        interpreter::object::IntegerObject,
         token::{EOFToken, IdentToken, IntToken, SemicolonToken},
     };
 

@@ -18,9 +18,13 @@ pub use infix::*;
 pub use integer_literal::*;
 pub use prefix::*;
 
-use crate::{object::Object, parser::Precedence, token::Token};
+use crate::{
+    interpreter::{object::Object, return_value::Return},
+    parser::Precedence,
+    token::Token,
+};
 
-use super::{AstNode, ParseNode, Return};
+use super::{AstNode, ParseNode};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {

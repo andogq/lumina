@@ -4,8 +4,11 @@ use std::{
 };
 
 use crate::{
-    ast::{AstNode, ParseNode, Return},
-    object::{BooleanObject, Object},
+    ast::{AstNode, ParseNode},
+    interpreter::{
+        object::{BooleanObject, Object},
+        return_value::Return,
+    },
     token::{FalseToken, Token, TrueToken},
 };
 
