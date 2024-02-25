@@ -1,4 +1,8 @@
-#[derive(Clone, Debug, PartialEq, Eq)]
+use self::span::Span;
+
+pub mod span;
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     /// Illegal/unknown token
     Illegal(IllegalToken),
@@ -44,72 +48,76 @@ pub enum Token {
     Return(ReturnToken),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IllegalToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct EOFToken;
+macro_rules! token {
+    ($name:ident { $($field:ident: $value:ty),* }) => {
+        token!(struct $name { $($field: $value,)* });
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IdentToken {
-    pub literal: String,
+        impl PartialEq for $name {
+            fn eq(&self, other: &Self) -> bool {
+                token!(condition $(self.$field == other.$field);*)
+            }
+        }
+    };
+
+    ($name:ident) => {
+        token!(struct $name { });
+
+        impl PartialEq for $name {
+            fn eq(&self, _: &Self) -> bool {
+                true
+            }
+        }
+    };
+
+    (struct $name:ident { $($field:ident: $value:ty,)* }) => {
+        #[derive(Clone, Debug, Default)]
+        pub struct $name {
+            pub span: Span,
+            $(pub $field: $value,)*
+        }
+    };
+
+    (condition $field:expr) => {
+        $field
+    };
+
+    (condition $field:expr; $($tail:tt)*) => {
+        $field && token!(condition $($tail)*)
+    };
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IntToken {
-    pub literal: String,
-}
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StringToken {
-    pub literal: String,
-}
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AssignToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PlusToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MinusToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BangToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AsteriskToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SlashToken;
+token!(IllegalToken);
+token!(EOFToken);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LeftAngleToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RightAngleToken;
+token!(IdentToken { literal: String });
+token!(IntToken { literal: String });
+token!(StringToken { literal: String });
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct EqToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NotEqToken;
+token!(AssignToken);
+token!(PlusToken);
+token!(MinusToken);
+token!(BangToken);
+token!(AsteriskToken);
+token!(SlashToken);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CommaToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SemicolonToken;
+token!(LeftAngleToken);
+token!(RightAngleToken);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LeftParenToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RightParenToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LeftBraceToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RightBraceToken;
+token!(EqToken);
+token!(NotEqToken);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FunctionToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LetToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TrueToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FalseToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IfToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElseToken;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ReturnToken;
+token!(CommaToken);
+token!(SemicolonToken);
+
+token!(LeftParenToken);
+token!(RightParenToken);
+token!(LeftBraceToken);
+token!(RightBraceToken);
+
+token!(FunctionToken);
+token!(LetToken);
+token!(TrueToken);
+token!(FalseToken);
+token!(IfToken);
+token!(ElseToken);
+token!(ReturnToken);

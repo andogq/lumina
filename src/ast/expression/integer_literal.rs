@@ -1,7 +1,4 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
@@ -10,10 +7,11 @@ use crate::{
         object::{IntegerObject, Object},
         return_value::Return,
     },
+    lexer::Lexer,
     token::{IntToken, Token},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct IntegerLiteral {
     pub token: IntToken,
     pub value: i64,
@@ -24,6 +22,7 @@ impl IntegerLiteral {
         Self {
             token: IntToken {
                 literal: value.to_string(),
+                ..Default::default()
             },
             value,
         }
@@ -36,18 +35,14 @@ impl AstNode for IntegerLiteral {
     }
 }
 
-impl ParseNode for IntegerLiteral {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let int_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::Int(int_token) = token {
-                    Some(int_token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected integer".to_string())?;
+impl<S> ParseNode<S> for IntegerLiteral
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::Int(int_token) = lexer.next() else {
+            return Err("expected integer".to_string());
+        };
 
         Ok(IntegerLiteral {
             value: int_token
@@ -67,68 +62,67 @@ impl Display for IntegerLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{EOFToken, SemicolonToken};
+    use crate::token::SemicolonToken;
 
     use super::*;
 
     #[test]
     fn parse_single_digit() {
-        let mut tokens = [
+        let mut lexer = Lexer::from_tokens([
             Token::Int(IntToken {
                 literal: "1".to_string(),
+                ..Default::default()
             }),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         assert!(matches!(
-            IntegerLiteral::parse(&mut tokens),
+            IntegerLiteral::parse(&mut lexer),
             Ok(IntegerLiteral { value: 1, .. })
         ));
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn parse_multiple_digits() {
-        let mut tokens = [
+        let mut lexer = Lexer::from_tokens([
             Token::Int(IntToken {
                 literal: "12345".to_string(),
+                ..Default::default()
             }),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         assert!(matches!(
-            IntegerLiteral::parse(&mut tokens),
+            IntegerLiteral::parse(&mut lexer),
             Ok(IntegerLiteral { value: 12345, .. })
         ));
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn reject_large_number() {
-        let mut tokens = [
+        let mut lexer = Lexer::from_tokens([
             Token::Int(IntToken {
                 literal: u64::MAX.to_string(),
+                ..Default::default()
             }),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        assert!(matches!(IntegerLiteral::parse(&mut tokens), Err(_)));
+        assert!(matches!(IntegerLiteral::parse(&mut lexer), Err(_)));
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn reject_non_number() {
         assert!(matches!(
-            IntegerLiteral::parse(&mut [Token::Semicolon(SemicolonToken)].into_iter().peekable()),
+            IntegerLiteral::parse(&mut Lexer::from_tokens([Token::Semicolon(
+                SemicolonToken::default()
+            )])),
             Err(_)
         ));
     }

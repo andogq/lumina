@@ -12,7 +12,7 @@ use crate::{
 
 use super::AstNode;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

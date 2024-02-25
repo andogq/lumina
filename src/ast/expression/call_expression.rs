@@ -1,18 +1,16 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
     interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
+    lexer::Lexer,
     return_value,
     token::Token,
 };
 
 use super::{Expression, FunctionLiteral, Identifier};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CallableFunction {
     Identifier(Identifier),
     FunctionLiteral(FunctionLiteral),
@@ -27,17 +25,17 @@ impl Display for CallableFunction {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CallExpression {
     pub function: CallableFunction,
     pub arguments: Vec<Expression>,
 }
 
 impl CallExpression {
-    pub fn parse_with_left(
-        left: Expression,
-        tokens: &mut Peekable<impl Iterator<Item = Token>>,
-    ) -> Result<Self, String> {
+    pub fn parse_with_left<S>(left: Expression, lexer: &mut Lexer<S>) -> Result<Self, String>
+    where
+        S: Iterator<Item = char>,
+    {
         let function = match left {
             Expression::Identifier(ident) => Some(CallableFunction::Identifier(ident)),
             Expression::Function(function) => Some(CallableFunction::FunctionLiteral(function)),
@@ -46,38 +44,29 @@ impl CallExpression {
         .ok_or_else(|| "expected ident or function literal".to_string())?;
 
         // Begin function argument list
-        tokens
+        lexer
             .next_if(|token| matches!(token, Token::LeftParen(_)))
             .ok_or_else(|| "expected left parenthesis to begin argument list".to_string())?;
 
         // Parse out arguments
         let mut arguments = Vec::new();
 
-        while tokens
-            .peek()
-            .map(|token| !matches!(token, Token::RightParen(_)))
-            .ok_or_else(|| "expected token to follow in argument list".to_string())?
-        {
+        while !matches!(lexer.peek(), Token::RightParen(_)) {
             // Parse out the argument
-            arguments.push(Expression::parse(tokens)?);
+            arguments.push(Expression::parse(lexer)?);
 
-            if !tokens
+            if !lexer
                 // Attempt to get a comma
                 .next_if(|token| matches!(token, Token::Comma(_)))
                 .map(|_| true)
                 // Otherwise make sure a right parenthesis follows
-                .or_else(|| {
-                    tokens
-                        .peek()
-                        .map(|token| matches!(token, Token::RightParen(_)))
-                })
-                .unwrap_or(false)
+                .unwrap_or_else(|| matches!(lexer.peek(), Token::RightParen(_)))
             {
                 return Err("expected a comma or right parenthesis to follow".to_string());
             }
         }
 
-        tokens
+        lexer
             .next_if(|token| matches!(token, Token::RightParen(_)))
             .ok_or_else(|| "expected right parenthesis to close argument list".to_string())?;
 
@@ -139,30 +128,29 @@ impl Display for CallExpression {
 #[cfg(test)]
 mod test {
     use crate::token::{
-        AsteriskToken, CommaToken, EOFToken, IdentToken, IntToken, LeftParenToken, PlusToken,
-        RightParenToken,
+        AsteriskToken, CommaToken, IdentToken, IntToken, LeftParenToken, PlusToken,
+        RightParenToken, SemicolonToken,
     };
 
     use super::*;
 
     #[test]
     fn call_expression_no_args() {
-        let mut tokens = [
-            Token::LeftParen(LeftParenToken),
-            Token::RightParen(RightParenToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+        let mut lexer = Lexer::from_tokens([
+            Token::LeftParen(LeftParenToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         let result = CallExpression::parse_with_left(
             Expression::Identifier(Identifier {
                 value: "add".to_string(),
                 ident_token: IdentToken {
                     literal: "add".to_string(),
+                    ..Default::default()
                 },
             }),
-            &mut tokens,
+            &mut lexer,
         );
         assert!(matches!(
             result,
@@ -181,30 +169,30 @@ mod test {
             assert!(arguments.is_empty());
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn call_expression_single_arg() {
-        let mut tokens = [
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::LeftParen(LeftParenToken::default()),
             Token::Int(IntToken {
                 literal: "1".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightParen(RightParenToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         let result = CallExpression::parse_with_left(
             Expression::Identifier(Identifier {
                 value: "add".to_string(),
                 ident_token: IdentToken {
                     literal: "add".to_string(),
+                    ..Default::default()
                 },
             }),
-            &mut tokens,
+            &mut lexer,
         );
         assert!(matches!(
             result,
@@ -224,31 +212,31 @@ mod test {
             assert_eq!(arguments[0].to_string(), "1");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn call_expression_single_arg_trailling_comma() {
-        let mut tokens = [
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::LeftParen(LeftParenToken::default()),
             Token::Int(IntToken {
                 literal: "1".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
-            Token::RightParen(RightParenToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Comma(CommaToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         let result = CallExpression::parse_with_left(
             Expression::Identifier(Identifier {
                 value: "add".to_string(),
                 ident_token: IdentToken {
                     literal: "add".to_string(),
+                    ..Default::default()
                 },
             }),
-            &mut tokens,
+            &mut lexer,
         );
         assert!(matches!(
             result,
@@ -268,46 +256,50 @@ mod test {
             assert_eq!(arguments[0].to_string(), "1");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn call_expression_many_args() {
-        let mut tokens = [
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::LeftParen(LeftParenToken::default()),
             Token::Int(IntToken {
                 literal: "1".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Int(IntToken {
                 literal: "2".to_string(),
+                ..Default::default()
             }),
-            Token::Asterisk(AsteriskToken),
+            Token::Asterisk(AsteriskToken::default()),
             Token::Int(IntToken {
                 literal: "3".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Int(IntToken {
                 literal: "4".to_string(),
+                ..Default::default()
             }),
-            Token::Plus(PlusToken),
+            Token::Plus(PlusToken::default()),
             Token::Int(IntToken {
                 literal: "5".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightParen(RightParenToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         let result = CallExpression::parse_with_left(
             Expression::Identifier(Identifier {
                 value: "add".to_string(),
                 ident_token: IdentToken {
                     literal: "add".to_string(),
+                    ..Default::default()
                 },
             }),
-            &mut tokens,
+            &mut lexer,
         );
         assert!(matches!(
             result,
@@ -329,47 +321,51 @@ mod test {
             assert_eq!(arguments[2].to_string(), "(4 + 5)");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn call_expression_many_args_trailling_comma() {
-        let mut tokens = [
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::LeftParen(LeftParenToken::default()),
             Token::Int(IntToken {
                 literal: "1".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Int(IntToken {
                 literal: "2".to_string(),
+                ..Default::default()
             }),
-            Token::Asterisk(AsteriskToken),
+            Token::Asterisk(AsteriskToken::default()),
             Token::Int(IntToken {
                 literal: "3".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Int(IntToken {
                 literal: "4".to_string(),
+                ..Default::default()
             }),
-            Token::Plus(PlusToken),
+            Token::Plus(PlusToken::default()),
             Token::Int(IntToken {
                 literal: "5".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
-            Token::RightParen(RightParenToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Comma(CommaToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
         let result = CallExpression::parse_with_left(
             Expression::Identifier(Identifier {
                 value: "add".to_string(),
                 ident_token: IdentToken {
                     literal: "add".to_string(),
+                    ..Default::default()
                 },
             }),
-            &mut tokens,
+            &mut lexer,
         );
         assert!(matches!(
             result,
@@ -391,6 +387,6 @@ mod test {
             assert_eq!(arguments[2].to_string(), "(4 + 5)");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 }

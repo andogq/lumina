@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
@@ -7,86 +7,84 @@ use crate::{
         object::{BooleanObject, NullObject, Object},
         return_value::Return,
     },
+    lexer::Lexer,
     return_value,
-    token::{IfToken, Token},
+    token::{ElseToken, IfToken, Token},
 };
 
 use super::Expression;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct ElseBranch {
+    else_token: ElseToken,
+    statement: BlockStatement,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct IfExpression {
     if_token: IfToken,
     condition: Expression,
     consequence: BlockStatement,
-    alternative: Option<BlockStatement>,
+    else_branch: Option<ElseBranch>,
 }
 
 impl AstNode for IfExpression {
     fn evaluate(&self, env: Environment) -> Return<Object> {
         let condition = return_value!(self.condition.evaluate(env.clone()));
 
-        match (condition, &self.alternative) {
+        match (condition, &self.else_branch) {
             (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(env),
             (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
-                alternative.evaluate(env)
+                alternative.statement.evaluate(env)
             }
             _ => Return::Implicit(Object::Null(NullObject)),
         }
     }
 }
 
-impl ParseNode for IfExpression {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let if_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::If(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected `if` token".to_string())?;
-
-        let _l_paren = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::LeftParen(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected opening parenthesis".to_string())?;
-
-        let condition = Expression::parse(tokens)?;
-
-        let _r_paren = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::RightParen(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected closing parenthesis".to_string())?;
-
-        let consequence = BlockStatement::parse(tokens)?;
-
-        let alternative = if let Some(Token::Else(_)) = tokens.peek() {
-            tokens.next();
-
-            Some(BlockStatement::parse(tokens)?)
-        } else {
-            None
+impl<S> ParseNode<S> for IfExpression
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::If(if_token) = lexer.next() else {
+            return Err("expected `if` token".to_string());
         };
+
+        let Token::LeftParen(_l_paren) = lexer.next() else {
+            return Err("expected opening parenthesis".to_string());
+        };
+
+        let condition = Expression::parse(lexer)?;
+
+        let Token::RightParen(_r_paren) = lexer.next() else {
+            return Err("expected closing parenthesis".to_string());
+        };
+
+        let consequence = BlockStatement::parse(lexer)?;
+
+        let else_branch = lexer
+            .next_if(|token| matches!(token, Token::Else(_)))
+            .and_then(|token| {
+                if let Token::Else(token) = token {
+                    Some(token)
+                } else {
+                    None
+                }
+            })
+            .map(|else_token| {
+                Ok::<_, String>(ElseBranch {
+                    else_token,
+                    statement: BlockStatement::parse(lexer)?,
+                })
+            })
+            .transpose()?;
 
         Ok(IfExpression {
             if_token,
             condition,
             consequence,
-            alternative,
+            else_branch,
         })
     }
 }
@@ -98,8 +96,8 @@ impl Display for IfExpression {
             "if {} {}{}",
             self.condition.to_string(),
             self.consequence.to_string(),
-            if let Some(alt) = &self.alternative {
-                format!(" else {}", alt.to_string())
+            if let Some(alt) = &self.else_branch {
+                format!(" else {}", alt.statement.to_string())
             } else {
                 String::new()
             }
@@ -118,32 +116,33 @@ mod test {
 
     #[test]
     fn simple() {
-        let mut tokens = [
-            Token::If(IfToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::If(IfToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::LeftAngle(LeftAngleToken),
+            Token::LeftAngle(LeftAngleToken::default()),
             Token::Ident(IdentToken {
                 literal: "y".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+        ]);
 
-        let result = IfExpression::parse(&mut tokens);
+        let result = IfExpression::parse(&mut lexer);
 
         assert!(matches!(
             result,
             Ok(IfExpression {
-                alternative: None,
+                else_branch: None,
                 ..
             })
         ));
@@ -156,38 +155,40 @@ mod test {
 
     #[test]
     fn if_else() {
-        let mut tokens = [
-            Token::If(IfToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::If(IfToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::LeftAngle(LeftAngleToken),
+            Token::LeftAngle(LeftAngleToken::default()),
             Token::Ident(IdentToken {
                 literal: "y".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::Else(ElseToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Else(ElseToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "y".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+        ]);
 
-        let result = IfExpression::parse(&mut tokens);
+        let result = IfExpression::parse(&mut lexer);
 
         assert!(matches!(
             result,
             Ok(IfExpression {
-                alternative: Some(_),
+                else_branch: Some(_),
                 ..
             })
         ));
@@ -196,8 +197,8 @@ mod test {
             assert_eq!(expr.condition.to_string(), "(x < y)");
             assert_eq!(expr.consequence.to_string(), "{ x }");
 
-            if let Some(alt) = expr.alternative {
-                assert_eq!(alt.to_string(), "{ y }");
+            if let Some(alt) = expr.else_branch {
+                assert_eq!(alt.statement.to_string(), "{ y }");
             }
         }
     }

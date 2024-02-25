@@ -1,7 +1,4 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
@@ -10,13 +7,14 @@ use crate::{
         object::{NullObject, Object},
         return_value::Return,
     },
+    lexer::Lexer,
     return_value,
     token::Token,
 };
 
 use super::Statement;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BlockStatement {
     statements: Vec<Statement>,
 }
@@ -33,39 +31,24 @@ impl AstNode for BlockStatement {
     }
 }
 
-impl ParseNode for BlockStatement {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let _l_brace = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::LeftBrace(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected opening brace".to_string())?;
+impl<S> ParseNode<S> for BlockStatement
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(tokens: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::LeftBrace(_l_brace) = tokens.next() else {
+            return Err("expected opening brace".to_string());
+        };
 
         let mut statements = Vec::new();
 
-        while tokens
-            .peek()
-            .map(|token| !matches!(token, Token::RightBrace(_) | Token::EOF(_)))
-            .unwrap_or(false)
-        {
+        while !matches!(tokens.peek(), Token::RightBrace(_) | Token::EOF(_)) {
             statements.push(Statement::parse(tokens)?);
         }
 
-        let _r_brace = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::RightBrace(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected closing brace".to_string())?;
+        let Token::RightBrace(_r_brace) = tokens.next() else {
+            return Err("expected closing brace".to_string());
+        };
 
         Ok(Self { statements })
     }

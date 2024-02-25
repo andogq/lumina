@@ -1,5 +1,3 @@
-use std::iter::Peekable;
-
 use crate::{
     ast::{ParseNode, Program, Statement},
     lexer::Lexer,
@@ -34,32 +32,30 @@ impl Precedence {
     }
 }
 
-pub struct Parser<'a> {
-    lexer: Peekable<Lexer<'a>>,
+pub struct Parser<S> {
+    lexer: Lexer<S>,
     pub errors: Vec<String>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
+impl<S> Parser<S>
+where
+    S: Iterator<Item = char>,
+{
+    pub fn new(lexer: Lexer<S>) -> Self {
         Self {
-            lexer: lexer.peekable(),
+            lexer,
             errors: Vec::new(),
         }
     }
 
-    pub fn parse<N: ParseNode>(&mut self) -> Result<N, String> {
+    pub fn parse<N: ParseNode<S>>(&mut self) -> Result<N, String> {
         N::parse(&mut self.lexer)
     }
 
     pub fn parse_program(&mut self) -> Program {
         let mut statements = Vec::new();
 
-        while !self
-            .lexer
-            .peek()
-            .map(|token| matches!(token, Token::EOF(_)))
-            .unwrap_or(true)
-        {
+        while !matches!(self.lexer.peek(), Token::EOF(_)) {
             match self.parse::<Statement>() {
                 Ok(statment) => {
                     statements.push(statment);
@@ -77,19 +73,26 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{Expression, Statement};
+    use crate::{
+        ast::{Expression, Statement},
+        lexer::Source,
+    };
 
     use super::*;
 
+    macro_rules! parser {
+        ($input:expr) => {
+            Parser::new(Lexer::new(Source::new("test", $input.chars())))
+        };
+    }
+
     #[test]
     fn let_statements() {
-        let input = r#"let x = 5;
-        let y = 10;
-        let foobar = 838383;
-        "#;
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = parser!(
+            r#"let x = 5;
+            let y = 10;
+            let foobar = 838383;"#
+        );
 
         let program = parser.parse_program();
         let statements = program
@@ -114,13 +117,11 @@ mod test {
 
     #[test]
     fn return_statements() {
-        let input = r#"return 5;
-        return 10;
-        return 993322;
-        "#;
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = parser!(
+            r#"return 5;
+            return 10;
+            return 993322;"#
+        );
 
         let program = parser.parse_program();
 
@@ -130,10 +131,7 @@ mod test {
 
     #[test]
     fn identifier_expression() {
-        let input = "foobar;";
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = parser!("foobar;");
 
         let program = parser.parse_program();
 
@@ -154,14 +152,11 @@ mod test {
 
     #[test]
     fn integer_literal_expression() {
-        let input = "5;";
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = parser!("5;");
 
         let program = parser.parse_program();
 
-        assert!(parser.errors.is_empty());
+        assert!(dbg!(parser.errors).is_empty());
 
         assert_eq!(program.statements.len(), 1);
 
@@ -181,8 +176,7 @@ mod test {
         [("!5;", "!", 5), ("-15;", "-", 15), ("+10;", "+", 10)]
             .into_iter()
             .for_each(|(input, operator, integer_value)| {
-                let lexer = Lexer::new(input);
-                let mut parser = Parser::new(lexer);
+                let mut parser = parser!(input);
 
                 let program = parser.parse_program();
 
@@ -221,8 +215,7 @@ mod test {
         ]
         .into_iter()
         .for_each(|(input, left, operator, right)| {
-            let lexer = Lexer::new(input);
-            let mut parser = Parser::new(lexer);
+            let mut parser = parser!(input);
 
             let program = parser.parse_program();
 
@@ -256,8 +249,7 @@ mod test {
         [("true;", true), ("false;", false)]
             .into_iter()
             .for_each(|(input, value)| {
-                let lexer = Lexer::new(input);
-                let mut parser = Parser::new(lexer);
+                let mut parser = parser!(input);
 
                 let program = parser.parse_program();
 
@@ -279,8 +271,7 @@ mod test {
 
     #[test]
     fn random() {
-        let lexer = Lexer::new("a + b * c + d / e - f");
-        let mut parser = Parser::new(lexer);
+        let mut parser = parser!("a + b * c + d / e - f");
 
         let program = parser.parse_program();
         println!("{}", program.to_string());

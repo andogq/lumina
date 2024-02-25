@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, Expression},
@@ -8,6 +8,7 @@ use crate::{
         object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
         return_value::Return,
     },
+    lexer::Lexer,
     parser::Precedence,
     return_value,
     token::{
@@ -18,7 +19,7 @@ use crate::{
 
 use super::parse_expression;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum InfixOperatorToken {
     Plus(PlusToken),
     Minus(MinusToken),
@@ -48,7 +49,7 @@ impl TryFrom<Token> for InfixOperatorToken {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InfixExpression {
     pub operator_token: InfixOperatorToken,
     pub operator: String,
@@ -57,14 +58,15 @@ pub struct InfixExpression {
 }
 
 impl InfixExpression {
-    pub fn parse_with_left(
-        tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    pub fn parse_with_left<S>(
+        lexer: &mut Lexer<S>,
         left: Expression,
-    ) -> Result<InfixExpression, String> {
+    ) -> Result<InfixExpression, String>
+    where
+        S: Iterator<Item = char>,
+    {
         let (precedence, operator, operator_token) = {
-            let token = tokens
-                .next()
-                .ok_or_else(|| "expected infix operator".to_string())?;
+            let token = lexer.next();
 
             (
                 Precedence::of(&token),
@@ -83,7 +85,7 @@ impl InfixExpression {
             )
         };
 
-        let right = parse_expression(tokens, precedence)?;
+        let right = parse_expression(lexer, precedence)?;
 
         Ok(InfixExpression {
             operator_token,

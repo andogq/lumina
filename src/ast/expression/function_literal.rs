@@ -1,7 +1,4 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
@@ -10,12 +7,13 @@ use crate::{
         object::{FunctionObject, Object},
         return_value::Return,
     },
+    lexer::Lexer,
     token::{FunctionToken, Token},
 };
 
 use super::Identifier;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FunctionLiteral {
     pub fn_token: FunctionToken,
     pub parameters: Vec<Identifier>,
@@ -32,29 +30,18 @@ impl AstNode for FunctionLiteral {
     }
 }
 
-impl ParseNode for FunctionLiteral {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let fn_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::Function(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected function token".to_string())?;
+impl<S> ParseNode<S> for FunctionLiteral
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::Function(fn_token) = lexer.next() else {
+            return Err("expected function token".to_string());
+        };
 
-        let _l_paren = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::LeftParen(token) = token {
-                    Some(token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected opening parenthesis".to_string())?;
+        let Token::LeftParen(_l_paren) = lexer.next() else {
+            return Err("expected opening parenthesis".to_string())?;
+        };
 
         let mut parameters = Vec::new();
 
@@ -63,7 +50,7 @@ impl ParseNode for FunctionLiteral {
         // Loop through all parameters in list
         loop {
             // Check if parameter list is closed
-            if tokens
+            if lexer
                 .next_if(|token| matches!(token, Token::RightParen(_)))
                 .is_some()
             {
@@ -72,10 +59,10 @@ impl ParseNode for FunctionLiteral {
                 return Err("expected end of parameter list".to_string());
             }
 
-            let param = Identifier::parse(tokens)?;
+            let param = Identifier::parse(lexer)?;
             parameters.push(param);
 
-            if tokens
+            if lexer
                 .next_if(|token| matches!(token, Token::Comma(_)))
                 .is_some()
             {
@@ -87,7 +74,7 @@ impl ParseNode for FunctionLiteral {
             }
         }
 
-        let body = BlockStatement::parse(tokens)?;
+        let body = BlockStatement::parse(lexer)?;
 
         Ok(Self {
             fn_token,
@@ -115,29 +102,28 @@ impl Display for FunctionLiteral {
 #[cfg(test)]
 mod test {
     use crate::token::{
-        CommaToken, EOFToken, IdentToken, IntToken, LeftBraceToken, LeftParenToken,
-        RightBraceToken, RightParenToken,
+        CommaToken, IdentToken, IntToken, LeftBraceToken, LeftParenToken, RightBraceToken,
+        RightParenToken, SemicolonToken,
     };
 
     use super::*;
 
     #[test]
     fn no_parameters() {
-        let mut tokens = [
-            Token::Function(FunctionToken),
-            Token::LeftParen(LeftParenToken),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Function(FunctionToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Int(IntToken {
                 literal: "0".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = dbg!(FunctionLiteral::parse(&mut tokens));
+        let result = FunctionLiteral::parse(&mut lexer);
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
@@ -146,29 +132,29 @@ mod test {
             assert_eq!(func.body.to_string(), "{ 0 }");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn one_parameter() {
-        let mut tokens = [
-            Token::Function(FunctionToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Function(FunctionToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = FunctionLiteral::parse(&mut tokens);
+        let result = FunctionLiteral::parse(&mut lexer);
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
@@ -178,30 +164,30 @@ mod test {
             assert_eq!(func.body.to_string(), "{ x }");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn one_parameter_trailing_comma() {
-        let mut tokens = [
-            Token::Function(FunctionToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Function(FunctionToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::Comma(CommaToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = FunctionLiteral::parse(&mut tokens);
+        let result = FunctionLiteral::parse(&mut lexer);
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
@@ -211,33 +197,34 @@ mod test {
             assert_eq!(func.body.to_string(), "{ x }");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn multiple_parameters() {
-        let mut tokens = [
-            Token::Function(FunctionToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Function(FunctionToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Ident(IdentToken {
                 literal: "y".to_string(),
+                ..Default::default()
             }),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = FunctionLiteral::parse(&mut tokens);
+        let result = FunctionLiteral::parse(&mut lexer);
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
@@ -248,34 +235,35 @@ mod test {
             assert_eq!(func.body.to_string(), "{ x }");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn multiple_parameters_with_trailing_comma() {
-        let mut tokens = [
-            Token::Function(FunctionToken),
-            Token::LeftParen(LeftParenToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Function(FunctionToken::default()),
+            Token::LeftParen(LeftParenToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
+            Token::Comma(CommaToken::default()),
             Token::Ident(IdentToken {
                 literal: "y".to_string(),
+                ..Default::default()
             }),
-            Token::Comma(CommaToken),
-            Token::RightParen(RightParenToken),
-            Token::LeftBrace(LeftBraceToken),
+            Token::Comma(CommaToken::default()),
+            Token::RightParen(RightParenToken::default()),
+            Token::LeftBrace(LeftBraceToken::default()),
             Token::Ident(IdentToken {
                 literal: "x".to_string(),
+                ..Default::default()
             }),
-            Token::RightBrace(RightBraceToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::RightBrace(RightBraceToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = FunctionLiteral::parse(&mut tokens);
+        let result = FunctionLiteral::parse(&mut lexer);
 
         assert!(matches!(result, Ok(FunctionLiteral { .. })));
 
@@ -286,6 +274,6 @@ mod test {
             assert_eq!(func.body.to_string(), "{ x }");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 }

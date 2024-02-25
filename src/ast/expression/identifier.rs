@@ -1,15 +1,13 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
     interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
+    lexer::Lexer,
     token::{IdentToken, Token},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Identifier {
     pub ident_token: IdentToken,
     pub value: String,
@@ -23,21 +21,19 @@ impl AstNode for Identifier {
     }
 }
 
-impl ParseNode for Identifier {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        tokens
-            .next()
-            .and_then(|token| {
-                if let Token::Ident(ident_token) = token {
-                    Some(Identifier {
-                        value: ident_token.literal.clone(),
-                        ident_token,
-                    })
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected identifier".to_string())
+impl<S> ParseNode<S> for Identifier
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::Ident(ident) = lexer.next() else {
+            return Err("expected identifier".to_string());
+        };
+
+        Ok(Identifier {
+            value: ident.literal.clone(),
+            ident_token: ident,
+        })
     }
 }
 
@@ -49,22 +45,21 @@ impl Display for Identifier {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{EOFToken, SemicolonToken};
+    use crate::token::SemicolonToken;
 
     use super::*;
 
     #[test]
     fn parse_ident() {
-        let mut tokens = [
+        let mut lexer = Lexer::from_tokens([
             Token::Ident(IdentToken {
                 literal: "my_ident".to_string(),
+                ..Default::default()
             }),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = Identifier::parse(&mut tokens);
+        let result = Identifier::parse(&mut lexer);
 
         assert!(matches!(result, Ok(Identifier { .. })));
 
@@ -72,13 +67,15 @@ mod test {
             assert_eq!(value, "my_ident");
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::Semicolon(_)));
     }
 
     #[test]
     fn reject_non_ident() {
         assert!(matches!(
-            Identifier::parse(&mut [Token::Semicolon(SemicolonToken)].into_iter().peekable()),
+            Identifier::parse(&mut Lexer::from_tokens([Token::Semicolon(
+                SemicolonToken::default()
+            )])),
             Err(_)
         ));
     }

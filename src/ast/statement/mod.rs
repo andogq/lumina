@@ -2,7 +2,7 @@ mod s_block;
 mod s_let;
 mod s_return;
 
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 pub use s_block::*;
 pub use s_let::*;
@@ -11,12 +11,13 @@ pub use s_return::*;
 use crate::{
     ast::Expression,
     interpreter::{environment::Environment, object::Object, return_value::Return},
+    lexer::Lexer,
     token::Token,
 };
 
 use super::{AstNode, ParseNode};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -33,20 +34,20 @@ impl AstNode for Statement {
     }
 }
 
-impl ParseNode for Statement {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        match tokens
-            .peek()
-            .ok_or_else(|| "expected statement to follow".to_string())?
-        {
-            Token::Let(_) => Ok(Statement::Let(LetStatement::parse(tokens)?)),
-            Token::Return(_) => Ok(Statement::Return(ReturnStatement::parse(tokens)?)),
+impl<S> ParseNode<S> for Statement
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        match lexer.peek() {
+            Token::Let(_) => Ok(Statement::Let(LetStatement::parse(lexer)?)),
+            Token::Return(_) => Ok(Statement::Return(ReturnStatement::parse(lexer)?)),
             _ => {
-                let expression = Expression::parse(tokens)?;
+                let expression = Expression::parse(lexer)?;
 
                 // Expression statement may end in semicolon, or be ommitted for implicit returns
                 // TODO: Should semicolon checks be done for all statements at this level?
-                tokens.next_if(|token| matches!(token, Token::Semicolon(_)));
+                lexer.next_if(|token| matches!(token, Token::Semicolon(_)));
 
                 Ok(Statement::Expression(expression))
             }

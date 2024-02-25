@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, ParseNode},
@@ -7,10 +7,11 @@ use crate::{
         object::{Object, StringObject},
         return_value::Return,
     },
+    lexer::Lexer,
     token::{StringToken, Token},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StringLiteral {
     pub token: StringToken,
     pub value: String,
@@ -24,18 +25,14 @@ impl AstNode for StringLiteral {
     }
 }
 
-impl ParseNode for StringLiteral {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let string_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::String(string_token) = token {
-                    Some(string_token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected string".to_string())?;
+impl<S> ParseNode<S> for StringLiteral
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::String(string_token) = lexer.next() else {
+            return Err("expected string".to_string());
+        };
 
         Ok(StringLiteral {
             value: string_token.literal.clone(),

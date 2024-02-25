@@ -1,6 +1,11 @@
 use std::io::{stdin, stdout, Write};
 
-use crate::{ast::AstNode, interpreter::environment::Environment, lexer::Lexer, parser::Parser};
+use crate::{
+    ast::AstNode,
+    interpreter::environment::Environment,
+    lexer::{Lexer, Source},
+    parser::Parser,
+};
 
 pub fn start() {
     let env = Environment::new();
@@ -13,7 +18,7 @@ pub fn start() {
             break;
         };
 
-        let lexer = Lexer::new(&line);
+        let lexer = Lexer::new(Source::new("repl", line.chars()));
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();

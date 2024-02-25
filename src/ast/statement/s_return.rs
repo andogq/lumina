@@ -1,15 +1,13 @@
-use std::{
-    fmt::{Display, Formatter},
-    iter::Peekable,
-};
+use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
     interpreter::{environment::Environment, object::Object, return_value::Return},
+    lexer::Lexer,
     token::{ReturnToken, Token},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ReturnStatement {
     pub return_token: ReturnToken,
     pub value: Expression,
@@ -24,31 +22,20 @@ impl AstNode for ReturnStatement {
     }
 }
 
-impl ParseNode for ReturnStatement {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let return_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::Return(return_token) = token {
-                    Some(return_token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected `return` token".to_string())?;
+impl<S> ParseNode<S> for ReturnStatement
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(tokens: &mut Lexer<S>) -> Result<Self, String> {
+        let Token::Return(return_token) = tokens.next() else {
+            return Err("expected `return` token".to_string());
+        };
 
         let value = Expression::parse(tokens)?;
 
-        let _semicolon_token = tokens
-            .next()
-            .and_then(|token| {
-                if let Token::Semicolon(semicolon_token) = token {
-                    Some(semicolon_token)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "expected `semicolon` token".to_string())?;
+        let Token::Semicolon(_semicolon_token) = tokens.next() else {
+            return Err("expected `semicolon` token".to_string());
+        };
 
         Ok(ReturnStatement {
             return_token,
@@ -75,18 +62,17 @@ mod test {
 
     #[test]
     fn simple_return() {
-        let mut tokens = [
-            Token::Return(ReturnToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Return(ReturnToken::default()),
             Token::Ident(IdentToken {
                 literal: "a".to_string(),
+                ..Default::default()
             }),
-            Token::Semicolon(SemicolonToken),
-            Token::EOF(EOFToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+            Token::EOF(EOFToken::default()),
+        ]);
 
-        let result = ReturnStatement::parse(&mut tokens);
+        let result = ReturnStatement::parse(&mut lexer);
 
         assert!(matches!(result, Ok(ReturnStatement { .. })));
         if let Ok(return_statement) = result {
@@ -97,48 +83,47 @@ mod test {
             }
         }
 
-        assert_eq!(tokens.count(), 1);
+        assert!(matches!(lexer.next(), Token::EOF(_)));
     }
 
     #[test]
     fn reject_no_return() {
-        let mut tokens = [
+        let mut lexer = Lexer::from_tokens([
             Token::Ident(IdentToken {
                 literal: "a".to_string(),
+                ..Default::default()
             }),
-            Token::Semicolon(SemicolonToken),
-        ]
-        .into_iter()
-        .peekable();
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = ReturnStatement::parse(&mut tokens);
+        let result = ReturnStatement::parse(&mut lexer);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn reject_no_value() {
-        let mut tokens = [Token::Return(ReturnToken), Token::Semicolon(SemicolonToken)]
-            .into_iter()
-            .peekable();
+        let mut lexer = Lexer::from_tokens([
+            Token::Return(ReturnToken::default()),
+            Token::Semicolon(SemicolonToken::default()),
+        ]);
 
-        let result = ReturnStatement::parse(&mut tokens);
+        let result = ReturnStatement::parse(&mut lexer);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn reject_no_semicolon() {
-        let mut tokens = [
-            Token::Return(ReturnToken),
+        let mut lexer = Lexer::from_tokens([
+            Token::Return(ReturnToken::default()),
             Token::Ident(IdentToken {
                 literal: "a".to_string(),
+                ..Default::default()
             }),
-        ]
-        .into_iter()
-        .peekable();
+        ]);
 
-        let result = ReturnStatement::parse(&mut tokens);
+        let result = ReturnStatement::parse(&mut lexer);
 
         assert!(result.is_err());
     }
@@ -146,7 +131,7 @@ mod test {
     #[test]
     fn return_explicit_value() {
         let result = Statement::Return(ReturnStatement {
-            return_token: ReturnToken,
+            return_token: ReturnToken::default(),
             value: Expression::Integer(IntegerLiteral::new(10)),
         })
         .evaluate(Environment::new());

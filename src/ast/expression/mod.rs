@@ -8,7 +8,7 @@ mod integer_literal;
 mod prefix;
 mod string_literal;
 
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 pub use boolean_literal::*;
 pub use call_expression::*;
@@ -22,13 +22,14 @@ pub use string_literal::*;
 
 use crate::{
     interpreter::{environment::Environment, object::Object, return_value::Return},
+    lexer::Lexer,
     parser::Precedence,
     token::Token,
 };
 
 use super::{AstNode, ParseNode};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     Identifier(Identifier),
     Integer(IntegerLiteral),
@@ -57,9 +58,12 @@ impl AstNode for Expression {
     }
 }
 
-impl ParseNode for Expression {
-    fn parse(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Self, String> {
-        let expression = parse_expression(tokens, Precedence::Lowest)?;
+impl<S> ParseNode<S> for Expression
+where
+    S: Iterator<Item = char>,
+{
+    fn parse(lexer: &mut Lexer<S>) -> Result<Self, String> {
+        let expression = parse_expression(lexer, Precedence::Lowest)?;
 
         Ok(expression)
     }
@@ -81,28 +85,22 @@ impl Display for Expression {
     }
 }
 
-fn parse_expression(
-    tokens: &mut Peekable<impl Iterator<Item = Token>>,
-    precedence: Precedence,
-) -> Result<Expression, String> {
-    let mut left = parse_prefix(tokens)?;
+fn parse_expression<S>(lexer: &mut Lexer<S>, precedence: Precedence) -> Result<Expression, String>
+where
+    S: Iterator<Item = char>,
+{
+    let mut left = parse_prefix(lexer)?;
 
-    while tokens
-        .peek()
-        .map(|token| !matches!(token, Token::Semicolon(_)) && precedence < Precedence::of(token))
-        .unwrap_or(false)
+    while !matches!(lexer.peek(), Token::Semicolon(_)) && precedence < Precedence::of(&lexer.peek())
     {
         // Depending on the following token, continue parsing in a different manner
-        left = match tokens
-            .peek()
-            .ok_or_else(|| "expected token following in expression".to_string())?
-        {
+        left = match lexer.peek() {
             // Opening bracket, potentially a function call
-            Token::LeftParen(_) => Expression::Call(CallExpression::parse_with_left(left, tokens)?),
+            Token::LeftParen(_) => Expression::Call(CallExpression::parse_with_left(left, lexer)?),
 
             // An infix operator
             token if InfixOperatorToken::try_from(token.clone()).is_ok() => {
-                Expression::Infix(InfixExpression::parse_with_left(tokens, left)?)
+                Expression::Infix(InfixExpression::parse_with_left(lexer, left)?)
             }
 
             // Some unknown token, potentially the end of the expression
@@ -113,52 +111,39 @@ fn parse_expression(
     Ok(left)
 }
 
-fn parse_prefix(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Result<Expression, String> {
+fn parse_prefix<S>(lexer: &mut Lexer<S>) -> Result<Expression, String>
+where
+    S: Iterator<Item = char>,
+{
     // NOTE: Effectively the `nud` map
-    match tokens
-        .peek()
-        .ok_or_else(|| "expected token for prefix expression".to_string())?
-    {
-        Token::Ident(_) => Ok(Expression::Identifier(Identifier::parse(tokens)?)),
-        Token::Int(_) => Ok(Expression::Integer(IntegerLiteral::parse(tokens)?)),
-        Token::String(_) => Ok(Expression::String(StringLiteral::parse(tokens)?)),
-        Token::True(_) | Token::False(_) => Ok(Expression::Boolean(BooleanLiteral::parse(tokens)?)),
+    match lexer.peek() {
+        Token::Ident(_) => Ok(Expression::Identifier(Identifier::parse(lexer)?)),
+        Token::Int(_) => Ok(Expression::Integer(IntegerLiteral::parse(lexer)?)),
+        Token::String(_) => Ok(Expression::String(StringLiteral::parse(lexer)?)),
+        Token::True(_) | Token::False(_) => Ok(Expression::Boolean(BooleanLiteral::parse(lexer)?)),
         Token::Bang(_) | Token::Plus(_) | Token::Minus(_) => {
-            Ok(Expression::Prefix(PrefixExpression::parse(tokens)?))
+            Ok(Expression::Prefix(PrefixExpression::parse(lexer)?))
         }
-        Token::LeftParen(_) => Ok(parse_grouped_expression(tokens)?),
-        Token::If(_) => Ok(Expression::If(Box::new(IfExpression::parse(tokens)?))),
-        Token::Function(_) => Ok(Expression::Function(FunctionLiteral::parse(tokens)?)),
+        Token::LeftParen(_) => Ok(parse_grouped_expression(lexer)?),
+        Token::If(_) => Ok(Expression::If(Box::new(IfExpression::parse(lexer)?))),
+        Token::Function(_) => Ok(Expression::Function(FunctionLiteral::parse(lexer)?)),
         token => Err(format!("no prefix parse function found for {token:?}")),
     }
 }
 
-fn parse_grouped_expression(
-    tokens: &mut Peekable<impl Iterator<Item = Token>>,
-) -> Result<Expression, String> {
-    let _left_paren_token = tokens
-        .next()
-        .and_then(|token| {
-            if let Token::LeftParen(token) = token {
-                Some(token)
-            } else {
-                None
-            }
-        })
-        .ok_or_else(|| "expected left parenthesis".to_string())?;
+fn parse_grouped_expression<S>(lexer: &mut Lexer<S>) -> Result<Expression, String>
+where
+    S: Iterator<Item = char>,
+{
+    let Token::LeftParen(_left_paren_token) = lexer.next() else {
+        return Err("expected left parenthesis".to_string());
+    };
 
-    let expression = parse_expression(tokens, Precedence::Lowest)?;
+    let expression = parse_expression(lexer, Precedence::Lowest)?;
 
-    let _right_paren_token = tokens
-        .next()
-        .and_then(|token| {
-            if let Token::RightParen(token) = token {
-                Some(token)
-            } else {
-                None
-            }
-        })
-        .ok_or_else(|| "expected right parenthesis".to_string())?;
+    let Token::RightParen(_right_paren_token) = lexer.next() else {
+        return Err("expected right parenthesis".to_string());
+    };
 
     Ok(expression)
 }
