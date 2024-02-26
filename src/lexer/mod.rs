@@ -235,6 +235,16 @@ where
             None
         }
     }
+
+    pub fn get<T>(&mut self, reason: impl AsRef<str>) -> Result<T, String>
+    where
+        T: Name,
+        Token: GetAs<T>,
+    {
+        self.next()
+            .get()
+            .ok_or_else(|| format!("expected {} {}", T::name(), reason.as_ref()))
+    }
 }
 
 impl Lexer<std::array::IntoIter<char, 0>> {

@@ -5,7 +5,7 @@ use crate::{
     interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
     lexer::Lexer,
     return_value,
-    token::Token,
+    token::{LeftParenToken, Token},
 };
 
 use super::{Expression, FunctionLiteral, Identifier};
@@ -44,9 +44,7 @@ impl CallExpression {
         .ok_or_else(|| "expected ident or function literal".to_string())?;
 
         // Begin function argument list
-        lexer
-            .next_if(|token| matches!(token, Token::LeftParen(_)))
-            .ok_or_else(|| "expected left parenthesis to begin argument list".to_string())?;
+        lexer.get::<LeftParenToken>("to begin argument list")?;
 
         // Parse out arguments
         let mut arguments = Vec::new();

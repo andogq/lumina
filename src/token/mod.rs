@@ -2,50 +2,80 @@ use self::span::Span;
 
 pub mod span;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    /// Illegal/unknown token
-    Illegal(IllegalToken),
-    /// End of file
-    EOF(EOFToken),
+macro_rules! token_enum {
+    ($($name:ident: $token:ty),*) => {
+        #[derive(Clone, Debug, PartialEq)]
+        pub enum Token {
+            $($name($token)),*
+        }
 
-    // Identifiers and literals
-    Ident(IdentToken),
-    Int(IntToken),
-    String(StringToken),
+        $(
+        impl GetAs<$token> for Token {
+            fn get(self) -> Option<$token> {
+                if let Self::$name(token) = self {
+                    Some(token)
+                } else {
+                    None
+                }
+            }
+        }
 
-    // Operators
-    Assign(AssignToken),
-    Plus(PlusToken),
-    Minus(MinusToken),
-    Bang(BangToken),
-    Asterisk(AsteriskToken),
-    Slash(SlashToken),
+        impl Name for $token {
+            fn name() -> &'static str {
+                stringify!($name)
+            }
+        }
+        )*
+    };
+}
 
-    LeftAngle(LeftAngleToken),
-    RightAngle(RightAngleToken),
+pub trait GetAs<T>
+where
+    T: Name,
+{
+    fn get(self) -> Option<T>;
+}
 
-    Eq(EqToken),
-    NotEq(NotEqToken),
+pub trait Name {
+    fn name() -> &'static str;
+}
 
-    // Delimiters
-    Comma(CommaToken),
-    Semicolon(SemicolonToken),
+token_enum! {
+    Illegal: IllegalToken,
+    EOF: EOFToken,
 
-    // Brackets
-    LeftParen(LeftParenToken),
-    RightParen(RightParenToken),
-    LeftBrace(LeftBraceToken),
-    RightBrace(RightBraceToken),
+    Ident: IdentToken,
+    Int: IntToken,
+    String: StringToken,
 
-    // Keywords
-    Function(FunctionToken),
-    Let(LetToken),
-    True(TrueToken),
-    False(FalseToken),
-    If(IfToken),
-    Else(ElseToken),
-    Return(ReturnToken),
+    Assign: AssignToken,
+    Plus: PlusToken,
+    Minus: MinusToken,
+    Bang: BangToken,
+    Asterisk: AsteriskToken,
+    Slash: SlashToken,
+
+    LeftAngle: LeftAngleToken,
+    RightAngle: RightAngleToken,
+
+    Eq: EqToken,
+    NotEq: NotEqToken,
+
+    Comma: CommaToken,
+    Semicolon: SemicolonToken,
+
+    LeftParen: LeftParenToken,
+    RightParen: RightParenToken,
+    LeftBrace: LeftBraceToken,
+    RightBrace: RightBraceToken,
+
+    Function: FunctionToken,
+    Let: LetToken,
+    True: TrueToken,
+    False: FalseToken,
+    If: IfToken,
+    Else: ElseToken,
+    Return: ReturnToken
 }
 
 macro_rules! token {
