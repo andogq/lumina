@@ -2,12 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{
-        environment::Environment,
-        object::{BooleanObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::{BooleanObject, Object},
     token::{FalseToken, Token, TrueToken},
 };
 
@@ -38,6 +35,10 @@ impl BooleanLiteral {
 impl AstNode for BooleanLiteral {
     fn evaluate(&self, _env: Environment) -> Return<Object> {
         Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

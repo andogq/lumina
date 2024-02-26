@@ -1,7 +1,8 @@
 use rust_script::{
     ast::AstNode,
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{environment::Environment, return_value::Return},
     lexer::{Lexer, Source},
+    object::Object,
     parser::Parser,
 };
 

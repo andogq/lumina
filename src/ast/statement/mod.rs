@@ -10,8 +10,9 @@ pub use s_return::*;
 
 use crate::{
     ast::Expression,
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::Object,
     token::Token,
 };
 
@@ -31,6 +32,10 @@ impl AstNode for Statement {
             Statement::Return(return_statement) => return_statement.evaluate(env),
             Statement::Expression(expression_statement) => expression_statement.evaluate(env),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

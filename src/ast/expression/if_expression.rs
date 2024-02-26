@@ -2,12 +2,9 @@ use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{
-        environment::Environment,
-        object::{BooleanObject, NullObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::{BooleanObject, NullObject, Object},
     return_value,
     token::{ElseToken, IfToken, Token},
 };
@@ -39,6 +36,10 @@ impl AstNode for IfExpression {
             }
             _ => Return::Implicit(Object::Null(NullObject)),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

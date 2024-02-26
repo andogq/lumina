@@ -21,8 +21,9 @@ pub use prefix::*;
 pub use string_literal::*;
 
 use crate::{
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::Object,
     parser::Precedence,
     token::Token,
 };
@@ -55,6 +56,10 @@ impl AstNode for Expression {
             Expression::Function(e) => e.evaluate(env),
             Expression::Call(e) => e.evaluate(env),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

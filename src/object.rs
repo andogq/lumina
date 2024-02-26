@@ -1,8 +1,9 @@
 use std::fmt::{Display, Formatter};
 
-use crate::ast::{BlockStatement, Identifier};
-
-use super::environment::Environment;
+use crate::{
+    ast::{BlockStatement, Identifier},
+    interpreter::environment::Environment,
+};
 
 #[derive(Clone, Debug)]
 pub enum Object {

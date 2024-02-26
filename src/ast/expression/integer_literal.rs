@@ -2,12 +2,10 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{
-        environment::Environment,
-        object::{IntegerObject, Object},
-        return_value::Return,
-    },
+    code::{Instruction, OpConstant},
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::{IntegerObject, Object},
     token::{IntToken, Token},
 };
 
@@ -27,11 +25,21 @@ impl IntegerLiteral {
             value,
         }
     }
+
+    pub fn as_object(&self) -> Object {
+        Object::Integer(IntegerObject { value: self.value })
+    }
 }
 
 impl AstNode for IntegerLiteral {
     fn evaluate(&self, _env: Environment) -> Return<Object> {
-        Return::Implicit(Object::Integer(IntegerObject { value: self.value }))
+        Return::Implicit(self.as_object())
+    }
+
+    fn compile(&self, mut register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        let id = register_constant(self.as_object());
+
+        Ok(OpConstant(id).bytes())
     }
 }
 
@@ -62,7 +70,7 @@ impl Display for IntegerLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::token::SemicolonToken;
+    use crate::{compiler::compile, token::SemicolonToken};
 
     use super::*;
 
@@ -133,5 +141,26 @@ mod test {
             IntegerLiteral::new(5).evaluate(Environment::new()),
             Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
+    }
+
+    #[test]
+    fn int_compile() {
+        let bytecode = compile(IntegerLiteral::new(5)).unwrap();
+
+        assert_eq!(bytecode.constants.len(), 1);
+
+        // Make sure the stored constants value is correct
+        assert!(matches!(bytecode.constants[0], Object::Integer(_)));
+        if let Object::Integer(int) = &bytecode.constants[0] {
+            assert_eq!(int.value, 5);
+        }
+
+        assert_eq!(
+            bytecode.instructions,
+            [
+                0x00, // Opcode
+                0x00, 0x00, 0x00, 0x00, // Constant index
+            ]
+        );
     }
 }

@@ -2,11 +2,8 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::Statement,
-    interpreter::{
-        environment::Environment,
-        object::{NullObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, return_value::Return},
+    object::{NullObject, Object},
     return_value,
 };
 
@@ -26,6 +23,10 @@ impl AstNode for Program {
         }
 
         Return::Implicit(result)
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

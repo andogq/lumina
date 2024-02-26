@@ -2,8 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
-    interpreter::{environment::Environment, object::Object, return_value::Return},
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::Object,
     token::{ReturnToken, Token},
 };
 
@@ -19,6 +20,10 @@ impl AstNode for ReturnStatement {
             Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
             Return::Error(err) => Return::Error(err),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 
@@ -54,7 +59,7 @@ impl Display for ReturnStatement {
 mod test {
     use crate::{
         ast::{IntegerLiteral, Statement},
-        interpreter::object::IntegerObject,
+        object::IntegerObject,
         token::{EOFToken, IdentToken, SemicolonToken},
     };
 

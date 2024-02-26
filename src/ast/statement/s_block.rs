@@ -2,12 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{
-        environment::Environment,
-        object::{NullObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::{NullObject, Object},
     return_value,
     token::Token,
 };
@@ -28,6 +25,10 @@ impl AstNode for BlockStatement {
         }
 
         Return::Implicit(result)
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

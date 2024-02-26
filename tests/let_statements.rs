@@ -1,7 +1,7 @@
 use common::run;
-use rust_script::interpreter::{
+use rust_script::{
+    interpreter::return_value::Return,
     object::{IntegerObject, Object},
-    return_value::Return,
 };
 
 mod common;

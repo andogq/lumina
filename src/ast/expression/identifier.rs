@@ -2,8 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
+    interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
+    object::Object,
     token::{IdentToken, Token},
 };
 
@@ -18,6 +19,10 @@ impl AstNode for Identifier {
         env.get(&self.value)
             .map(|value| Return::Implicit(value))
             .unwrap_or_else(|| Error::throw(format!("identifier not found: \"{}\"", self.value)))
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

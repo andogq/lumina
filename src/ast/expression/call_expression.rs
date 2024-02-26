@@ -2,8 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, error::Error, object::Object, return_value::Return},
+    interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
+    object::Object,
     return_value,
     token::{LeftParenToken, Token},
 };
@@ -105,6 +106,10 @@ impl AstNode for CallExpression {
             Return::Explicit(value) | Return::Implicit(value) => Return::Implicit(value),
             Return::Error(err) => Return::Error(err),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

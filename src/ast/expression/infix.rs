@@ -2,13 +2,9 @@ use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, Expression},
-    interpreter::{
-        environment::Environment,
-        error::Error,
-        object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
+    object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
     parser::Precedence,
     return_value,
     token::{
@@ -157,6 +153,10 @@ impl AstNode for InfixExpression {
 
             _ => return Error::throw("insupported infix operation"),
         })
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

@@ -2,12 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{
-        environment::Environment,
-        object::{FunctionObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
+    object::{FunctionObject, Object},
     token::{FunctionToken, Token},
 };
 
@@ -27,6 +24,10 @@ impl AstNode for FunctionLiteral {
             body: self.body.clone(),
             env: env.clone(),
         }))
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 

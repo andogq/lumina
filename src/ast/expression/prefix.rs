@@ -2,13 +2,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
-    interpreter::{
-        environment::Environment,
-        error::Error,
-        object::{BooleanObject, Object},
-        return_value::Return,
-    },
+    interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
+    object::{BooleanObject, Object},
     parser::Precedence,
     return_value,
     token::{BangToken, MinusToken, PlusToken, Token},
@@ -50,6 +46,10 @@ impl AstNode for PrefixExpression {
             }
             _ => Error::throw("prefix operation not supported"),
         }
+    }
+
+    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+        todo!()
     }
 }
 
