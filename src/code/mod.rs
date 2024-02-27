@@ -1,99 +1,70 @@
-use std::fmt::{Display, Formatter};
+use int_enum::IntEnum;
 
-use crate::{object::Object, vm::Stack};
+use crate::{
+    object::{IntegerObject, Object},
+    vm::Stack,
+};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, IntEnum)]
 #[repr(u8)]
 pub enum Opcode {
-    Constant,
+    Constant = 0,
+    Add = 1,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Instruction {
+    Constant(u32),
     Add,
 }
 
-impl TryFrom<u8> for Opcode {
-    type Error = ();
-
-    fn try_from(opcode: u8) -> Result<Self, Self::Error> {
-        use Opcode::*;
-
-        Ok(match opcode {
-            0 => Constant,
-            1 => Add,
-            _ => return Err(()),
-        })
-    }
-}
-
-impl Display for Opcode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        use Opcode::*;
+impl Instruction {
+    /// Encode this instruction
+    pub fn encode(&self) -> Vec<u8> {
         match self {
-            Constant => write!(f, "Constant"),
-            Add => write!(f, "Other"),
+            Instruction::Constant(offset) => {
+                let mut bytes = Vec::with_capacity(5);
+                bytes.push(Opcode::Constant as u8);
+                bytes.extend_from_slice(&offset.to_be_bytes());
+
+                bytes
+            }
+            Instruction::Add => vec![Opcode::Add as u8],
         }
     }
-}
 
-pub fn decode_instruction(
-    opcode: u8,
-    next_byte: impl FnMut() -> u8,
-) -> Result<Box<dyn Instruction>, String> {
-    use Opcode::*;
-    Ok(
-        match Opcode::try_from(opcode).map_err(|_| "unknown opcode".to_string())? {
-            Constant => Box::new(OpConstant::from_bytes(next_byte)?),
-            Add => Box::new(OpAdd),
-        },
-    )
-}
-
-pub trait Instruction {
-    /// Convert to bytes, including opcode
-    fn bytes(&self) -> Vec<u8>;
-
-    // Parse from bytes, excluding opcode
-    fn from_bytes(next_byte: impl FnMut() -> u8) -> Result<Self, String>
-    where
-        Self: Sized;
-
-    fn run(&self, stack: &mut Stack, constants: &[Object]);
-}
-
-pub struct OpAdd;
-impl Instruction for OpAdd {
-    fn bytes(&self) -> Vec<u8> {
-        vec![Opcode::Add as u8]
+    pub fn decode(mut next_byte: impl FnMut() -> u8) -> Result<Self, String> {
+        match Opcode::try_from(next_byte()).map_err(|opcode| format!("unknown opcode {opcode}"))? {
+            Opcode::Constant => Ok(Self::Constant(u32::from_be_bytes([
+                next_byte(),
+                next_byte(),
+                next_byte(),
+                next_byte(),
+            ]))),
+            Opcode::Add => Ok(Self::Add),
+        }
     }
 
-    fn from_bytes(next_byte: impl FnMut() -> u8) -> Result<Self, String> {
-        todo!()
-    }
+    pub fn run(&self, stack: &mut Stack, constants: &[Object]) -> Result<(), String> {
+        match self {
+            &Instruction::Constant(offset) => {
+                stack.push(constants[offset as usize].clone())?;
+            }
+            Instruction::Add => {
+                let Object::Integer(IntegerObject { value: left }) = stack.pop()? else {
+                    return Err("expected int on stack".to_string());
+                };
+                let Object::Integer(IntegerObject { value: right }) = stack.pop()? else {
+                    return Err("expected int on stack".to_string());
+                };
 
-    fn run(&self, stack: &mut Stack, constants: &[Object]) {
-        todo!()
-    }
-}
+                stack.push(Object::Integer(IntegerObject {
+                    value: left + right,
+                }))?;
+            }
+        }
 
-pub struct OpConstant(pub u32);
-impl Instruction for OpConstant {
-    fn bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(5);
-        bytes.push(Opcode::Constant as u8);
-        bytes.extend_from_slice(&self.0.to_be_bytes());
-
-        bytes
-    }
-
-    fn from_bytes(mut next_byte: impl FnMut() -> u8) -> Result<Self, String> {
-        Ok(Self(u32::from_be_bytes([
-            next_byte(),
-            next_byte(),
-            next_byte(),
-            next_byte(),
-        ])))
-    }
-
-    fn run(&self, stack: &mut Stack, constants: &[Object]) {
-        stack.push(constants[self.0 as usize].clone());
+        Ok(())
     }
 }
 
@@ -103,6 +74,9 @@ mod test {
 
     #[test]
     fn encode_op_constant() {
-        assert_eq!(OpConstant(65534).bytes(), [0x00, 0xff, 0xff, 0xff, 0xfe]);
+        assert_eq!(
+            Instruction::Constant(65534).encode(),
+            [0x00, 0x00, 0x00, 0xff, 0xfe]
+        );
     }
 }

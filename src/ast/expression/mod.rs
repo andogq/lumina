@@ -21,6 +21,7 @@ pub use prefix::*;
 pub use string_literal::*;
 
 use crate::{
+    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::Object,
@@ -58,8 +59,21 @@ impl AstNode for Expression {
         }
     }
 
-    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
-        todo!()
+    fn compile(
+        &self,
+        register_constant: &mut impl FnMut(Object) -> u32,
+    ) -> Result<Vec<Instruction>, String> {
+        match self {
+            Expression::Identifier(e) => e.compile(register_constant),
+            Expression::Integer(e) => e.compile(register_constant),
+            Expression::Boolean(e) => e.compile(register_constant),
+            Expression::String(e) => e.compile(register_constant),
+            Expression::Prefix(e) => e.compile(register_constant),
+            Expression::Infix(e) => e.compile(register_constant),
+            Expression::If(e) => e.compile(register_constant),
+            Expression::Function(e) => e.compile(register_constant),
+            Expression::Call(e) => e.compile(register_constant),
+        }
     }
 }
 

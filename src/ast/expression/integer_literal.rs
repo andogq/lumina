@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    code::{Instruction, OpConstant},
+    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::{IntegerObject, Object},
@@ -36,10 +36,13 @@ impl AstNode for IntegerLiteral {
         Return::Implicit(self.as_object())
     }
 
-    fn compile(&self, mut register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+    fn compile(
+        &self,
+        mut register_constant: &mut impl FnMut(Object) -> u32,
+    ) -> Result<Vec<Instruction>, String> {
         let id = register_constant(self.as_object());
 
-        Ok(OpConstant(id).bytes())
+        Ok(vec![Instruction::Constant(id)])
     }
 }
 

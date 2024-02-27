@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, Expression, Identifier, ParseNode},
+    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::{NullObject, Object},
@@ -24,7 +25,10 @@ impl AstNode for LetStatement {
         Return::Implicit(Object::Null(NullObject))
     }
 
-    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
+    fn compile(
+        &self,
+        register_constant: &mut impl FnMut(Object) -> u32,
+    ) -> Result<Vec<Instruction>, String> {
         todo!()
     }
 }

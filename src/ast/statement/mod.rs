@@ -10,6 +10,7 @@ pub use s_return::*;
 
 use crate::{
     ast::Expression,
+    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::Object,
@@ -34,8 +35,15 @@ impl AstNode for Statement {
         }
     }
 
-    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String> {
-        todo!()
+    fn compile(
+        &self,
+        register_constant: &mut impl FnMut(Object) -> u32,
+    ) -> Result<Vec<Instruction>, String> {
+        match self {
+            Statement::Let(statement) => statement.compile(register_constant),
+            Statement::Return(statement) => statement.compile(register_constant),
+            Statement::Expression(statement) => statement.compile(register_constant),
+        }
     }
 }
 

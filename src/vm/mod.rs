@@ -1,4 +1,4 @@
-use crate::{code::decode_instruction, object::Object};
+use crate::{code::Instruction, compiler::Bytecode, object::Object};
 
 #[derive(Default)]
 pub struct VM {
@@ -8,73 +8,129 @@ pub struct VM {
     stack: Stack,
 }
 
-#[derive(Default)]
 pub struct Stack {
-    stack: Vec<Object>,
+    stack: [Option<Object>; 1024],
+    pointer: usize,
 }
 
-// TODO: Should do bounds checks/proper error handling in struct
+const ARRAY_REPEAT_VALUE: Option<Object> = None;
+
+impl Default for Stack {
+    fn default() -> Self {
+        Self {
+            stack: [ARRAY_REPEAT_VALUE; 1024],
+            pointer: 0,
+        }
+    }
+}
+
 impl Stack {
-    pub fn push(&mut self, object: Object) {
-        self.stack.push(object);
+    pub fn push(&mut self, object: Object) -> Result<(), String> {
+        if self.pointer < self.stack.len() {
+            self.stack[self.pointer] = Some(object);
+            self.pointer += 1;
+            Ok(())
+        } else {
+            Err("stack overflow".to_string())
+        }
     }
 
-    pub fn pop(&mut self) -> Object {
-        self.stack.pop().unwrap()
+    pub fn pop(&mut self) -> Result<Object, String> {
+        if self.pointer > 0 {
+            self.pointer -= 1;
+            std::mem::replace(&mut self.stack[self.pointer], None)
+                .ok_or_else(|| "value not found on stack".to_string())
+        } else {
+            Err("stack underflow(?)".to_string())
+        }
     }
 }
 
 impl VM {
+    pub fn new(bytecode: Bytecode) -> Self {
+        Self {
+            constants: bytecode.constants,
+            instructions: bytecode.instructions,
+
+            stack: Stack::default(),
+        }
+    }
+
     pub fn run(&mut self) -> Result<(), String> {
         let mut i = 0;
 
         while i < self.instructions.len() {
-            let mut get_byte = || {
+            // Decode and run
+            Instruction::decode(|| {
                 // WARN: Should have bounds check
                 let b = self.instructions[i];
                 i += 1;
                 b
-            };
-
-            let opcode = get_byte();
-
-            // Attempt to decode opcode
-            let instruction = decode_instruction(opcode, get_byte)?;
-
-            instruction.run(&mut self.stack, &self.constants);
+            })?
+            .run(&mut self.stack, &self.constants)?;
         }
 
         Ok(())
     }
 
     pub fn stack_top(&self) -> Option<&Object> {
-        self.stack.stack.last()
+        self.stack.stack[self.stack.pointer - 1].as_ref()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        code::{Instruction, OpConstant},
-        object::IntegerObject,
-    };
+    use crate::{code::Instruction, object::IntegerObject};
 
     use super::*;
 
-    #[test]
-    fn int_constant() {
+    fn run_vm(instructions: &[Instruction], constants: &[Object]) -> Result<VM, String> {
         let mut vm = VM::default();
 
-        // Setup the machine
-        vm.instructions = OpConstant(0).bytes();
-        vm.constants = vec![Object::Integer(IntegerObject { value: 1234 })];
+        vm.instructions = instructions
+            .into_iter()
+            .map(|i| i.encode())
+            .flatten()
+            .collect();
+        vm.constants = Vec::from_iter(constants.into_iter().cloned());
 
-        // Run the machine
-        let _ = vm.run();
+        vm.run()?;
+
+        Ok(vm)
+    }
+
+    #[test]
+    fn int_constant() {
+        let vm = run_vm(
+            &[Instruction::Constant(0)],
+            &[Object::Integer(IntegerObject { value: 1234 })],
+        )
+        .unwrap();
 
         assert!(matches!(
             vm.stack_top(),
             Some(Object::Integer(IntegerObject { value: 1234 }))
+        ));
+    }
+
+    #[test]
+    fn add_ints() {
+        let vm = run_vm(
+            &[
+                Instruction::Constant(0),
+                Instruction::Constant(1),
+                Instruction::Add,
+            ],
+            &[
+                Object::Integer(IntegerObject { value: 5 }),
+                Object::Integer(IntegerObject { value: 4 }),
+            ],
+        )
+        .unwrap();
+
+        assert!(matches!(
+            vm.stack_top(),
+            Some(Object::Integer(IntegerObject { value: 9 }))
         ));
     }
 }

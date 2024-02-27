@@ -9,6 +9,7 @@ pub use program::*;
 pub use statement::*;
 
 use crate::{
+    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::Object,
@@ -16,7 +17,10 @@ use crate::{
 
 pub trait AstNode: Display + Sized {
     fn evaluate(&self, env: Environment) -> Return<Object>;
-    fn compile(&self, register_constant: impl FnMut(Object) -> u32) -> Result<Vec<u8>, String>;
+    fn compile(
+        &self,
+        register_constant: &mut impl (FnMut(Object) -> u32),
+    ) -> Result<Vec<Instruction>, String>;
 }
 
 pub trait ParseNode<S>: AstNode {
