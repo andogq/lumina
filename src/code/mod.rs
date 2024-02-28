@@ -90,10 +90,10 @@ impl Instruction {
             | Instruction::Sub
             | Instruction::Mul
             | Instruction::Div) => {
-                let Object::Integer(IntegerObject { value: left }) = stack.pop()? else {
+                let Object::Integer(IntegerObject { value: right }) = stack.pop()? else {
                     return Err("expected int on stack".to_string());
                 };
-                let Object::Integer(IntegerObject { value: right }) = stack.pop()? else {
+                let Object::Integer(IntegerObject { value: left }) = stack.pop()? else {
                     return Err("expected int on stack".to_string());
                 };
 
@@ -122,21 +122,31 @@ impl Instruction {
             instruction @ (Instruction::Equal
             | Instruction::NotEqual
             | Instruction::GreaterThan) => {
-                let Object::Boolean(BooleanObject { value: left }) = stack.pop()? else {
-                    return Err("expected boolean on stack".to_string());
-                };
-                let Object::Boolean(BooleanObject { value: right }) = stack.pop()? else {
-                    return Err("expected boolean on stack".to_string());
-                };
+                let right = stack.pop()?;
+                let left = stack.pop()?;
 
-                let value = match instruction {
-                    Instruction::Equal => left == right,
-                    Instruction::NotEqual => left != right,
-                    Instruction::GreaterThan => left > right,
-                    _ => unreachable!(),
-                };
-
-                stack.push(Object::Boolean(BooleanObject { value }))?;
+                stack.push(Object::Boolean(BooleanObject {
+                    value: match (left, right) {
+                        (
+                            Object::Boolean(BooleanObject { value: left }),
+                            Object::Boolean(BooleanObject { value: right }),
+                        ) => match instruction {
+                            Instruction::Equal => left == right,
+                            Instruction::NotEqual => left != right,
+                            _ => return Err("invalid operation on boolean operands".to_string()),
+                        },
+                        (
+                            Object::Integer(IntegerObject { value: left }),
+                            Object::Integer(IntegerObject { value: right }),
+                        ) => match instruction {
+                            Instruction::Equal => left == right,
+                            Instruction::NotEqual => left != right,
+                            Instruction::GreaterThan => left > right,
+                            _ => return Err("invalid operation on boolean operands".to_string()),
+                        },
+                        _ => return Err("invalid operands for operation".to_string()),
+                    },
+                }))?;
             }
         }
 
