@@ -41,7 +41,7 @@ pub fn start() {
                         continue;
                     }
 
-                    println!("stack top: {:?}", vm.stack_top());
+                    println!("{:?}", vm.last_pop());
                 }
                 Err(err) => {
                     println!("unable to compile program: {err}");

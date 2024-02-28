@@ -38,7 +38,7 @@ impl AstNode for IntegerLiteral {
 
     fn compile(
         &self,
-        mut register_constant: &mut impl FnMut(Object) -> u32,
+        register_constant: &mut impl FnMut(Object) -> u32,
     ) -> Result<Vec<Instruction>, String> {
         let id = register_constant(self.as_object());
 

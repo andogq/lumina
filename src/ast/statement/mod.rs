@@ -42,7 +42,15 @@ impl AstNode for Statement {
         match self {
             Statement::Let(statement) => statement.compile(register_constant),
             Statement::Return(statement) => statement.compile(register_constant),
-            Statement::Expression(statement) => statement.compile(register_constant),
+            Statement::Expression(statement) => {
+                let mut instructions = statement.compile(register_constant)?;
+
+                // End every expression statement with a pop instruction, to prevent the stack from
+                // continually growing.
+                instructions.push(Instruction::Pop);
+
+                Ok(instructions)
+            }
         }
     }
 }

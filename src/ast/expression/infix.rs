@@ -164,9 +164,9 @@ impl AstNode for InfixExpression {
         instructions.append(&mut self.right.compile(register_constant)?);
         instructions.push(match self.operator_token {
             InfixOperatorToken::Plus(_) => Instruction::Add,
-            InfixOperatorToken::Minus(_) => todo!(),
-            InfixOperatorToken::Asterisk(_) => todo!(),
-            InfixOperatorToken::Slash(_) => todo!(),
+            InfixOperatorToken::Minus(_) => Instruction::Sub,
+            InfixOperatorToken::Asterisk(_) => Instruction::Mul,
+            InfixOperatorToken::Slash(_) => Instruction::Div,
             InfixOperatorToken::LeftAngle(_) => todo!(),
             InfixOperatorToken::RightAngle(_) => todo!(),
             InfixOperatorToken::Eq(_) => todo!(),
