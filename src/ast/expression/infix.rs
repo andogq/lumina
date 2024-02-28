@@ -162,16 +162,21 @@ impl AstNode for InfixExpression {
     ) -> Result<Vec<Instruction>, String> {
         let mut instructions = self.left.compile(register_constant)?;
         instructions.append(&mut self.right.compile(register_constant)?);
-        instructions.push(match self.operator_token {
+        let instruction = match self.operator_token {
             InfixOperatorToken::Plus(_) => Instruction::Add,
             InfixOperatorToken::Minus(_) => Instruction::Sub,
             InfixOperatorToken::Asterisk(_) => Instruction::Mul,
             InfixOperatorToken::Slash(_) => Instruction::Div,
-            InfixOperatorToken::LeftAngle(_) => todo!(),
-            InfixOperatorToken::RightAngle(_) => todo!(),
-            InfixOperatorToken::Eq(_) => todo!(),
-            InfixOperatorToken::NotEq(_) => todo!(),
-        });
+            InfixOperatorToken::LeftAngle(_) => {
+                // Re-use greater than for less than, meaning params must be reversed
+                instructions.reverse();
+                Instruction::GreaterThan
+            }
+            InfixOperatorToken::RightAngle(_) => Instruction::GreaterThan,
+            InfixOperatorToken::Eq(_) => Instruction::Equal,
+            InfixOperatorToken::NotEq(_) => Instruction::NotEqual,
+        };
+        instructions.push(instruction);
         Ok(instructions)
     }
 }

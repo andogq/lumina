@@ -40,9 +40,12 @@ impl AstNode for BooleanLiteral {
 
     fn compile(
         &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
+        _register_constant: &mut impl FnMut(Object) -> u32,
     ) -> Result<Vec<Instruction>, String> {
-        todo!()
+        Ok(vec![match self.value {
+            true => Instruction::True,
+            false => Instruction::False,
+        }])
     }
 }
 
