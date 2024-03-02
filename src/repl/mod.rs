@@ -5,8 +5,8 @@ use crate::{
         lexer::{Lexer, Source},
         parser::Parser,
     },
+    runtime::vm::VM,
     stages::compiler::Compiler,
-    vm::VM,
 };
 
 pub fn start() {

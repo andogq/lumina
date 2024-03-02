@@ -2,7 +2,7 @@ use int_enum::IntEnum;
 
 use crate::{
     runtime::object::{BooleanObject, IntegerObject, Object},
-    vm::Stack,
+    runtime::vm::Stack,
 };
 
 pub struct Bytecode {
