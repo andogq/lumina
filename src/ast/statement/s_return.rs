@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
-    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::Object,
@@ -21,13 +20,6 @@ impl AstNode for ReturnStatement {
             Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
             Return::Error(err) => Return::Error(err),
         }
-    }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        todo!()
     }
 }
 

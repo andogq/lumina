@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, Expression},
-    code::Instruction,
     interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
     object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
@@ -154,30 +153,6 @@ impl AstNode for InfixExpression {
 
             _ => return Error::throw("insupported infix operation"),
         })
-    }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        let mut instructions = self.left.compile(register_constant)?;
-        instructions.append(&mut self.right.compile(register_constant)?);
-        let instruction = match self.operator_token {
-            InfixOperatorToken::Plus(_) => Instruction::Add,
-            InfixOperatorToken::Minus(_) => Instruction::Sub,
-            InfixOperatorToken::Asterisk(_) => Instruction::Mul,
-            InfixOperatorToken::Slash(_) => Instruction::Div,
-            InfixOperatorToken::LeftAngle(_) => {
-                // Re-use greater than for less than, meaning params must be reversed
-                instructions.reverse();
-                Instruction::GreaterThan
-            }
-            InfixOperatorToken::RightAngle(_) => Instruction::GreaterThan,
-            InfixOperatorToken::Eq(_) => Instruction::Equal,
-            InfixOperatorToken::NotEq(_) => Instruction::NotEqual,
-        };
-        instructions.push(instruction);
-        Ok(instructions)
     }
 }
 

@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::{IntegerObject, Object},
@@ -35,15 +34,6 @@ impl AstNode for IntegerLiteral {
     fn evaluate(&self, _env: Environment) -> Return<Object> {
         Return::Implicit(self.as_object())
     }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        let id = register_constant(self.as_object());
-
-        Ok(vec![Instruction::Constant(id)])
-    }
 }
 
 impl<S> ParseNode<S> for IntegerLiteral
@@ -73,7 +63,7 @@ impl Display for IntegerLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::{compiler::compile, token::SemicolonToken};
+    use crate::token::SemicolonToken;
 
     use super::*;
 
@@ -144,26 +134,5 @@ mod test {
             IntegerLiteral::new(5).evaluate(Environment::new()),
             Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
-    }
-
-    #[test]
-    fn int_compile() {
-        let bytecode = compile(IntegerLiteral::new(5)).unwrap();
-
-        assert_eq!(bytecode.constants.len(), 1);
-
-        // Make sure the stored constants value is correct
-        assert!(matches!(bytecode.constants[0], Object::Integer(_)));
-        if let Object::Integer(int) = &bytecode.constants[0] {
-            assert_eq!(int.value, 5);
-        }
-
-        assert_eq!(
-            bytecode.instructions,
-            [
-                0x00, // Opcode
-                0x00, 0x00, 0x00, 0x00, // Constant index
-            ]
-        );
     }
 }

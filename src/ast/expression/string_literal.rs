@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use crate::{
     ast::{AstNode, ParseNode},
-    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::{Object, StringObject},
@@ -20,13 +19,6 @@ impl AstNode for StringLiteral {
         Return::Implicit(Object::String(StringObject {
             value: self.value.clone(),
         }))
-    }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        todo!()
     }
 }
 

@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, ParseNode},
-    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::{BooleanObject, Object},
@@ -36,16 +35,6 @@ impl BooleanLiteral {
 impl AstNode for BooleanLiteral {
     fn evaluate(&self, _env: Environment) -> Return<Object> {
         Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
-    }
-
-    fn compile(
-        &self,
-        _register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        Ok(vec![match self.value {
-            true => Instruction::True,
-            false => Instruction::False,
-        }])
     }
 }
 

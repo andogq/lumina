@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     ast::{AstNode, Expression, ParseNode},
-    code::Instruction,
     interpreter::{environment::Environment, error::Error, return_value::Return},
     lexer::Lexer,
     object::{BooleanObject, Object},
@@ -47,25 +46,6 @@ impl AstNode for PrefixExpression {
             }
             _ => Error::throw("prefix operation not supported"),
         }
-    }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        let mut instructions = self.right.compile(register_constant)?;
-
-        match self.prefix_token {
-            PrefixToken::Plus(_) => {}
-            PrefixToken::Minus(_) => {
-                instructions.push(Instruction::Negate);
-            }
-            PrefixToken::Bang(_) => {
-                instructions.push(Instruction::Bang);
-            }
-        };
-
-        Ok(instructions)
     }
 }
 

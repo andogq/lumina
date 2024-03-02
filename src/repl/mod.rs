@@ -1,15 +1,15 @@
 use std::io::{stdin, stdout, Write};
 
 use crate::{
-    compiler::compile,
     interpreter::environment::Environment,
     lexer::{Lexer, Source},
     parser::Parser,
+    stages::compiler::Compiler,
     vm::VM,
 };
 
 pub fn start() {
-    let env = Environment::new();
+    let _env = Environment::new();
 
     loop {
         print!(">> ");
@@ -32,7 +32,7 @@ pub fn start() {
         if parser.errors.is_empty() {
             // println!("{}", program.evaluate(env.clone()));
 
-            match compile(program) {
+            match Compiler::compile(program) {
                 Ok(bytecode) => {
                     let mut vm = VM::new(bytecode);
 

@@ -5,6 +5,11 @@ use crate::{
     vm::Stack,
 };
 
+pub struct Bytecode {
+    pub instructions: Vec<u8>,
+    pub constants: Vec<Object>,
+}
+
 #[derive(Debug, PartialEq, Eq, IntEnum)]
 #[repr(u8)]
 pub enum Opcode {

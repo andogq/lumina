@@ -1,4 +1,7 @@
-use crate::{code::Instruction, compiler::Bytecode, object::Object};
+use crate::{
+    code::{Bytecode, Instruction},
+    object::Object,
+};
 
 #[derive(Default)]
 pub struct VM {

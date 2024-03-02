@@ -10,7 +10,6 @@ pub use s_return::*;
 
 use crate::{
     ast::Expression,
-    code::Instruction,
     interpreter::{environment::Environment, return_value::Return},
     lexer::Lexer,
     object::Object,
@@ -32,25 +31,6 @@ impl AstNode for Statement {
             Statement::Let(let_statement) => let_statement.evaluate(env),
             Statement::Return(return_statement) => return_statement.evaluate(env),
             Statement::Expression(expression_statement) => expression_statement.evaluate(env),
-        }
-    }
-
-    fn compile(
-        &self,
-        register_constant: &mut impl FnMut(Object) -> u32,
-    ) -> Result<Vec<Instruction>, String> {
-        match self {
-            Statement::Let(statement) => statement.compile(register_constant),
-            Statement::Return(statement) => statement.compile(register_constant),
-            Statement::Expression(statement) => {
-                let mut instructions = statement.compile(register_constant)?;
-
-                // End every expression statement with a pop instruction, to prevent the stack from
-                // continually growing.
-                instructions.push(Instruction::Pop);
-
-                Ok(instructions)
-            }
         }
     }
 }
