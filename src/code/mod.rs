@@ -1,9 +1,6 @@
 use int_enum::IntEnum;
 
-use crate::{
-    runtime::object::{BooleanObject, IntegerObject, Object},
-    runtime::vm::Stack,
-};
+use crate::runtime::object::Object;
 
 pub struct Bytecode {
     pub instructions: Vec<u8>,
@@ -92,93 +89,6 @@ impl Instruction {
             Opcode::Negate => Ok(Self::Negate),
             Opcode::Bang => Ok(Self::Bang),
         }
-    }
-
-    pub fn run(&self, stack: &mut Stack, constants: &[Object]) -> Result<(), String> {
-        match self {
-            &Instruction::Constant(offset) => {
-                stack.push(constants[offset as usize].clone())?;
-            }
-            instruction @ (Instruction::Add
-            | Instruction::Sub
-            | Instruction::Mul
-            | Instruction::Div) => {
-                let Object::Integer(IntegerObject { value: right }) = stack.pop()? else {
-                    return Err("expected int on stack".to_string());
-                };
-                let Object::Integer(IntegerObject { value: left }) = stack.pop()? else {
-                    return Err("expected int on stack".to_string());
-                };
-
-                let value = match instruction {
-                    Instruction::Add => left + right,
-                    Instruction::Sub => left - right,
-                    Instruction::Mul => left * right,
-                    Instruction::Div => left / right,
-                    _ => unreachable!(),
-                };
-
-                stack.push(Object::Integer(IntegerObject { value }))?;
-            }
-            Instruction::Pop => {
-                stack.pop()?;
-            }
-            instruction @ (Instruction::True | Instruction::False) => {
-                stack.push(Object::Boolean(BooleanObject {
-                    value: match instruction {
-                        Instruction::True => true,
-                        Instruction::False => false,
-                        _ => unreachable!(),
-                    },
-                }))?;
-            }
-            instruction @ (Instruction::Equal
-            | Instruction::NotEqual
-            | Instruction::GreaterThan) => {
-                let right = stack.pop()?;
-                let left = stack.pop()?;
-
-                stack.push(Object::Boolean(BooleanObject {
-                    value: match (left, right) {
-                        (
-                            Object::Boolean(BooleanObject { value: left }),
-                            Object::Boolean(BooleanObject { value: right }),
-                        ) => match instruction {
-                            Instruction::Equal => left == right,
-                            Instruction::NotEqual => left != right,
-                            _ => return Err("invalid operation on boolean operands".to_string()),
-                        },
-                        (
-                            Object::Integer(IntegerObject { value: left }),
-                            Object::Integer(IntegerObject { value: right }),
-                        ) => match instruction {
-                            Instruction::Equal => left == right,
-                            Instruction::NotEqual => left != right,
-                            Instruction::GreaterThan => left > right,
-                            _ => return Err("invalid operation on boolean operands".to_string()),
-                        },
-                        _ => return Err("invalid operands for operation".to_string()),
-                    },
-                }))?;
-            }
-            instruction @ (Instruction::Negate | Instruction::Bang) => {
-                let operand = stack.pop()?;
-
-                stack.push(match (instruction, operand) {
-                    (Instruction::Negate, Object::Integer(IntegerObject { value: operand })) => {
-                        Object::Integer(IntegerObject {
-                            value: operand * -1,
-                        })
-                    }
-                    (Instruction::Bang, Object::Boolean(BooleanObject { value: operand })) => {
-                        Object::Boolean(BooleanObject { value: !operand })
-                    }
-                    _ => unreachable!(),
-                })?;
-            }
-        }
-
-        Ok(())
     }
 }
 

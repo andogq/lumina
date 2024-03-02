@@ -1,7 +1,12 @@
+mod execute;
+mod stack;
+
 use crate::{
     code::{Bytecode, Instruction},
     runtime::object::Object,
 };
+
+use self::stack::Stack;
 
 #[derive(Default)]
 pub struct VM {
@@ -9,52 +14,6 @@ pub struct VM {
     instructions: Vec<u8>,
 
     stack: Stack,
-}
-
-pub struct Stack {
-    stack: [Option<Object>; 1024],
-    pointer: usize,
-    last_popped: Option<Object>,
-}
-
-const ARRAY_REPEAT_VALUE: Option<Object> = None;
-
-impl Default for Stack {
-    fn default() -> Self {
-        Self {
-            stack: [ARRAY_REPEAT_VALUE; 1024],
-            pointer: 0,
-            last_popped: None,
-        }
-    }
-}
-
-impl Stack {
-    pub fn push(&mut self, object: Object) -> Result<(), String> {
-        if self.pointer < self.stack.len() {
-            self.stack[self.pointer] = Some(object);
-            self.pointer += 1;
-            Ok(())
-        } else {
-            Err("stack overflow".to_string())
-        }
-    }
-
-    pub fn pop(&mut self) -> Result<Object, String> {
-        if self.pointer > 0 {
-            self.pointer -= 1;
-
-            let value = std::mem::replace(&mut self.stack[self.pointer], None)
-                .ok_or_else(|| "value not found on stack".to_string())?;
-
-            // WARN: Probably bad
-            self.last_popped = Some(value.clone());
-
-            Ok(value)
-        } else {
-            Err("stack underflow(?)".to_string())
-        }
-    }
 }
 
 impl VM {
@@ -71,24 +30,21 @@ impl VM {
         let mut i = 0;
 
         while i < self.instructions.len() {
-            // Decode and run
-            Instruction::decode(|| {
+            let instruction = Instruction::decode(|| {
                 // WARN: Should have bounds check
                 let b = self.instructions[i];
                 i += 1;
                 b
-            })?
-            .run(&mut self.stack, &self.constants)?;
+            })?;
+
+            self.execute(instruction)?;
         }
 
         Ok(())
     }
 
     pub fn stack_top(&self) -> Option<&Object> {
-        self.stack
-            .pointer
-            .checked_sub(1)
-            .and_then(|i| self.stack.stack[i].as_ref())
+        self.stack.top()
     }
 
     pub fn last_pop(&self) -> Option<&Object> {
