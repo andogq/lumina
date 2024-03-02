@@ -66,7 +66,8 @@ trait REPL {
 
             if parser.errors.is_empty() {
                 match self.process_program(program) {
-                    Ok(value) => println!("{value:?}",),
+                    Ok(Some(value)) => println!("{value}",),
+                    Ok(_) => {}
                     Err(err) => eprintln!("{err}"),
                 }
             } else {
