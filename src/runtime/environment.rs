@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::runtime::object::Object;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct Inner {
     env: HashMap<String, Object>,
     parent: Option<Environment>,
@@ -25,7 +25,7 @@ impl Inner {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Environment(Rc<RefCell<Inner>>);
 
 impl Environment {

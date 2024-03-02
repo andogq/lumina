@@ -7,11 +7,14 @@ use crate::{core::ast::Program, return_value, runtime::object::Object, runtime::
 use self::{runtime::return_value::Return, statement::interpret_statement};
 
 pub fn interpret(program: Program) -> Return<Object> {
-    let mut env = Environment::new();
+    interpret_with_env(&mut Environment::new(), program)
+}
+
+pub fn interpret_with_env(env: &mut Environment, program: Program) -> Return<Object> {
     let mut result = Object::null();
 
     for statement in program.statements {
-        result = return_value!(interpret_statement(&mut env, statement));
+        result = return_value!(interpret_statement(env, statement));
     }
 
     Return::Implicit(result)
