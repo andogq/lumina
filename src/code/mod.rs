@@ -19,6 +19,8 @@ pub enum Opcode {
     Equal = 8,
     NotEqual = 9,
     GreaterThan = 10,
+    Negate = 11,
+    Bang = 12,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -34,6 +36,8 @@ pub enum Instruction {
     Equal,
     NotEqual,
     GreaterThan,
+    Negate,
+    Bang,
 }
 
 impl Instruction {
@@ -57,6 +61,8 @@ impl Instruction {
             Instruction::Equal => vec![Opcode::Equal as u8],
             Instruction::NotEqual => vec![Opcode::NotEqual as u8],
             Instruction::GreaterThan => vec![Opcode::GreaterThan as u8],
+            Instruction::Negate => vec![Opcode::Negate as u8],
+            Instruction::Bang => vec![Opcode::Bang as u8],
         }
     }
 
@@ -78,6 +84,8 @@ impl Instruction {
             Opcode::Equal => Ok(Self::Equal),
             Opcode::NotEqual => Ok(Self::NotEqual),
             Opcode::GreaterThan => Ok(Self::GreaterThan),
+            Opcode::Negate => Ok(Self::Negate),
+            Opcode::Bang => Ok(Self::Bang),
         }
     }
 
@@ -147,6 +155,21 @@ impl Instruction {
                         _ => return Err("invalid operands for operation".to_string()),
                     },
                 }))?;
+            }
+            instruction @ (Instruction::Negate | Instruction::Bang) => {
+                let operand = stack.pop()?;
+
+                stack.push(match (instruction, operand) {
+                    (Instruction::Negate, Object::Integer(IntegerObject { value: operand })) => {
+                        Object::Integer(IntegerObject {
+                            value: operand * -1,
+                        })
+                    }
+                    (Instruction::Bang, Object::Boolean(BooleanObject { value: operand })) => {
+                        Object::Boolean(BooleanObject { value: !operand })
+                    }
+                    _ => unreachable!(),
+                })?;
             }
         }
 

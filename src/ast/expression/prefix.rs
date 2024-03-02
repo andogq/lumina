@@ -53,7 +53,19 @@ impl AstNode for PrefixExpression {
         &self,
         register_constant: &mut impl FnMut(Object) -> u32,
     ) -> Result<Vec<Instruction>, String> {
-        todo!()
+        let mut instructions = self.right.compile(register_constant)?;
+
+        match self.prefix_token {
+            PrefixToken::Plus(_) => {}
+            PrefixToken::Minus(_) => {
+                instructions.push(Instruction::Negate);
+            }
+            PrefixToken::Bang(_) => {
+                instructions.push(Instruction::Bang);
+            }
+        };
+
+        Ok(instructions)
     }
 }
 
