@@ -4,7 +4,7 @@ mod statement;
 use crate::{
     ast::Program,
     code::{Bytecode, Instruction},
-    object::Object,
+    runtime::object::Object,
 };
 
 #[derive(Default)]

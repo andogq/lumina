@@ -1,10 +1,9 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::ParseNode,
     lexer::Lexer,
-    object::{IntegerObject, Object},
+    runtime::object::{IntegerObject, Object},
     token::{IntToken, Token},
 };
 
@@ -27,12 +26,6 @@ impl IntegerLiteral {
 
     pub fn as_object(&self) -> Object {
         Object::Integer(IntegerObject { value: self.value })
-    }
-}
-
-impl AstNode for IntegerLiteral {
-    fn evaluate(&self, _env: Environment) -> Return<Object> {
-        Return::Implicit(self.as_object())
     }
 }
 
@@ -125,14 +118,6 @@ mod test {
                 SemicolonToken::default()
             )])),
             Err(_)
-        ));
-    }
-
-    #[test]
-    fn evaluate() {
-        assert!(matches!(
-            IntegerLiteral::new(5).evaluate(Environment::new()),
-            Return::Implicit(Object::Integer(IntegerObject { value: 5 }))
         ));
     }
 }

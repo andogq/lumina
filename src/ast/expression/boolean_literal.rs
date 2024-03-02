@@ -1,10 +1,8 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::ParseNode,
     lexer::Lexer,
-    object::{BooleanObject, Object},
     token::{FalseToken, Token, TrueToken},
 };
 
@@ -29,12 +27,6 @@ impl BooleanLiteral {
             },
             value,
         }
-    }
-}
-
-impl AstNode for BooleanLiteral {
-    fn evaluate(&self, _env: Environment) -> Return<Object> {
-        Return::Implicit(Object::Boolean(BooleanObject { value: self.value }))
     }
 }
 
@@ -114,13 +106,5 @@ mod test {
             )])),
             Err(_)
         ));
-    }
-
-    #[test]
-    fn evaluate() {
-        assert!(matches!(
-            BooleanLiteral::new(true).evaluate(Environment::new()),
-            Return::Implicit(Object::Boolean(BooleanObject { value: true }))
-        ))
     }
 }

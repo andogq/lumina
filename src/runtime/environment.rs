@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::object::Object;
+use crate::runtime::object::Object;
 
 #[derive(Clone, Debug)]
 struct Inner {

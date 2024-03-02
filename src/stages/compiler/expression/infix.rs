@@ -44,7 +44,7 @@ impl Compiler {
 mod test {
     use crate::{
         ast::{Expression, IntegerLiteral},
-        object::{IntegerObject, Object},
+        runtime::object::{IntegerObject, Object},
         token::PlusToken,
     };
 

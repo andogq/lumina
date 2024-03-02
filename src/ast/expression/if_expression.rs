@@ -1,11 +1,8 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::{BlockStatement, ParseNode},
     lexer::Lexer,
-    object::{BooleanObject, NullObject, Object},
-    return_value,
     token::{ElseToken, IfToken, Token},
 };
 
@@ -13,30 +10,16 @@ use super::Expression;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ElseBranch {
-    else_token: ElseToken,
-    statement: BlockStatement,
+    pub else_token: ElseToken,
+    pub statement: BlockStatement,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IfExpression {
-    if_token: IfToken,
-    condition: Expression,
-    consequence: BlockStatement,
-    else_branch: Option<ElseBranch>,
-}
-
-impl AstNode for IfExpression {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        let condition = return_value!(self.condition.evaluate(env.clone()));
-
-        match (condition, &self.else_branch) {
-            (Object::Boolean(BooleanObject { value: true }), _) => self.consequence.evaluate(env),
-            (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
-                alternative.statement.evaluate(env)
-            }
-            _ => Return::Implicit(Object::Null(NullObject)),
-        }
-    }
+    pub if_token: IfToken,
+    pub condition: Expression,
+    pub consequence: BlockStatement,
+    pub else_branch: Option<ElseBranch>,
 }
 
 impl<S> ParseNode<S> for IfExpression

@@ -1,10 +1,8 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::{Expression, ParseNode},
     lexer::Lexer,
-    object::Object,
     token::{ReturnToken, Token},
 };
 
@@ -12,15 +10,6 @@ use crate::{
 pub struct ReturnStatement {
     pub return_token: ReturnToken,
     pub value: Expression,
-}
-
-impl AstNode for ReturnStatement {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        match self.value.evaluate(env) {
-            Return::Explicit(value) | Return::Implicit(value) => Return::Explicit(value),
-            Return::Error(err) => Return::Error(err),
-        }
-    }
 }
 
 impl<S> ParseNode<S> for ReturnStatement
@@ -53,11 +42,7 @@ impl Display for ReturnStatement {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        ast::{IntegerLiteral, Statement},
-        object::IntegerObject,
-        token::{EOFToken, IdentToken, SemicolonToken},
-    };
+    use crate::token::{EOFToken, IdentToken, SemicolonToken};
 
     use super::*;
 
@@ -127,19 +112,5 @@ mod test {
         let result = ReturnStatement::parse(&mut lexer);
 
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn return_explicit_value() {
-        let result = Statement::Return(ReturnStatement {
-            return_token: ReturnToken::default(),
-            value: Expression::Integer(IntegerLiteral::new(10)),
-        })
-        .evaluate(Environment::new());
-
-        assert!(matches!(
-            result,
-            Return::Explicit(Object::Integer(IntegerObject { value: 10 }))
-        ));
     }
 }

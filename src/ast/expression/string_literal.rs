@@ -1,10 +1,8 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::ParseNode,
     lexer::Lexer,
-    object::{Object, StringObject},
     token::{StringToken, Token},
 };
 
@@ -12,14 +10,6 @@ use crate::{
 pub struct StringLiteral {
     pub token: StringToken,
     pub value: String,
-}
-
-impl AstNode for StringLiteral {
-    fn evaluate(&self, _env: Environment) -> Return<Object> {
-        Return::Implicit(Object::String(StringObject {
-            value: self.value.clone(),
-        }))
-    }
 }
 
 impl<S> ParseNode<S> for StringLiteral

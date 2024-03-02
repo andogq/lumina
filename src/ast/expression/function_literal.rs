@@ -1,10 +1,8 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, BlockStatement, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::{BlockStatement, ParseNode},
     lexer::Lexer,
-    object::{FunctionObject, Object},
     token::{FunctionToken, Token},
 };
 
@@ -15,16 +13,6 @@ pub struct FunctionLiteral {
     pub fn_token: FunctionToken,
     pub parameters: Vec<Identifier>,
     pub body: BlockStatement,
-}
-
-impl AstNode for FunctionLiteral {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        Return::Implicit(Object::Function(FunctionObject {
-            parameters: self.parameters.clone(),
-            body: self.body.clone(),
-            env: env.clone(),
-        }))
-    }
 }
 
 impl<S> ParseNode<S> for FunctionLiteral

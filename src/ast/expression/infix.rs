@@ -1,12 +1,9 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{AstNode, Expression},
-    interpreter::{environment::Environment, error::Error, return_value::Return},
+    ast::Expression,
     lexer::Lexer,
-    object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
     parser::Precedence,
-    return_value,
     token::{
         AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
         SlashToken, Token,
@@ -88,70 +85,6 @@ impl InfixExpression {
             operator,
             left: Box::new(left),
             right: Box::new(right),
-        })
-    }
-}
-
-impl AstNode for InfixExpression {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        use InfixOperatorToken::*;
-
-        let left = return_value!(self.left.evaluate(env.clone()));
-        let right = return_value!(self.right.evaluate(env));
-
-        Return::Implicit(match (&self.operator_token, left, right) {
-            (token, Object::Integer(left), Object::Integer(right)) => {
-                let left = left.value;
-                let right = right.value;
-
-                match token {
-                    Plus(_) | Minus(_) | Asterisk(_) | Slash(_) => Object::Integer(IntegerObject {
-                        value: match token {
-                            Plus(_) => left + right,
-                            Minus(_) => left - right,
-                            Asterisk(_) => left * right,
-                            Slash(_) => left / right,
-                            _ => unreachable!(),
-                        },
-                    }),
-                    LeftAngle(_) | RightAngle(_) | Eq(_) | NotEq(_) => {
-                        Object::Boolean(BooleanObject {
-                            value: match token {
-                                LeftAngle(_) => left < right,
-                                RightAngle(_) => left > right,
-                                Eq(_) => left == right,
-                                NotEq(_) => left != right,
-                                _ => unreachable!(),
-                            },
-                        })
-                    }
-                }
-            }
-            (token, Object::Boolean(left), Object::Boolean(right)) => {
-                let left = left.value;
-                let right = right.value;
-
-                Object::Boolean(BooleanObject {
-                    value: match token {
-                        LeftAngle(_) => left < right,
-                        RightAngle(_) => left > right,
-                        Eq(_) => left == right,
-                        NotEq(_) => left != right,
-                        _ => return Return::Implicit(Object::Null(NullObject)),
-                    },
-                })
-            }
-            (Plus(_), Object::String(left), Object::String(right)) => {
-                Object::String(StringObject {
-                    value: left.value + &right.value,
-                })
-            }
-
-            // If hasn't already been evaluated, left and right aren't equal
-            (Eq(_), _, _) => Object::Boolean(BooleanObject { value: false }),
-            (NotEq(_), _, _) => Object::Boolean(BooleanObject { value: true }),
-
-            _ => return Error::throw("insupported infix operation"),
         })
     }
 }

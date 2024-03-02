@@ -1,7 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
 use crate::{
-    interpreter::environment::Environment,
     lexer::{Lexer, Source},
     parser::Parser,
     stages::compiler::Compiler,
@@ -9,8 +8,6 @@ use crate::{
 };
 
 pub fn start() {
-    let _env = Environment::new();
-
     loop {
         print!(">> ");
         stdout().flush().unwrap();

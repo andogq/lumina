@@ -1,7 +1,7 @@
 use int_enum::IntEnum;
 
 use crate::{
-    object::{BooleanObject, IntegerObject, Object},
+    runtime::object::{BooleanObject, IntegerObject, Object},
     vm::Stack,
 };
 

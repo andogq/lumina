@@ -1,7 +1,7 @@
 use crate::{
     ast::{BooleanLiteral, IntegerLiteral},
     code::Instruction,
-    object::{IntegerObject, Object},
+    runtime::object::{IntegerObject, Object},
 };
 
 use super::Compiler;

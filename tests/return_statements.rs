@@ -1,8 +1,8 @@
 mod common;
 
 use rust_script::{
-    interpreter::return_value::Return,
-    object::{IntegerObject, Object},
+    runtime::object::{IntegerObject, Object},
+    stages::interpreter::runtime::return_value::Return,
 };
 
 use crate::common::run;

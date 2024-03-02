@@ -1,6 +1,6 @@
 use crate::{
     code::{Bytecode, Instruction},
-    object::Object,
+    runtime::object::Object,
 };
 
 #[derive(Default)]
@@ -98,7 +98,7 @@ impl VM {
 
 #[cfg(test)]
 mod test {
-    use crate::{code::Instruction, object::IntegerObject};
+    use crate::{code::Instruction, runtime::object::IntegerObject};
 
     use super::*;
 

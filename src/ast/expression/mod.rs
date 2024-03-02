@@ -20,15 +20,9 @@ pub use integer_literal::*;
 pub use prefix::*;
 pub use string_literal::*;
 
-use crate::{
-    interpreter::{environment::Environment, return_value::Return},
-    lexer::Lexer,
-    object::Object,
-    parser::Precedence,
-    token::Token,
-};
+use crate::{lexer::Lexer, parser::Precedence, token::Token};
 
-use super::{AstNode, ParseNode};
+use super::ParseNode;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
@@ -41,22 +35,6 @@ pub enum Expression {
     If(Box<IfExpression>),
     Function(FunctionLiteral),
     Call(CallExpression),
-}
-
-impl AstNode for Expression {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        match self {
-            Expression::Identifier(e) => e.evaluate(env),
-            Expression::Integer(e) => e.evaluate(env),
-            Expression::Boolean(e) => e.evaluate(env),
-            Expression::String(e) => e.evaluate(env),
-            Expression::Prefix(e) => e.evaluate(env),
-            Expression::Infix(e) => e.evaluate(env),
-            Expression::If(e) => e.evaluate(env),
-            Expression::Function(e) => e.evaluate(env),
-            Expression::Call(e) => e.evaluate(env),
-        }
-    }
 }
 
 impl<S> ParseNode<S> for Expression

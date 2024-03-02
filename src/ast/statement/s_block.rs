@@ -1,31 +1,12 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
-    ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
-    lexer::Lexer,
-    object::{NullObject, Object},
-    return_value,
-    token::Token,
-};
+use crate::{ast::ParseNode, lexer::Lexer, token::Token};
 
 use super::Statement;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockStatement {
-    statements: Vec<Statement>,
-}
-
-impl AstNode for BlockStatement {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        let mut result = Object::Null(NullObject);
-
-        for statement in &self.statements {
-            result = return_value!(statement.evaluate(env.clone()));
-        }
-
-        Return::Implicit(result)
-    }
+    pub statements: Vec<Statement>,
 }
 
 impl<S> ParseNode<S> for BlockStatement

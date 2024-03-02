@@ -8,31 +8,15 @@ pub use s_block::*;
 pub use s_let::*;
 pub use s_return::*;
 
-use crate::{
-    ast::Expression,
-    interpreter::{environment::Environment, return_value::Return},
-    lexer::Lexer,
-    object::Object,
-    token::Token,
-};
+use crate::{ast::Expression, lexer::Lexer, token::Token};
 
-use super::{AstNode, ParseNode};
+use super::ParseNode;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
     Expression(Expression),
-}
-
-impl AstNode for Statement {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        match self {
-            Statement::Let(let_statement) => let_statement.evaluate(env),
-            Statement::Return(return_statement) => return_statement.evaluate(env),
-            Statement::Expression(expression_statement) => expression_statement.evaluate(env),
-        }
-    }
 }
 
 impl<S> ParseNode<S> for Statement

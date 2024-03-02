@@ -1,11 +1,8 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, ParseNode},
-    interpreter::{environment::Environment, error::Error, return_value::Return},
+    ast::ParseNode,
     lexer::Lexer,
-    object::Object,
-    return_value,
     token::{LeftParenToken, Token},
 };
 
@@ -73,39 +70,6 @@ impl CallExpression {
             function,
             arguments,
         })
-    }
-}
-
-impl AstNode for CallExpression {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        let Object::Function(function) = return_value!(match &self.function {
-            CallableFunction::Identifier(ident) => ident.evaluate(env.clone()),
-            CallableFunction::FunctionLiteral(lit) => lit.evaluate(env.clone()),
-        }) else {
-            return Error::throw("value is not of type function");
-        };
-
-        let function_env = env.nest();
-
-        // Evaluate all arguments and set them in the environment
-        for (arg, param) in self
-            .arguments
-            .iter()
-            .map(|arg| arg.evaluate(env.clone()))
-            .zip(function.parameters)
-        {
-            match arg {
-                Return::Implicit(value) | Return::Explicit(value) => {
-                    function_env.set(param.value, value)
-                }
-                Return::Error(err) => return Return::Error(err),
-            }
-        }
-
-        match function.body.evaluate(function_env) {
-            Return::Explicit(value) | Return::Implicit(value) => Return::Implicit(value),
-            Return::Error(err) => Return::Error(err),
-        }
     }
 }
 

@@ -1,11 +1,8 @@
 use std::fmt::Display;
 
 use crate::{
-    ast::{AstNode, Expression, Identifier, ParseNode},
-    interpreter::{environment::Environment, return_value::Return},
+    ast::{Expression, Identifier, ParseNode},
     lexer::Lexer,
-    object::{NullObject, Object},
-    return_value,
     token::{LetToken, Token},
 };
 
@@ -14,15 +11,6 @@ pub struct LetStatement {
     pub let_token: LetToken,
     pub name: Identifier,
     pub value: Expression,
-}
-
-impl AstNode for LetStatement {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        let result = return_value!(self.value.evaluate(env.clone()));
-        env.set(&self.name.value, result);
-
-        Return::Implicit(Object::Null(NullObject))
-    }
 }
 
 impl<S> ParseNode<S> for LetStatement

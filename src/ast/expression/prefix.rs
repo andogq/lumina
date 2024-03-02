@@ -1,12 +1,9 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::{AstNode, Expression, ParseNode},
-    interpreter::{environment::Environment, error::Error, return_value::Return},
+    ast::{Expression, ParseNode},
     lexer::Lexer,
-    object::{BooleanObject, Object},
     parser::Precedence,
-    return_value,
     token::{BangToken, MinusToken, PlusToken, Token},
 };
 
@@ -24,29 +21,6 @@ pub struct PrefixExpression {
     pub prefix_token: PrefixToken,
     pub operator: String,
     pub right: Box<Expression>,
-}
-
-impl AstNode for PrefixExpression {
-    fn evaluate(&self, env: Environment) -> Return<Object> {
-        let right = return_value!(self.right.evaluate(env));
-
-        match (&self.prefix_token, right) {
-            (PrefixToken::Plus(_), Object::Integer(int)) => Return::Implicit(Object::Integer(int)),
-            (PrefixToken::Minus(_), Object::Integer(mut int)) => {
-                Return::Implicit(Object::Integer({
-                    int.value = -int.value;
-                    int
-                }))
-            }
-            (PrefixToken::Bang(_), Object::Boolean(bool)) => {
-                Return::Implicit(Object::Boolean(BooleanObject { value: !bool.value }))
-            }
-            (PrefixToken::Bang(_), Object::Null(_)) => {
-                Return::Implicit(Object::Boolean(BooleanObject { value: true }))
-            }
-            _ => Error::throw("prefix operation not supported"),
-        }
-    }
 }
 
 impl<S> ParseNode<S> for PrefixExpression

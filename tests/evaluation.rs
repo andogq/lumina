@@ -1,5 +1,5 @@
 use common::run;
-use rust_script::interpreter::return_value::Return;
+use rust_script::stages::interpreter::runtime::return_value::Return;
 
 mod common;
 
