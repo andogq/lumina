@@ -1,3 +1,4 @@
+mod jump;
 mod math;
 mod stack;
 
@@ -32,6 +33,10 @@ impl VM {
             // Unary operations
             Instruction::Negate => self.math_negate()?,
             Instruction::Bang => self.math_invert()?,
+
+            // Jump instructions
+            Instruction::JumpNotTrue(offset) => self.jump_not_true(offset)?,
+            Instruction::Jump(offset) => self.jump(offset)?,
         }
 
         Ok(())

@@ -34,7 +34,7 @@ impl Compiler {
         self.compile_expression(rhs)?;
 
         // Insert instruction
-        self.instructions.push(instruction);
+        self.push(instruction);
 
         Ok(())
     }
@@ -74,10 +74,11 @@ mod test {
         assert_eq!(
             compiler.instructions,
             [
-                Instruction::Constant(0),
-                Instruction::Constant(1),
-                Instruction::Add,
+                Instruction::Constant(0).encode(),
+                Instruction::Constant(1).encode(),
+                Instruction::Add.encode(),
             ]
+            .concat()
         );
     }
 }

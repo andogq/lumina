@@ -155,7 +155,7 @@ mod test {
 
         let program = parser.parse_program();
 
-        assert!(dbg!(parser.errors).is_empty());
+        assert!(parser.errors.is_empty());
 
         assert_eq!(program.statements.len(), 1);
 

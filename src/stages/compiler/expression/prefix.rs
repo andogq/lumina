@@ -11,10 +11,10 @@ impl Compiler {
         match prefix.prefix_token {
             PrefixToken::Plus(_) => {}
             PrefixToken::Minus(_) => {
-                self.instructions.push(Instruction::Negate);
+                self.push(Instruction::Negate);
             }
             PrefixToken::Bang(_) => {
-                self.instructions.push(Instruction::Bang);
+                self.push(Instruction::Bang);
             }
         };
 

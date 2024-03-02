@@ -8,7 +8,7 @@ use super::Compiler;
 
 impl Compiler {
     pub(super) fn compile_boolean(&mut self, literal: BooleanLiteral) -> Result<(), String> {
-        self.instructions.push(match literal.value {
+        self.push(match literal.value {
             true => Instruction::True,
             false => Instruction::False,
         });
@@ -19,7 +19,7 @@ impl Compiler {
     pub(super) fn compile_integer(&mut self, literal: IntegerLiteral) -> Result<(), String> {
         let id = self.register_constant(Object::integer(literal.value));
 
-        self.instructions.push(Instruction::Constant(id));
+        self.push(Instruction::Constant(id));
 
         Ok(())
     }
@@ -42,6 +42,6 @@ mod test {
             assert_eq!(int.value, 5);
         }
 
-        assert_eq!(compiler.instructions, [Instruction::Constant(0),]);
+        assert_eq!(compiler.instructions, Instruction::Constant(0).encode());
     }
 }

@@ -13,6 +13,8 @@ pub struct VM {
     constants: Vec<Object>,
     instructions: Vec<u8>,
 
+    pc: usize,
+
     stack: Stack,
 }
 
@@ -22,18 +24,18 @@ impl VM {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
 
+            pc: 0,
+
             stack: Stack::default(),
         }
     }
 
     pub fn run(&mut self) -> Result<(), String> {
-        let mut i = 0;
-
-        while i < self.instructions.len() {
+        while self.pc < self.instructions.len() {
             let instruction = Instruction::decode(|| {
                 // WARN: Should have bounds check
-                let b = self.instructions[i];
-                i += 1;
+                let b = self.instructions[self.pc];
+                self.pc += 1;
                 b
             })?;
 

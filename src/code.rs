@@ -23,6 +23,8 @@ pub enum Opcode {
     GreaterThan = 10,
     Negate = 11,
     Bang = 12,
+    JumpNotTrue = 13,
+    Jump = 14,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -40,6 +42,8 @@ pub enum Instruction {
     GreaterThan,
     Negate,
     Bang,
+    JumpNotTrue(i16),
+    Jump(i16),
 }
 
 impl Instruction {
@@ -65,6 +69,18 @@ impl Instruction {
             Instruction::GreaterThan => vec![Opcode::GreaterThan as u8],
             Instruction::Negate => vec![Opcode::Negate as u8],
             Instruction::Bang => vec![Opcode::Bang as u8],
+            Instruction::JumpNotTrue(offset) => {
+                let mut bytes = Vec::with_capacity(3);
+                bytes.push(Opcode::JumpNotTrue as u8);
+                bytes.extend_from_slice(&offset.to_be_bytes());
+                bytes
+            }
+            Instruction::Jump(offset) => {
+                let mut bytes = Vec::with_capacity(3);
+                bytes.push(Opcode::Jump as u8);
+                bytes.extend_from_slice(&offset.to_be_bytes());
+                bytes
+            }
         }
     }
 
@@ -88,6 +104,11 @@ impl Instruction {
             Opcode::GreaterThan => Ok(Self::GreaterThan),
             Opcode::Negate => Ok(Self::Negate),
             Opcode::Bang => Ok(Self::Bang),
+            Opcode::JumpNotTrue => Ok(Self::JumpNotTrue(i16::from_be_bytes([
+                next_byte(),
+                next_byte(),
+            ]))),
+            Opcode::Jump => Ok(Self::Jump(i16::from_be_bytes([next_byte(), next_byte()]))),
         }
     }
 }
