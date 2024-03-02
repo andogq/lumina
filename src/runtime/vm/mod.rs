@@ -75,11 +75,7 @@ mod test {
 
     #[test]
     fn int_constant() {
-        let vm = run_vm(
-            &[Instruction::Constant(0)],
-            &[Object::Integer(IntegerObject { value: 1234 })],
-        )
-        .unwrap();
+        let vm = run_vm(&[Instruction::Constant(0)], &[Object::integer(1234)]).unwrap();
 
         assert!(matches!(
             vm.stack_top(),
@@ -95,10 +91,7 @@ mod test {
                 Instruction::Constant(1),
                 Instruction::Add,
             ],
-            &[
-                Object::Integer(IntegerObject { value: 5 }),
-                Object::Integer(IntegerObject { value: 4 }),
-            ],
+            &[Object::integer(5), Object::integer(4)],
         )
         .unwrap();
 

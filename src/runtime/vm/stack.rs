@@ -1,4 +1,4 @@
-use crate::runtime::object::{BooleanObject, IntegerObject, Object};
+use crate::runtime::object::Object;
 
 pub struct Stack {
     stack: [Option<Object>; 1024],

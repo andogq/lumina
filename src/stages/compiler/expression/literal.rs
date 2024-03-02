@@ -1,7 +1,7 @@
 use crate::{
     code::Instruction,
     core::ast::{BooleanLiteral, IntegerLiteral},
-    runtime::object::{IntegerObject, Object},
+    runtime::object::Object,
 };
 
 use super::Compiler;
@@ -17,9 +17,7 @@ impl Compiler {
     }
 
     pub(super) fn compile_integer(&mut self, literal: IntegerLiteral) -> Result<(), String> {
-        let id = self.register_constant(Object::Integer(IntegerObject {
-            value: literal.value,
-        }));
+        let id = self.register_constant(Object::integer(literal.value));
 
         self.instructions.push(Instruction::Constant(id));
 

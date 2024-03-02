@@ -1,10 +1,7 @@
 use crate::{
     core::ast::{PrefixExpression, PrefixToken},
     return_value,
-    runtime::{
-        object::{BooleanObject, Object},
-        Environment,
-    },
+    runtime::{object::Object, Environment},
     stages::interpreter::runtime::{error::Error, return_value::Return},
 };
 
@@ -14,17 +11,16 @@ pub fn interpret_prefix(env: &mut Environment, prefix: PrefixExpression) -> Retu
     let right = return_value!(interpret_expression(env, *prefix.right));
 
     match (&prefix.prefix_token, right) {
-        (PrefixToken::Plus(_), Object::Integer(int)) => Return::Implicit(Object::Integer(int)),
-        (PrefixToken::Minus(_), Object::Integer(mut int)) => Return::Implicit(Object::Integer({
-            int.value = -int.value;
-            int
-        })),
+        (PrefixToken::Plus(_), Object::Integer(int)) => {
+            Return::Implicit(Object::integer(int.value))
+        }
+        (PrefixToken::Minus(_), Object::Integer(int)) => {
+            Return::Implicit(Object::integer(-int.value))
+        }
         (PrefixToken::Bang(_), Object::Boolean(bool)) => {
-            Return::Implicit(Object::Boolean(BooleanObject { value: !bool.value }))
+            Return::Implicit(Object::boolean(!bool.value))
         }
-        (PrefixToken::Bang(_), Object::Null(_)) => {
-            Return::Implicit(Object::Boolean(BooleanObject { value: true }))
-        }
+        (PrefixToken::Bang(_), Object::Null(_)) => Return::Implicit(Object::boolean(true)),
         _ => Error::throw("prefix operation not supported"),
     }
 }

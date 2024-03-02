@@ -13,6 +13,32 @@ pub enum Object {
     Function(FunctionObject),
 }
 
+impl Object {
+    pub fn integer(i: i64) -> Self {
+        Self::Integer(IntegerObject { value: i })
+    }
+
+    pub fn boolean(b: bool) -> Self {
+        Self::Boolean(BooleanObject { value: b })
+    }
+
+    pub fn string(s: String) -> Self {
+        Self::String(StringObject { value: s })
+    }
+
+    pub fn null() -> Self {
+        Self::Null(NullObject)
+    }
+
+    pub fn function(env: &Environment, parameters: Vec<Identifier>, body: BlockStatement) -> Self {
+        Self::Function(FunctionObject {
+            env: env.nest(),
+            parameters,
+            body,
+        })
+    }
+}
+
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

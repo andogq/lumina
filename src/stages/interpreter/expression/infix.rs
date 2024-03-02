@@ -1,10 +1,7 @@
 use crate::{
     core::ast::{InfixExpression, InfixOperatorToken},
     return_value,
-    runtime::{
-        object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},
-        Environment,
-    },
+    runtime::{object::Object, Environment},
     stages::interpreter::expression::interpret_expression,
     stages::interpreter::runtime::{error::Error, return_value::Return},
 };
@@ -21,23 +18,19 @@ pub fn interpret_infix(env: &mut Environment, infix: InfixExpression) -> Return<
             let right = right.value;
 
             match token {
-                Plus(_) | Minus(_) | Asterisk(_) | Slash(_) => Object::Integer(IntegerObject {
-                    value: match token {
-                        Plus(_) => left + right,
-                        Minus(_) => left - right,
-                        Asterisk(_) => left * right,
-                        Slash(_) => left / right,
-                        _ => unreachable!(),
-                    },
+                Plus(_) | Minus(_) | Asterisk(_) | Slash(_) => Object::integer(match token {
+                    Plus(_) => left + right,
+                    Minus(_) => left - right,
+                    Asterisk(_) => left * right,
+                    Slash(_) => left / right,
+                    _ => unreachable!(),
                 }),
-                LeftAngle(_) | RightAngle(_) | Eq(_) | NotEq(_) => Object::Boolean(BooleanObject {
-                    value: match token {
-                        LeftAngle(_) => left < right,
-                        RightAngle(_) => left > right,
-                        Eq(_) => left == right,
-                        NotEq(_) => left != right,
-                        _ => unreachable!(),
-                    },
+                LeftAngle(_) | RightAngle(_) | Eq(_) | NotEq(_) => Object::boolean(match token {
+                    LeftAngle(_) => left < right,
+                    RightAngle(_) => left > right,
+                    Eq(_) => left == right,
+                    NotEq(_) => left != right,
+                    _ => unreachable!(),
                 }),
             }
         }
@@ -45,23 +38,21 @@ pub fn interpret_infix(env: &mut Environment, infix: InfixExpression) -> Return<
             let left = left.value;
             let right = right.value;
 
-            Object::Boolean(BooleanObject {
-                value: match token {
-                    LeftAngle(_) => left < right,
-                    RightAngle(_) => left > right,
-                    Eq(_) => left == right,
-                    NotEq(_) => left != right,
-                    _ => return Return::Implicit(Object::Null(NullObject)),
-                },
+            Object::boolean(match token {
+                LeftAngle(_) => left < right,
+                RightAngle(_) => left > right,
+                Eq(_) => left == right,
+                NotEq(_) => left != right,
+                _ => return Return::Implicit(Object::null()),
             })
         }
-        (Plus(_), Object::String(left), Object::String(right)) => Object::String(StringObject {
-            value: left.value + &right.value,
-        }),
+        (Plus(_), Object::String(left), Object::String(right)) => {
+            Object::string(left.value + &right.value)
+        }
 
         // If hasn't already been evaluated, left and right aren't equal
-        (Eq(_), _, _) => Object::Boolean(BooleanObject { value: false }),
-        (NotEq(_), _, _) => Object::Boolean(BooleanObject { value: true }),
+        (Eq(_), _, _) => Object::boolean(false),
+        (NotEq(_), _, _) => Object::boolean(true),
 
         _ => return Error::throw("insupported infix operation"),
     })

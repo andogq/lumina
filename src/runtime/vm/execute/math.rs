@@ -25,13 +25,11 @@ impl VM {
     ) -> Result<(), String> {
         let (left, right) = self.get_integer_pair()?;
 
-        self.stack.push(Object::Integer(IntegerObject {
-            value: match op {
-                MathIntegerOperation::Add => left + right,
-                MathIntegerOperation::Sub => left - right,
-                MathIntegerOperation::Mul => left * right,
-                MathIntegerOperation::Div => left / right,
-            },
+        self.stack.push(Object::integer(match op {
+            MathIntegerOperation::Add => left + right,
+            MathIntegerOperation::Sub => left - right,
+            MathIntegerOperation::Mul => left * right,
+            MathIntegerOperation::Div => left / right,
         }))?;
 
         Ok(())
@@ -42,19 +40,17 @@ impl VM {
         let right = self.stack.pop()?;
         let left = self.stack.pop()?;
 
-        self.stack.push(Object::Boolean(BooleanObject {
-            value: match (left, right) {
-                (
-                    Object::Boolean(BooleanObject { value: left }),
-                    Object::Boolean(BooleanObject { value: right }),
-                ) => (left == right) == equal,
-                (
-                    Object::Integer(IntegerObject { value: left }),
-                    Object::Integer(IntegerObject { value: right }),
-                ) => (left == right) == equal,
-                // Any other combination of operands cannot be equal, since they're different types
-                _ => false,
-            },
+        self.stack.push(Object::boolean(match (left, right) {
+            (
+                Object::Boolean(BooleanObject { value: left }),
+                Object::Boolean(BooleanObject { value: right }),
+            ) => (left == right) == equal,
+            (
+                Object::Integer(IntegerObject { value: left }),
+                Object::Integer(IntegerObject { value: right }),
+            ) => (left == right) == equal,
+            // Any other combination of operands cannot be equal, since they're different types
+            _ => false,
         }))?;
 
         Ok(())
@@ -63,9 +59,7 @@ impl VM {
     pub(super) fn math_greater_than(&mut self) -> Result<(), String> {
         let (left, right) = self.get_integer_pair()?;
 
-        self.stack.push(Object::Boolean(BooleanObject {
-            value: left > right,
-        }))?;
+        self.stack.push(Object::boolean(left > right))?;
 
         Ok(())
     }
@@ -73,8 +67,7 @@ impl VM {
     pub(super) fn math_negate(&mut self) -> Result<(), String> {
         let result = -self.stack.pop_integer()?;
 
-        self.stack
-            .push(Object::Integer(IntegerObject { value: result }))?;
+        self.stack.push(Object::integer(result))?;
 
         Ok(())
     }
@@ -82,8 +75,7 @@ impl VM {
     pub(super) fn math_invert(&mut self) -> Result<(), String> {
         let result = !self.stack.pop_boolean()?;
 
-        self.stack
-            .push(Object::Boolean(BooleanObject { value: !result }))?;
+        self.stack.push(Object::boolean(!result))?;
 
         Ok(())
     }

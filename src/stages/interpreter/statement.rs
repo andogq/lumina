@@ -1,10 +1,7 @@
 use crate::{
     core::ast::{BlockStatement, LetStatement, ReturnStatement, Statement},
     return_value,
-    runtime::{
-        object::{NullObject, Object},
-        Environment,
-    },
+    runtime::{object::Object, Environment},
 };
 
 use super::{expression::interpret_expression, runtime::return_value::Return};
@@ -20,7 +17,7 @@ pub fn interpret_statement(env: &mut Environment, statement: Statement) -> Retur
 }
 
 pub fn interpret_block_statement(env: &mut Environment, block: BlockStatement) -> Return<Object> {
-    let mut result = Object::Null(NullObject);
+    let mut result = Object::null();
 
     for statement in block.statements {
         result = return_value!(interpret_statement(env, statement));
@@ -36,7 +33,7 @@ pub fn interpret_let_statement(
     let result = return_value!(interpret_expression(env, let_statement.value));
     env.set(&let_statement.name.value, result);
 
-    Return::Implicit(Object::Null(NullObject))
+    Return::Implicit(Object::null())
 }
 
 pub fn interpret_return_statement(

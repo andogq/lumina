@@ -2,7 +2,7 @@ use crate::{
     core::ast::{CallExpression, CallableFunction, Expression, Identifier, IfExpression},
     return_value,
     runtime::{
-        object::{BooleanObject, NullObject, Object},
+        object::{BooleanObject, Object},
         Environment,
     },
 };
@@ -86,6 +86,6 @@ pub fn interpret_if_expression(
         (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
             interpret_block_statement(env, alternative.statement)
         }
-        _ => Return::Implicit(Object::Null(NullObject)),
+        _ => Return::Implicit(Object::null()),
     }
 }

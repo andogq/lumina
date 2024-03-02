@@ -5,7 +5,7 @@ use crate::{
         ast::ParseNode,
         lexer::{IntToken, Lexer, Token},
     },
-    runtime::object::{IntegerObject, Object},
+    runtime::object::Object,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,7 +26,7 @@ impl IntegerLiteral {
     }
 
     pub fn as_object(&self) -> Object {
-        Object::Integer(IntegerObject { value: self.value })
+        Object::integer(self.value)
     }
 }
 

@@ -1,7 +1,4 @@
-use crate::runtime::{
-    object::{BooleanObject, Object},
-    vm::VM,
-};
+use crate::runtime::{object::Object, vm::VM};
 
 impl VM {
     pub(super) fn stack_push_constant(&mut self, offset: u32) -> Result<(), String> {
@@ -9,8 +6,7 @@ impl VM {
     }
 
     pub(super) fn stack_push_boolean(&mut self, boolean: bool) -> Result<(), String> {
-        self.stack
-            .push(Object::Boolean(BooleanObject { value: boolean }))
+        self.stack.push(Object::boolean(boolean))
     }
 
     pub(super) fn stack_pop(&mut self) -> Result<(), String> {
