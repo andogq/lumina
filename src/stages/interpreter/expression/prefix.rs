@@ -1,5 +1,5 @@
 use crate::{
-    ast::{PrefixExpression, PrefixToken},
+    core::ast::{PrefixExpression, PrefixToken},
     return_value,
     runtime::{
         object::{BooleanObject, Object},

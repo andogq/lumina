@@ -1,6 +1,6 @@
 use crate::{
-    ast::{Expression, LetStatement, ReturnStatement, Statement},
     code::Instruction,
+    core::ast::{Expression, LetStatement, ReturnStatement, Statement},
 };
 
 use super::Compiler;

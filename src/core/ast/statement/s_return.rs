@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::{Expression, ParseNode},
-    lexer::Lexer,
-    token::{ReturnToken, Token},
+    lexer::{Lexer, ReturnToken, Token},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -42,7 +41,7 @@ impl Display for ReturnStatement {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{EOFToken, IdentToken, SemicolonToken};
+    use crate::core::lexer::{EOFToken, IdentToken, SemicolonToken};
 
     use super::*;
 

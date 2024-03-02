@@ -20,7 +20,10 @@ pub use integer_literal::*;
 pub use prefix::*;
 pub use string_literal::*;
 
-use crate::{lexer::Lexer, parser::Precedence, token::Token};
+use crate::core::{
+    lexer::{Lexer, Token},
+    parser::Precedence,
+};
 
 use super::ParseNode;
 

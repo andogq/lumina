@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
-use crate::{
+use crate::core::{
     ast::{Expression, Identifier, ParseNode},
-    lexer::Lexer,
-    token::{LetToken, Token},
+    lexer::{LetToken, Lexer, Token},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -63,7 +62,7 @@ impl Display for LetStatement {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{AssignToken, EOFToken, IdentToken, IntToken, SemicolonToken};
+    use crate::core::lexer::{AssignToken, EOFToken, IdentToken, IntToken, SemicolonToken};
 
     use super::*;
 

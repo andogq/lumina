@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::ast::Statement;
+use crate::core::ast::Statement;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Program {

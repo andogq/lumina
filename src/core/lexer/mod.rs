@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 
-use crate::token::*;
-
 pub use self::source::Source;
+pub use token::*;
 
 mod source;
+mod token;
 
 pub struct Lexer<S> {
     source: Source<S>,
@@ -275,7 +275,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::token::Token;
 
     macro_rules! lexer {
         ($input:expr) => {

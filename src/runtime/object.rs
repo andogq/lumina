@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::ast::{BlockStatement, Identifier};
+use crate::core::ast::{BlockStatement, Identifier};
 
 use super::Environment;
 

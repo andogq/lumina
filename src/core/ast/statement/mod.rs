@@ -8,7 +8,10 @@ pub use s_block::*;
 pub use s_let::*;
 pub use s_return::*;
 
-use crate::{ast::Expression, lexer::Lexer, token::Token};
+use crate::core::{
+    ast::Expression,
+    lexer::{Lexer, Token},
+};
 
 use super::ParseNode;
 

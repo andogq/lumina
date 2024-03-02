@@ -3,7 +3,7 @@ pub mod runtime;
 mod statement;
 
 use crate::{
-    ast::Program,
+    core::ast::Program,
     return_value,
     runtime::object::{NullObject, Object},
     runtime::Environment,

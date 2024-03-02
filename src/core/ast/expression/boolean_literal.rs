@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::ParseNode,
-    lexer::Lexer,
-    token::{FalseToken, Token, TrueToken},
+    lexer::{FalseToken, Lexer, Token, TrueToken},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -60,7 +59,7 @@ impl Display for BooleanLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::token::SemicolonToken;
+    use crate::core::lexer::SemicolonToken;
 
     use super::*;
 

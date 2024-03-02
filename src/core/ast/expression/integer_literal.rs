@@ -1,10 +1,11 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
-    ast::ParseNode,
-    lexer::Lexer,
+    core::{
+        ast::ParseNode,
+        lexer::{IntToken, Lexer, Token},
+    },
     runtime::object::{IntegerObject, Object},
-    token::{IntToken, Token},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,7 +57,7 @@ impl Display for IntegerLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::token::SemicolonToken;
+    use crate::core::lexer::SemicolonToken;
 
     use super::*;
 

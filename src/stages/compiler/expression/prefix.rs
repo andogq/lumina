@@ -1,6 +1,6 @@
 use crate::{
-    ast::{PrefixExpression, PrefixToken},
     code::Instruction,
+    core::ast::{PrefixExpression, PrefixToken},
     stages::compiler::Compiler,
 };
 
@@ -21,4 +21,3 @@ impl Compiler {
         Ok(())
     }
 }
-

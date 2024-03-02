@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::{BlockStatement, ParseNode},
-    lexer::Lexer,
-    token::{FunctionToken, Token},
+    lexer::{FunctionToken, Lexer, Token},
 };
 
 use super::Identifier;
@@ -86,7 +85,7 @@ impl Display for FunctionLiteral {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{
+    use crate::core::lexer::{
         CommaToken, IdentToken, IntToken, LeftBraceToken, LeftParenToken, RightBraceToken,
         RightParenToken, SemicolonToken,
     };

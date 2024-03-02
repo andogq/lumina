@@ -1,10 +1,9 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::{Expression, ParseNode},
-    lexer::Lexer,
+    lexer::{BangToken, Lexer, MinusToken, PlusToken, Token},
     parser::Precedence,
-    token::{BangToken, MinusToken, PlusToken, Token},
 };
 
 use super::parse_expression;

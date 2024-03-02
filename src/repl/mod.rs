@@ -1,8 +1,10 @@
 use std::io::{stdin, stdout, Write};
 
 use crate::{
-    lexer::{Lexer, Source},
-    parser::Parser,
+    core::{
+        lexer::{Lexer, Source},
+        parser::Parser,
+    },
     stages::compiler::Compiler,
     vm::VM,
 };

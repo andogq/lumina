@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
-use crate::{
+use crate::core::{
     ast::ParseNode,
-    lexer::Lexer,
-    token::{StringToken, Token},
+    lexer::{Lexer, StringToken, Token},
 };
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{CallExpression, CallableFunction, Expression, Identifier, IfExpression},
+    core::ast::{CallExpression, CallableFunction, Expression, Identifier, IfExpression},
     return_value,
     runtime::{
         object::{BooleanObject, NullObject, Object},

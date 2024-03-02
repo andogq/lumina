@@ -1,6 +1,6 @@
 use crate::{
-    ast::{BooleanLiteral, IntegerLiteral},
     code::Instruction,
+    core::ast::{BooleanLiteral, IntegerLiteral},
     runtime::object::{IntegerObject, Object},
 };
 

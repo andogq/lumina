@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::token::span::{Location, Span};
+use crate::core::lexer::span::{Location, Span};
 
 pub struct Source<S> {
     name: String,

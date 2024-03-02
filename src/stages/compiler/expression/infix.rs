@@ -1,6 +1,6 @@
 use crate::{
-    ast::{InfixExpression, InfixOperatorToken},
     code::Instruction,
+    core::ast::{InfixExpression, InfixOperatorToken},
     stages::compiler::Compiler,
 };
 
@@ -43,9 +43,11 @@ impl Compiler {
 #[cfg(test)]
 mod test {
     use crate::{
-        ast::{Expression, IntegerLiteral},
+        core::{
+            ast::{Expression, IntegerLiteral},
+            lexer::PlusToken,
+        },
         runtime::object::{IntegerObject, Object},
-        token::PlusToken,
     };
 
     use super::*;

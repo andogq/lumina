@@ -1,13 +1,12 @@
 use std::fmt::Display;
 
-use crate::{
+use crate::core::{
     ast::Expression,
-    lexer::Lexer,
-    parser::Precedence,
-    token::{
-        AsteriskToken, EqToken, LeftAngleToken, MinusToken, NotEqToken, PlusToken, RightAngleToken,
-        SlashToken, Token,
+    lexer::{
+        AsteriskToken, EqToken, LeftAngleToken, Lexer, MinusToken, NotEqToken, PlusToken,
+        RightAngleToken, SlashToken, Token,
     },
+    parser::Precedence,
 };
 
 use super::parse_expression;

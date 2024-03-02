@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::ParseNode,
-    lexer::Lexer,
-    token::{IdentToken, Token},
+    lexer::{IdentToken, Lexer, Token},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -36,7 +35,7 @@ impl Display for Identifier {
 
 #[cfg(test)]
 mod test {
-    use crate::token::SemicolonToken;
+    use crate::core::lexer::SemicolonToken;
 
     use super::*;
 

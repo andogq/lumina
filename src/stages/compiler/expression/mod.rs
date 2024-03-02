@@ -2,7 +2,7 @@ mod infix;
 mod literal;
 mod prefix;
 
-use crate::ast::Expression;
+use crate::core::ast::Expression;
 
 use super::Compiler;
 

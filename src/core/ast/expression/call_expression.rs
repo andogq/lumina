@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{
+use crate::core::{
     ast::ParseNode,
-    lexer::Lexer,
-    token::{LeftParenToken, Token},
+    lexer::{LeftParenToken, Lexer, Token},
 };
 
 use super::{Expression, FunctionLiteral, Identifier};
@@ -90,7 +89,7 @@ impl Display for CallExpression {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{
+    use crate::core::lexer::{
         AsteriskToken, CommaToken, IdentToken, IntToken, LeftParenToken, PlusToken,
         RightParenToken, SemicolonToken,
     };

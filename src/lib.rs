@@ -1,9 +1,6 @@
-pub mod ast;
 pub mod code;
-pub mod lexer;
-pub mod parser;
+pub mod core;
 pub mod repl;
 pub mod runtime;
 pub mod stages;
-pub mod token;
 pub mod vm;

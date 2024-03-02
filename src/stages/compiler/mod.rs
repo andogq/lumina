@@ -2,8 +2,8 @@ mod expression;
 mod statement;
 
 use crate::{
-    ast::Program,
     code::{Bytecode, Instruction},
+    core::ast::Program,
     runtime::object::Object,
 };
 

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{InfixExpression, InfixOperatorToken},
+    core::ast::{InfixExpression, InfixOperatorToken},
     return_value,
     runtime::{
         object::{BooleanObject, IntegerObject, NullObject, Object, StringObject},

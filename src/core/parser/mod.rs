@@ -1,7 +1,6 @@
-use crate::{
+use crate::core::{
     ast::{ParseNode, Program, Statement},
-    lexer::Lexer,
-    token::Token,
+    lexer::{Lexer, Token},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -73,7 +72,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::{
+    use crate::core::{
         ast::{Expression, Statement},
         lexer::Source,
     };

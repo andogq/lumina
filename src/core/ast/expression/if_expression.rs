@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
-use crate::{
+use crate::core::{
     ast::{BlockStatement, ParseNode},
-    lexer::Lexer,
-    token::{ElseToken, IfToken, Token},
+    lexer::{ElseToken, IfToken, Lexer, Token},
 };
 
 use super::Expression;
@@ -87,7 +86,7 @@ impl Display for IfExpression {
 
 #[cfg(test)]
 mod test {
-    use crate::token::{
+    use crate::core::lexer::{
         ElseToken, IdentToken, IfToken, LeftAngleToken, LeftBraceToken, LeftParenToken,
         RightBraceToken, RightParenToken,
     };

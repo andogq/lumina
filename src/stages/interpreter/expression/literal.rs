@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BooleanLiteral, FunctionLiteral, IntegerLiteral, StringLiteral},
+    core::ast::{BooleanLiteral, FunctionLiteral, IntegerLiteral, StringLiteral},
     runtime::{
         object::{BooleanObject, FunctionObject, IntegerObject, Object, StringObject},
         Environment,

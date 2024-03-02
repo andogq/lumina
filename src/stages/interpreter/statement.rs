@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BlockStatement, LetStatement, ReturnStatement, Statement},
+    core::ast::{BlockStatement, LetStatement, ReturnStatement, Statement},
     return_value,
     runtime::{
         object::{NullObject, Object},

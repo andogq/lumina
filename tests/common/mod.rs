@@ -1,6 +1,8 @@
 use rust_script::{
-    lexer::{Lexer, Source},
-    parser::Parser,
+    core::{
+        lexer::{Lexer, Source},
+        parser::Parser,
+    },
     runtime::object::Object,
     stages::interpreter::{interpret, runtime::return_value::Return},
 };

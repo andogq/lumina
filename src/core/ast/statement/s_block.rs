@@ -1,6 +1,9 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{ast::ParseNode, lexer::Lexer, token::Token};
+use crate::core::{
+    ast::ParseNode,
+    lexer::{Lexer, Token},
+};
 
 use super::Statement;
 
