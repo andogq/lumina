@@ -9,6 +9,10 @@ impl VM {
         self.stack.push(Object::boolean(boolean))
     }
 
+    pub(super) fn stack_push_null(&mut self) -> Result<(), String> {
+        self.stack.push(Object::null())
+    }
+
     pub(super) fn stack_pop(&mut self) -> Result<(), String> {
         self.stack.pop()?;
         Ok(())

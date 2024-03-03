@@ -37,6 +37,8 @@ impl VM {
             // Jump instructions
             Instruction::JumpNotTrue(offset) => self.jump_not_true(offset)?,
             Instruction::Jump(offset) => self.jump(offset)?,
+
+            Instruction::Null => self.stack_push_null()?,
         }
 
         Ok(())

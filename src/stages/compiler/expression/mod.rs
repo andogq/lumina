@@ -35,15 +35,14 @@ impl Compiler {
         // Compile the consequence
         let consequence_start = self.instructions.len();
         self.compile_block_statement(e.consequence)?;
-        let mut consequence_end = self.instructions.len();
 
-        if let Some(else_branch) = e.else_branch {
+        let consequence_end = if let Some(else_branch) = e.else_branch {
             // Add an additional instruction to skip past the else body
             let alternate_jump_instruction = self.instructions.len();
             self.push(Instruction::Jump(0));
 
             // Shift consequence end to include the jump
-            consequence_end = self.instructions.len();
+            let consequence_end = self.instructions.len();
 
             self.compile_block_statement(else_branch.statement)?;
             let else_end = self.instructions.len();
@@ -51,7 +50,18 @@ impl Compiler {
             // Calculate instruction offset to skip else block
             let offset = else_end - consequence_end;
             self.replace(alternate_jump_instruction, Instruction::Jump(offset as i16));
-        }
+
+            consequence_end
+        } else {
+            // Always jump 1 byte, to skip over the null instruction
+            self.push(Instruction::Jump(1));
+
+            let consequence_end = self.instructions.len();
+
+            self.push(Instruction::Null);
+
+            consequence_end
+        };
 
         // Calculate the number of instructions to jump past
         let offset = consequence_end - consequence_start;
@@ -93,8 +103,10 @@ mod test {
             compiler.instructions,
             [
                 Instruction::True.encode(),
-                Instruction::JumpNotTrue(5).encode(),
+                Instruction::JumpNotTrue(8).encode(),
                 Instruction::Constant(0).encode(),
+                Instruction::Jump(1).encode(),
+                Instruction::Null.encode(),
             ]
             .concat()
         );

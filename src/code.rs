@@ -25,6 +25,7 @@ pub enum Opcode {
     Bang = 12,
     JumpNotTrue = 13,
     Jump = 14,
+    Null = 15,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -44,6 +45,7 @@ pub enum Instruction {
     Bang,
     JumpNotTrue(i16),
     Jump(i16),
+    Null,
 }
 
 impl Instruction {
@@ -81,6 +83,7 @@ impl Instruction {
                 bytes.extend_from_slice(&offset.to_be_bytes());
                 bytes
             }
+            Instruction::Null => vec![Opcode::Null as u8],
         }
     }
 
@@ -109,6 +112,7 @@ impl Instruction {
                 next_byte(),
             ]))),
             Opcode::Jump => Ok(Self::Jump(i16::from_be_bytes([next_byte(), next_byte()]))),
+            Opcode::Null => Ok(Self::Null),
         }
     }
 }
