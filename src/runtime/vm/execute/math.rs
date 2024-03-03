@@ -73,9 +73,13 @@ impl VM {
     }
 
     pub(super) fn math_invert(&mut self) -> Result<(), String> {
-        let result = !self.stack.pop_boolean()?;
+        let value = match self.stack.pop()? {
+            Object::Boolean(BooleanObject { value }) => value,
+            Object::Null(_) => false,
+            _ => return Err("expected boolean or null".to_string()),
+        };
 
-        self.stack.push(Object::boolean(!result))?;
+        self.stack.push(Object::boolean(!value))?;
 
         Ok(())
     }
