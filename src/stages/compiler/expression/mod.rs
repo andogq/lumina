@@ -12,7 +12,7 @@ use super::Compiler;
 impl Compiler {
     pub(super) fn compile_expression(&mut self, e: Expression) -> Result<(), String> {
         match e {
-            Expression::Identifier(_) => todo!(),
+            Expression::Identifier(ident) => self.compile_ident(ident),
             Expression::Integer(integer) => self.compile_integer(integer),
             Expression::String(_) => todo!(),
             Expression::Boolean(boolean) => self.compile_boolean(boolean),

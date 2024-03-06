@@ -1,3 +1,4 @@
+mod global;
 mod jump;
 mod math;
 mod stack;
@@ -39,6 +40,10 @@ impl VM {
             Instruction::Jump(offset) => self.jump(offset)?,
 
             Instruction::Null => self.stack_push_null()?,
+
+            // Symbol instructions
+            Instruction::GetGlobal(id) => self.global_get(id)?,
+            Instruction::SetGlobal(id) => self.global_set(id)?,
         }
 
         Ok(())

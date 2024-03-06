@@ -1,6 +1,8 @@
 mod execute;
 mod stack;
 
+use std::collections::HashMap;
+
 use crate::{
     code::{Bytecode, Instruction},
     runtime::object::Object,
@@ -16,6 +18,8 @@ pub struct VM {
     pc: usize,
 
     stack: Stack,
+
+    symbols: HashMap<u16, Object>,
 }
 
 impl VM {
@@ -27,6 +31,8 @@ impl VM {
             pc: 0,
 
             stack: Stack::default(),
+
+            symbols: HashMap::new(),
         }
     }
 

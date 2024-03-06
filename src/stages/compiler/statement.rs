@@ -20,8 +20,17 @@ impl Compiler {
         }
     }
 
-    pub(super) fn compile_let(&mut self, _statement: LetStatement) -> Result<(), String> {
-        todo!()
+    pub(super) fn compile_let(&mut self, statement: LetStatement) -> Result<(), String> {
+        // Compile the RHS
+        self.compile_expression(statement.value)?;
+
+        // Resolve the ident
+        let ident = self.symbol_table.resolve(&statement.name.value);
+
+        // Save the resulting value on the stack
+        self.push(Instruction::SetGlobal(ident));
+
+        Ok(())
     }
 
     pub(super) fn compile_return(&mut self, _statement: ReturnStatement) -> Result<(), String> {

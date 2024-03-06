@@ -26,6 +26,8 @@ pub enum Opcode {
     JumpNotTrue = 13,
     Jump = 14,
     Null = 15,
+    GetGlobal = 16,
+    SetGlobal = 17,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -46,6 +48,8 @@ pub enum Instruction {
     JumpNotTrue(i16),
     Jump(i16),
     Null,
+    GetGlobal(u16),
+    SetGlobal(u16),
 }
 
 impl Instruction {
@@ -84,6 +88,18 @@ impl Instruction {
                 bytes
             }
             Instruction::Null => vec![Opcode::Null as u8],
+            Instruction::GetGlobal(identifier) => {
+                let mut bytes = Vec::with_capacity(3);
+                bytes.push(Opcode::GetGlobal as u8);
+                bytes.extend_from_slice(&identifier.to_be_bytes());
+                bytes
+            }
+            Instruction::SetGlobal(identifier) => {
+                let mut bytes = Vec::with_capacity(3);
+                bytes.push(Opcode::SetGlobal as u8);
+                bytes.extend_from_slice(&identifier.to_be_bytes());
+                bytes
+            }
         }
     }
 
@@ -113,6 +129,14 @@ impl Instruction {
             ]))),
             Opcode::Jump => Ok(Self::Jump(i16::from_be_bytes([next_byte(), next_byte()]))),
             Opcode::Null => Ok(Self::Null),
+            Opcode::GetGlobal => Ok(Self::GetGlobal(u16::from_be_bytes([
+                next_byte(),
+                next_byte(),
+            ]))),
+            Opcode::SetGlobal => Ok(Self::SetGlobal(u16::from_be_bytes([
+                next_byte(),
+                next_byte(),
+            ]))),
         }
     }
 }

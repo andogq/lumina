@@ -1,6 +1,6 @@
 use crate::{
     code::Instruction,
-    core::ast::{BooleanLiteral, IntegerLiteral},
+    core::ast::{BooleanLiteral, Identifier, IntegerLiteral},
     runtime::object::Object,
 };
 
@@ -20,6 +20,14 @@ impl Compiler {
         let id = self.register_constant(Object::integer(literal.value));
 
         self.push(Instruction::Constant(id));
+
+        Ok(())
+    }
+
+    pub(super) fn compile_ident(&mut self, ident: Identifier) -> Result<(), String> {
+        let id = self.symbol_table.resolve(&ident.value);
+
+        self.push(Instruction::GetGlobal(id));
 
         Ok(())
     }

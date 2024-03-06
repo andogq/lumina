@@ -1,6 +1,8 @@
 mod expression;
 mod statement;
 
+use std::collections::HashMap;
+
 use crate::{
     code::{Bytecode, Instruction},
     core::ast::Program,
@@ -8,9 +10,26 @@ use crate::{
 };
 
 #[derive(Default)]
+pub struct SymbolTable {
+    table: HashMap<String, u16>,
+    next_id: u16,
+}
+
+impl SymbolTable {
+    pub fn resolve(&mut self, ident: &str) -> u16 {
+        *self.table.entry(ident.to_string()).or_insert_with(|| {
+            let id = self.next_id;
+            self.next_id += 1;
+            id
+        })
+    }
+}
+
+#[derive(Default)]
 pub struct Compiler {
     instructions: Vec<u8>,
     constants: Vec<Object>,
+    symbol_table: SymbolTable,
 }
 
 impl Compiler {
