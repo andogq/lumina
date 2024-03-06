@@ -29,7 +29,7 @@ impl SymbolTable {
 pub struct Compiler {
     instructions: Vec<u8>,
     constants: Vec<Object>,
-    symbol_table: SymbolTable,
+    pub symbol_table: SymbolTable,
 }
 
 impl Compiler {
@@ -49,16 +49,21 @@ impl Compiler {
     }
 
     /// Consume this compiler instance, producing bytecode.
-    pub fn compile(program: Program) -> Result<Bytecode, String> {
-        Ok(program
-            .statements
-            .into_iter()
-            .try_fold(Compiler::default(), |mut compiler, statement| {
-                compiler.compile_statement(statement, false)?;
+    pub fn compile(&mut self, program: Program) -> Result<Bytecode, String> {
+        for statement in program.statements {
+            self.compile_statement(statement, false)?;
+        }
 
-                Ok::<_, String>(compiler)
-            })?
-            .into())
+        let mut instructions = Vec::new();
+        let mut constants = Vec::new();
+
+        std::mem::swap(&mut self.instructions, &mut instructions);
+        std::mem::swap(&mut self.constants, &mut constants);
+
+        Ok(Bytecode {
+            instructions,
+            constants,
+        })
     }
 }
 

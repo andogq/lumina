@@ -38,7 +38,7 @@ fn main() {
         Box::new(Interpreted::default())
     } else {
         // Compiled by default
-        Box::new(Compiled) as Box<dyn REPL>
+        Box::new(Compiled::default()) as Box<dyn REPL>
     };
 
     println!("Running in {} mode", repl.get_identifier());
@@ -80,18 +80,21 @@ trait REPL {
     }
 }
 
-struct Compiled;
+#[derive(Default)]
+struct Compiled {
+    compiler: Compiler,
+    vm: VM,
+}
 impl REPL for Compiled {
     fn get_identifier(&self) -> String {
         "compiled".to_string()
     }
 
     fn process_program(&mut self, program: Program) -> Result<Option<Object>, String> {
-        let mut vm = VM::new(Compiler::compile(program)?);
+        let bytecode = self.compiler.compile(program)?;
+        self.vm.run_bytecode(bytecode)?;
 
-        vm.run()?;
-
-        Ok(vm.last_pop().cloned())
+        Ok(self.vm.last_pop().cloned())
     }
 }
 

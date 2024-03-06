@@ -51,6 +51,14 @@ impl VM {
         Ok(())
     }
 
+    pub fn run_bytecode(&mut self, bytecode: Bytecode) -> Result<(), String> {
+        self.constants = bytecode.constants;
+        self.instructions = bytecode.instructions;
+        self.pc = 0;
+
+        self.run()
+    }
+
     pub fn stack_top(&self) -> Option<&Object> {
         self.stack.top()
     }
