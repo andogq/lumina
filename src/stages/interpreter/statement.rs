@@ -10,9 +10,7 @@ pub fn interpret_statement(env: &mut Environment, statement: Statement) -> Retur
     match statement {
         Statement::Let(let_statement) => interpret_let_statement(env, let_statement),
         Statement::Return(return_statement) => interpret_return_statement(env, return_statement),
-        Statement::Expression(expression_statement) => {
-            interpret_expression(env, expression_statement)
-        }
+        Statement::Expression { expression, .. } => interpret_expression(env, expression),
     }
 }
 

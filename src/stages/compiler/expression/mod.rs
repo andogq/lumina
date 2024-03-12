@@ -91,9 +91,10 @@ mod test {
                 if_token: IfToken::default(),
                 condition: Expression::Boolean(BooleanLiteral::new(true)),
                 consequence: BlockStatement {
-                    statements: vec![Statement::Expression(Expression::Integer(
-                        IntegerLiteral::new(10),
-                    ))],
+                    statements: vec![Statement::Expression {
+                        expression: Expression::Integer(IntegerLiteral::new(10)),
+                        semicolon: true,
+                    }],
                 },
                 else_branch: None,
             })
@@ -120,16 +121,18 @@ mod test {
                 if_token: IfToken::default(),
                 condition: Expression::Boolean(BooleanLiteral::new(true)),
                 consequence: BlockStatement {
-                    statements: vec![Statement::Expression(Expression::Integer(
-                        IntegerLiteral::new(10),
-                    ))],
+                    statements: vec![Statement::Expression {
+                        expression: Expression::Integer(IntegerLiteral::new(10)),
+                        semicolon: true,
+                    }],
                 },
                 else_branch: Some(ElseBranch {
                     else_token: ElseToken::default(),
                     statement: BlockStatement {
-                        statements: vec![Statement::Expression(Expression::Integer(
-                            IntegerLiteral::new(99),
-                        ))],
+                        statements: vec![Statement::Expression {
+                            expression: Expression::Integer(IntegerLiteral::new(99)),
+                            semicolon: true,
+                        }],
                     },
                 }),
             })

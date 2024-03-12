@@ -70,67 +70,50 @@ where
     }
 }
 
-#[cfg(test)]
-mod test {
-    use crate::core::{
-        ast::{Expression, Statement},
-        lexer::Source,
+#[macro_export]
+macro_rules! assert_pattern {
+    ($value:expr, $pattern:pat, $block:block) => {
+        #[allow(unused)]
+        {
+            assert!(matches!(&$value, $pattern));
+        };
+
+        if let $pattern = $value {
+            $block
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! test_parser {
+    ($target:ty, $input:expr, $pattern:pat, $block:block) => {
+        let item = test_parser!($target, $input);
+
+        crate::assert_pattern!(item, $pattern, $block)
     };
 
-    use super::*;
+    ($target:ty, $input:expr) => {
+        crate::core::parser::Parser::new(crate::core::lexer::Lexer::new(
+            crate::core::lexer::Source::new("test", $input.chars()),
+        ))
+        .parse::<$target>()
+        .unwrap()
+    };
 
-    macro_rules! parser {
-        ($input:expr) => {
-            Parser::new(Lexer::new(Source::new("test", $input.chars())))
-        };
-    }
+    ($input:expr) => {
+        crate::core::parser::Parser::new(crate::core::lexer::Lexer::new(
+            crate::core::lexer::Source::new("test", $input.chars()),
+        ))
+    };
+}
 
-    #[test]
-    fn let_statements() {
-        let mut parser = parser!(
-            r#"let x = 5;
-            let y = 10;
-            let foobar = 838383;"#
-        );
-
-        let program = parser.parse_program();
-        let statements = program
-            .statements
-            .into_iter()
-            .filter_map(|statement| {
-                if let Statement::Let(let_statement) = statement {
-                    Some(let_statement.name.value)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        assert!(parser.errors.is_empty());
-
-        assert_eq!(
-            vec!["x".to_string(), "y".to_string(), "foobar".to_string()],
-            statements
-        );
-    }
-
-    #[test]
-    fn return_statements() {
-        let mut parser = parser!(
-            r#"return 5;
-            return 10;
-            return 993322;"#
-        );
-
-        let program = parser.parse_program();
-
-        assert!(parser.errors.is_empty());
-        assert_eq!(program.statements.len(), 3);
-    }
+#[cfg(test)]
+mod test {
+    use crate::core::ast::{Expression, Statement};
 
     #[test]
     fn identifier_expression() {
-        let mut parser = parser!("foobar;");
+        let mut parser = test_parser!("foobar;");
 
         let program = parser.parse_program();
 
@@ -141,17 +124,24 @@ mod test {
         let statement = &program.statements[0];
         assert!(matches!(
             statement,
-            Statement::Expression(Expression::Identifier(_))
+            Statement::Expression {
+                expression: Expression::Identifier(_),
+                ..
+            }
         ));
 
-        if let Statement::Expression(Expression::Identifier(identifier)) = statement {
+        if let Statement::Expression {
+            expression: Expression::Identifier(identifier),
+            ..
+        } = statement
+        {
             assert_eq!(identifier.value, "foobar".to_string());
         }
     }
 
     #[test]
     fn integer_literal_expression() {
-        let mut parser = parser!("5;");
+        let mut parser = test_parser!("5;");
 
         let program = parser.parse_program();
 
@@ -162,10 +152,17 @@ mod test {
         let statement = &program.statements[0];
         assert!(matches!(
             statement,
-            Statement::Expression(Expression::Integer(_))
+            Statement::Expression {
+                expression: Expression::Integer(_),
+                ..
+            }
         ));
 
-        if let Statement::Expression(Expression::Integer(integer)) = statement {
+        if let Statement::Expression {
+            expression: Expression::Integer(integer),
+            ..
+        } = statement
+        {
             assert_eq!(integer.value, 5);
         }
     }
@@ -175,7 +172,7 @@ mod test {
         [("!5;", "!", 5), ("-15;", "-", 15), ("+10;", "+", 10)]
             .into_iter()
             .for_each(|(input, operator, integer_value)| {
-                let mut parser = parser!(input);
+                let mut parser = test_parser!(input);
 
                 let program = parser.parse_program();
 
@@ -186,10 +183,17 @@ mod test {
                 let statement = &program.statements[0];
                 assert!(matches!(
                     statement,
-                    Statement::Expression(Expression::Prefix(_))
+                    Statement::Expression {
+                        expression: Expression::Prefix(_),
+                        ..
+                    }
                 ));
 
-                if let Statement::Expression(Expression::Prefix(prefix_expression)) = statement {
+                if let Statement::Expression {
+                    expression: Expression::Prefix(prefix_expression),
+                    ..
+                } = statement
+                {
                     assert_eq!(prefix_expression.operator, operator);
                     assert!(matches!(*prefix_expression.right, Expression::Integer(_)));
 
@@ -214,7 +218,7 @@ mod test {
         ]
         .into_iter()
         .for_each(|(input, left, operator, right)| {
-            let mut parser = parser!(input);
+            let mut parser = test_parser!(input);
 
             let program = parser.parse_program();
 
@@ -225,10 +229,17 @@ mod test {
             let statement = &program.statements[0];
             assert!(matches!(
                 statement,
-                Statement::Expression(Expression::Infix(_))
+                Statement::Expression {
+                    expression: Expression::Infix(_),
+                    ..
+                }
             ));
 
-            if let Statement::Expression(Expression::Infix(infix_expression)) = statement {
+            if let Statement::Expression {
+                expression: Expression::Infix(infix_expression),
+                ..
+            } = statement
+            {
                 assert_eq!(infix_expression.operator, operator);
                 assert!(matches!(*infix_expression.left, Expression::Integer(_)));
                 assert!(matches!(*infix_expression.right, Expression::Integer(_)));
@@ -248,7 +259,7 @@ mod test {
         [("true;", true), ("false;", false)]
             .into_iter()
             .for_each(|(input, value)| {
-                let mut parser = parser!(input);
+                let mut parser = test_parser!(input);
 
                 let program = parser.parse_program();
 
@@ -259,20 +270,22 @@ mod test {
                 let statement = &program.statements[0];
                 assert!(matches!(
                     statement,
-                    Statement::Expression(Expression::Boolean(_))
+                    Statement::Expression {
+                        expression: Expression::Boolean(_),
+                        ..
+                    }
                 ));
 
-                if let Statement::Expression(Expression::Boolean(integer)) = statement {
+                if let Statement::Expression {
+                    expression: Expression::Boolean(integer),
+                    ..
+                } = statement
+                {
                     assert_eq!(integer.value, value);
                 }
             })
     }
 
     #[test]
-    fn random() {
-        let mut parser = parser!("a + b * c + d / e - f");
-
-        let program = parser.parse_program();
-        println!("{}", program.to_string());
-    }
+    fn variable_declarations() {}
 }

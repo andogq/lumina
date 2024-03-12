@@ -14,8 +14,8 @@ impl Compiler {
         match statement {
             Statement::Let(statement) => self.compile_let(statement),
             Statement::Return(statement) => self.compile_return(statement),
-            Statement::Expression(statement) => {
-                self.compile_expression_statement(statement, skip_pop)
+            Statement::Expression { expression, .. } => {
+                self.compile_expression_statement(expression, skip_pop)
             }
         }
     }
