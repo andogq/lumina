@@ -15,7 +15,7 @@ use self::{
 
 use super::{
     runtime::{error::Error, return_value::Return},
-    statement::interpret_block_statement,
+    statement::interpret_block,
 };
 
 mod infix;
@@ -30,6 +30,7 @@ pub fn interpret_expression(env: &mut Environment, expression: Expression) -> Re
         Expression::String(string) => Return::Implicit(interpret_string(string)),
         Expression::Prefix(prefix) => interpret_prefix(env, prefix),
         Expression::Infix(infix) => interpret_infix(env, infix),
+        Expression::Block(block) => interpret_block(env, block),
         Expression::If(if_expression) => interpret_if_expression(env, *if_expression),
         Expression::Function(function) => Return::Implicit(interpret_function(env, function)),
         Expression::Call(call) => interpret_call(env, call),
@@ -67,7 +68,7 @@ pub fn interpret_call(env: &mut Environment, call: CallExpression) -> Return<Obj
         }
     }
 
-    match interpret_block_statement(&mut function_env, function.body) {
+    match interpret_block(&mut function_env, function.body) {
         Return::Explicit(value) | Return::Implicit(value) => Return::Implicit(value),
         Return::Error(err) => Return::Error(err),
     }
@@ -81,10 +82,10 @@ pub fn interpret_if_expression(
 
     match (condition, if_expression.else_branch) {
         (Object::Boolean(BooleanObject { value: true }), _) => {
-            interpret_block_statement(env, if_expression.consequence)
+            interpret_block(env, if_expression.consequence)
         }
         (Object::Boolean(BooleanObject { value: false }), Some(alternative)) => {
-            interpret_block_statement(env, alternative.statement)
+            interpret_block(env, alternative.statement)
         }
         _ => Return::Implicit(Object::null()),
     }

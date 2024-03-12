@@ -1,5 +1,5 @@
 use crate::{
-    core::ast::{BlockStatement, LetStatement, ReturnStatement, Statement},
+    core::ast::{Block, LetStatement, ReturnStatement, Statement},
     return_value,
     runtime::{object::Object, Environment},
 };
@@ -14,7 +14,7 @@ pub fn interpret_statement(env: &mut Environment, statement: Statement) -> Retur
     }
 }
 
-pub fn interpret_block_statement(env: &mut Environment, block: BlockStatement) -> Return<Object> {
+pub fn interpret_block(env: &mut Environment, block: Block) -> Return<Object> {
     let mut result = Object::null();
 
     for statement in block.statements {

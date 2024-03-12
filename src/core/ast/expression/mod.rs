@@ -1,3 +1,4 @@
+mod block;
 mod boolean_literal;
 mod call_expression;
 mod function_literal;
@@ -10,6 +11,7 @@ mod string_literal;
 
 use std::fmt::Display;
 
+pub use block::*;
 pub use boolean_literal::*;
 pub use call_expression::*;
 pub use function_literal::*;
@@ -35,6 +37,7 @@ pub enum Expression {
     Boolean(BooleanLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
+    Block(Block),
     If(Box<IfExpression>),
     Function(FunctionLiteral),
     Call(CallExpression),
@@ -60,6 +63,7 @@ impl Display for Expression {
             Expression::String(string) => string.fmt(f),
             Expression::Prefix(prefix) => prefix.fmt(f),
             Expression::Infix(infix) => infix.fmt(f),
+            Expression::Block(block) => block.fmt(f),
             Expression::If(if_expression) => if_expression.fmt(f),
             Expression::Function(function) => function.fmt(f),
             Expression::Call(call) => call.fmt(f),

@@ -1,23 +1,23 @@
 use std::fmt::Display;
 
 use crate::core::{
-    ast::{BlockStatement, ParseNode},
+    ast::ParseNode,
     lexer::{ElseToken, IfToken, Lexer, Token},
 };
 
-use super::Expression;
+use super::{Block, Expression};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ElseBranch {
     pub else_token: ElseToken,
-    pub statement: BlockStatement,
+    pub statement: Block,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IfExpression {
     pub if_token: IfToken,
     pub condition: Expression,
-    pub consequence: BlockStatement,
+    pub consequence: Block,
     pub else_branch: Option<ElseBranch>,
 }
 
@@ -40,7 +40,7 @@ where
             return Err("expected closing parenthesis".to_string());
         };
 
-        let consequence = BlockStatement::parse(lexer)?;
+        let consequence = Block::parse(lexer)?;
 
         let else_branch = lexer
             .next_if(|token| matches!(token, Token::Else(_)))
@@ -54,7 +54,7 @@ where
             .map(|else_token| {
                 Ok::<_, String>(ElseBranch {
                     else_token,
-                    statement: BlockStatement::parse(lexer)?,
+                    statement: Block::parse(lexer)?,
                 })
             })
             .transpose()?;

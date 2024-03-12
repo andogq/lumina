@@ -1,6 +1,6 @@
 use crate::{
     code::Instruction,
-    core::ast::{BlockStatement, Expression, LetStatement, ReturnStatement, Statement},
+    core::ast::{Block, Expression, LetStatement, ReturnStatement, Statement},
 };
 
 use super::Compiler;
@@ -53,7 +53,7 @@ impl Compiler {
         Ok(())
     }
 
-    pub(super) fn compile_block_statement(&mut self, block: BlockStatement) -> Result<(), String> {
+    pub(super) fn compile_block_statement(&mut self, block: Block) -> Result<(), String> {
         let last_statment = block.statements.len() - 1;
 
         block

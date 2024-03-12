@@ -1,18 +1,16 @@
 use std::fmt::{Display, Formatter};
 
 use crate::core::{
-    ast::ParseNode,
+    ast::{ParseNode, Statement},
     lexer::{Lexer, Token},
 };
 
-use super::Statement;
-
 #[derive(Clone, Debug, PartialEq)]
-pub struct BlockStatement {
+pub struct Block {
     pub statements: Vec<Statement>,
 }
 
-impl<S> ParseNode<S> for BlockStatement
+impl<S> ParseNode<S> for Block
 where
     S: Iterator<Item = char>,
 {
@@ -35,7 +33,7 @@ where
     }
 }
 
-impl Display for BlockStatement {
+impl Display for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -46,5 +44,29 @@ impl Display for BlockStatement {
                 .collect::<Vec<_>>()
                 .join("\n")
         )
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        assert_pattern,
+        core::ast::{Expression, IntegerLiteral},
+        test_parser,
+    };
+
+    use super::*;
+
+    #[test]
+    fn parse() {
+        test_parser!(Block, "{ 1 }", Block { statements }, {
+            assert_pattern!(
+                statements[0],
+                Statement::Expression {
+                    expression: Expression::Integer(IntegerLiteral { value: 1, .. }),
+                    semicolon: false
+                }
+            );
+        });
     }
 }

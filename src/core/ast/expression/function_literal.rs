@@ -1,17 +1,17 @@
 use std::fmt::{Display, Formatter};
 
 use crate::core::{
-    ast::{BlockStatement, ParseNode},
+    ast::ParseNode,
     lexer::{FunctionToken, Lexer, Token},
 };
 
-use super::Identifier;
+use super::{Block, Identifier};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionLiteral {
     pub fn_token: FunctionToken,
     pub parameters: Vec<Identifier>,
-    pub body: BlockStatement,
+    pub body: Block,
 }
 
 impl<S> ParseNode<S> for FunctionLiteral
@@ -58,7 +58,7 @@ where
             }
         }
 
-        let body = BlockStatement::parse(lexer)?;
+        let body = Block::parse(lexer)?;
 
         Ok(Self {
             fn_token,

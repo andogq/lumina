@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::core::ast::{BlockStatement, Identifier};
+use crate::core::ast::{Block, Identifier};
 
 use super::Environment;
 
@@ -30,7 +30,7 @@ impl Object {
         Self::Null(NullObject)
     }
 
-    pub fn function(env: &Environment, parameters: Vec<Identifier>, body: BlockStatement) -> Self {
+    pub fn function(env: &Environment, parameters: Vec<Identifier>, body: Block) -> Self {
         Self::Function(FunctionObject {
             env: env.nest(),
             parameters,
@@ -96,7 +96,7 @@ impl Display for NullObject {
 #[derive(Clone, Debug)]
 pub struct FunctionObject {
     pub parameters: Vec<Identifier>,
-    pub body: BlockStatement,
+    pub body: Block,
     pub env: Environment,
 }
 

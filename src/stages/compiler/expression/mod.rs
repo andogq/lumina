@@ -19,6 +19,7 @@ impl Compiler {
             Expression::Prefix(prefix) => self.compile_prefix(prefix),
             Expression::Infix(infix) => self.compile_infix(infix),
             Expression::If(if_statement) => self.compile_if_expression(*if_statement),
+            Expression::Block(_) => todo!(),
             Expression::Function(_) => todo!(),
             Expression::Call(_) => todo!(),
         }
@@ -77,7 +78,7 @@ impl Compiler {
 #[cfg(test)]
 mod test {
     use crate::core::{
-        ast::{BlockStatement, BooleanLiteral, ElseBranch, IntegerLiteral, Statement},
+        ast::{Block, BooleanLiteral, ElseBranch, IntegerLiteral, Statement},
         lexer::{ElseToken, IfToken},
     };
 
@@ -90,7 +91,7 @@ mod test {
             .compile_if_expression(IfExpression {
                 if_token: IfToken::default(),
                 condition: Expression::Boolean(BooleanLiteral::new(true)),
-                consequence: BlockStatement {
+                consequence: Block {
                     statements: vec![Statement::Expression {
                         expression: Expression::Integer(IntegerLiteral::new(10)),
                         semicolon: true,
@@ -120,7 +121,7 @@ mod test {
             .compile_if_expression(IfExpression {
                 if_token: IfToken::default(),
                 condition: Expression::Boolean(BooleanLiteral::new(true)),
-                consequence: BlockStatement {
+                consequence: Block {
                     statements: vec![Statement::Expression {
                         expression: Expression::Integer(IntegerLiteral::new(10)),
                         semicolon: true,
@@ -128,7 +129,7 @@ mod test {
                 },
                 else_branch: Some(ElseBranch {
                     else_token: ElseToken::default(),
-                    statement: BlockStatement {
+                    statement: Block {
                         statements: vec![Statement::Expression {
                             expression: Expression::Integer(IntegerLiteral::new(99)),
                             semicolon: true,

@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::ast::{
-    BooleanLiteral, Expression, InfixExpression, IntegerLiteral, PrefixExpression, Program,
-};
+use crate::core::ast::{Expression, InfixExpression, PrefixExpression};
 
 /// Primitive types available in the language.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +38,7 @@ fn type_check_expression(e: &Expression, ctx: &Context) -> Result<Type, &'static
                 Err("expected left and right side of infix operation to be identical")
             }
         }
+        Expression::Block(_) => todo!(),
         Expression::If(_) => todo!(),
         Expression::Function(_) => todo!(),
         Expression::Call(_) => todo!(),
@@ -48,7 +47,6 @@ fn type_check_expression(e: &Expression, ctx: &Context) -> Result<Type, &'static
 
 #[cfg(test)]
 mod test {
-
     use crate::core::ast::{Identifier, InfixExpression, InfixOperatorToken};
 
     use super::*;

@@ -80,8 +80,9 @@ macro_rules! assert_pattern {
     };
 
     ($value:expr, $pattern:pat, $block:block) => {
-        assert_pattern!($value, $pattern);
+        crate::assert_pattern!($value, $pattern);
 
+        #[allow(irrefutable_let_patterns)]
         if let $pattern = $value {
             $block
         }
