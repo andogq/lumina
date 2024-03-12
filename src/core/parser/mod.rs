@@ -72,11 +72,15 @@ where
 
 #[macro_export]
 macro_rules! assert_pattern {
-    ($value:expr, $pattern:pat, $block:block) => {
+    ($value:expr, $pattern:pat) => {
         #[allow(unused)]
         {
             assert!(matches!(&$value, $pattern));
         };
+    };
+
+    ($value:expr, $pattern:pat, $block:block) => {
+        assert_pattern!($value, $pattern);
 
         if let $pattern = $value {
             $block
@@ -90,6 +94,12 @@ macro_rules! test_parser {
         let item = test_parser!($target, $input);
 
         crate::assert_pattern!(item, $pattern, $block)
+    };
+
+    ($target:ty, $input:expr, $pattern:pat) => {
+        let item = test_parser!($target, $input);
+
+        crate::assert_pattern!(item, $pattern)
     };
 
     ($target:ty, $input:expr) => {
@@ -253,39 +263,4 @@ mod test {
             }
         });
     }
-
-    #[test]
-    fn parse_boolean_expression() {
-        [("true;", true), ("false;", false)]
-            .into_iter()
-            .for_each(|(input, value)| {
-                let mut parser = test_parser!(input);
-
-                let program = parser.parse_program();
-
-                assert!(parser.errors.is_empty());
-
-                assert_eq!(program.statements.len(), 1);
-
-                let statement = &program.statements[0];
-                assert!(matches!(
-                    statement,
-                    Statement::Expression {
-                        expression: Expression::Boolean(_),
-                        ..
-                    }
-                ));
-
-                if let Statement::Expression {
-                    expression: Expression::Boolean(integer),
-                    ..
-                } = statement
-                {
-                    assert_eq!(integer.value, value);
-                }
-            })
-    }
-
-    #[test]
-    fn variable_declarations() {}
 }
