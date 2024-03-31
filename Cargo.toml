@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.1", features = ["derive"] }
 int-enum = "1.0.1"
+thiserror = "1.0.58"
