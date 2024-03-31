@@ -9,6 +9,8 @@ where
     S: Iterator,
 {
     source: Source<S>,
+
+    next: Option<Token>,
 }
 
 impl<S> Lexer<S>
@@ -17,12 +19,16 @@ where
 {
     /// Create a new lexer with the provided source.
     pub fn new(source: Source<S>) -> Self {
-        Self { source }
+        Self { source, next: None }
     }
 
     /// Get the next token. Will continually produce [`EOFToken`] if no more tokens can be
     /// produced.
     pub fn next(&mut self) -> Token {
+        if let Some(token) = self.next.take() {
+            return token;
+        }
+
         // Track the start of the span
         let span_start = self.source.location();
 
@@ -59,6 +65,12 @@ where
 
         self.consume_whitespace();
 
+        token
+    }
+
+    pub fn peek(&mut self) -> Token {
+        let token = self.next();
+        self.next = Some(token.clone());
         token
     }
 
