@@ -19,7 +19,12 @@ where
 {
     /// Create a new lexer with the provided source.
     pub fn new(source: Source<S>) -> Self {
-        Self { source, next: None }
+        let mut lexer = Self { source, next: None };
+
+        // Consume all whitespace at the start of the file
+        lexer.consume_whitespace();
+
+        lexer
     }
 
     /// Get the next token. Will continually produce [`EOFToken`] if no more tokens can be
