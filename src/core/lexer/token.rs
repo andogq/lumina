@@ -85,18 +85,38 @@ token!(IllegalToken);
 token!(EOFToken);
 
 token!(IntegerToken { literal: String });
+token!(IdentToken { literal: String });
 
 token!(PlusToken);
 
 token!(SemicolonToken);
+token!(ThinArrowToken);
+
+token!(LeftParenToken);
+token!(RightParenToken);
+token!(LeftBraceToken);
+token!(RightBraceToken);
+
+token!(FnToken);
+token!(ReturnToken);
 
 token_enum! {
     Illegal: IllegalToken,
     EOF: EOFToken,
 
     Integer: IntegerToken,
+    Ident: IdentToken,
 
     Plus: PlusToken,
 
-    Semicolon: SemicolonToken
+    Semicolon: SemicolonToken,
+    ThinArrow: ThinArrowToken,
+
+    LeftParen: LeftParenToken,
+    RightParen: RightParenToken,
+    LeftBrace: LeftBraceToken,
+    RightBrace: RightBraceToken,
+
+    Fn: FnToken,
+    Return: ReturnToken
 }

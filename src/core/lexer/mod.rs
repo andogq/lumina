@@ -2,7 +2,7 @@ pub mod token;
 
 use crate::util::source::Source;
 
-use self::token::{EOFToken, IntegerToken, PlusToken, SemicolonToken, Token};
+use self::token::*;
 
 pub struct Lexer<S>
 where
@@ -43,6 +43,19 @@ where
         let token = match c {
             '+' => Token::Plus(PlusToken { span }),
 
+            '(' => Token::LeftParen(LeftParenToken { span }),
+            ')' => Token::RightParen(RightParenToken { span }),
+            '{' => Token::LeftBrace(LeftBraceToken { span }),
+            '}' => Token::RightBrace(RightBraceToken { span }),
+
+            '-' if matches!(self.source.peek(), Some('>')) => {
+                self.source.next();
+
+                Token::ThinArrow(ThinArrowToken {
+                    span: self.source.span(span_start),
+                })
+            }
+
             ';' => Token::Semicolon(SemicolonToken { span }),
 
             c if c.is_digit(10) => {
@@ -56,6 +69,20 @@ where
                     span: self.source.span(span_start),
                     literal: integer,
                 })
+            }
+
+            c if c.is_alphabetic() => {
+                let literal = {
+                    let mut s = self.source.consume_while(|c| c.is_alphabetic());
+                    s.insert(0, c);
+                    s
+                };
+
+                let span = self.source.span(span_start);
+                match literal.as_str() {
+                    "fn" => Token::Fn(FnToken { span }),
+                    _ => Token::Ident(IdentToken { span, literal }),
+                }
             }
 
             _ => Token::Illegal(token::IllegalToken {

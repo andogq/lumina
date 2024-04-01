@@ -1,5 +1,7 @@
 mod span;
 
+use std::ops::{Deref, DerefMut};
+
 pub use self::span::*;
 
 use super::multi_peek::{MultiPeekIterator, MultiPeekable};
@@ -71,5 +73,25 @@ where
         }
 
         Some(c)
+    }
+}
+
+impl<S> Deref for Source<S>
+where
+    S: Iterator<Item = char>,
+{
+    type Target = MultiPeekable<S>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.source
+    }
+}
+
+impl<S> DerefMut for Source<S>
+where
+    S: Iterator<Item = char>,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.source
     }
 }
