@@ -23,6 +23,9 @@ pub enum ParseError {
 
     #[error("the main function is missing and must be present")]
     MissingMain,
+
+    #[error("the function must have a return statement")]
+    MissingReturn,
 }
 
 pub fn parse<S>(mut lexer: Lexer<S>) -> Result<Program, ParseError>

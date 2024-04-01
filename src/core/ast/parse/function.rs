@@ -1,5 +1,5 @@
 use crate::core::{
-    ast::Function,
+    ast::{Function, Statement},
     lexer::{token::Token, Lexer},
 };
 
@@ -58,6 +58,10 @@ where
         }
     })
     .collect::<Result<Vec<_>, _>>()?;
+
+    if !matches!(body.get(0), Some(Statement::Return(_))) {
+        return Err(ParseError::MissingReturn);
+    }
 
     // closing brace for body
     if !matches!(lexer.next(), Token::RightBrace(_)) {
