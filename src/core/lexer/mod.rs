@@ -86,6 +86,8 @@ where
 
                 let span = self.source.span(span_start);
                 match literal.as_str() {
+                    "true" => Token::True(TrueToken { span }),
+                    "false" => Token::False(FalseToken { span }),
                     "fn" => Token::Fn(FnToken { span }),
                     "return" => Token::Return(ReturnToken { span }),
                     "let" => Token::Let(LetToken { span }),

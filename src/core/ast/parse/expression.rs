@@ -38,6 +38,14 @@ where
             span: token.span,
             name: token.literal,
         })),
+        Token::True(token) => Ok(node::Expression::Boolean(node::Boolean {
+            span: token.span,
+            literal: true,
+        })),
+        Token::False(token) => Ok(node::Expression::Boolean(node::Boolean {
+            span: token.span,
+            literal: false,
+        })),
         token => Err(ParseError::UnexpectedToken(token)),
     }
 }

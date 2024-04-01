@@ -98,6 +98,9 @@ token!(RightParenToken);
 token!(LeftBraceToken);
 token!(RightBraceToken);
 
+token!(TrueToken);
+token!(FalseToken);
+
 token!(FnToken);
 token!(ReturnToken);
 token!(LetToken);
@@ -119,6 +122,9 @@ token_enum! {
     RightParen: RightParenToken,
     LeftBrace: LeftBraceToken,
     RightBrace: RightBraceToken,
+
+    True: TrueToken,
+    False: FalseToken,
 
     Fn: FnToken,
     Return: ReturnToken,

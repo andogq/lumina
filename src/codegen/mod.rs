@@ -85,6 +85,13 @@ impl<'ctx> CompilePass<'ctx> {
                 )
                 .unwrap()
                 .into_int_value(),
+            Expression::Boolean(boolean) => {
+                if boolean.literal {
+                    self.context.bool_type().const_all_ones()
+                } else {
+                    self.context.bool_type().const_zero()
+                }
+            }
         }
     }
 
