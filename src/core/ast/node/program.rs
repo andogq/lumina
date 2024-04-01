@@ -1,5 +1,6 @@
-use super::expression::Expression;
+use super::function::Function;
 
 pub struct Program {
-    pub expressions: Vec<Expression>,
+    pub functions: Vec<Function>,
+    pub main: Function,
 }

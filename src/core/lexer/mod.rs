@@ -81,6 +81,7 @@ where
                 let span = self.source.span(span_start);
                 match literal.as_str() {
                     "fn" => Token::Fn(FnToken { span }),
+                    "return" => Token::Return(ReturnToken { span }),
                     _ => Token::Ident(IdentToken { span, literal }),
                 }
             }

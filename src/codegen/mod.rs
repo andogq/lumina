@@ -8,7 +8,7 @@ use inkwell::{
     OptimizationLevel,
 };
 
-use crate::core::ast::{Expression, InfixOperation, Program};
+use crate::core::ast::{Expression, Function, InfixOperation, Program};
 
 pub struct Compiler {
     context: Context,
@@ -28,33 +28,17 @@ impl<'ctx> Compiler {
             builder: self.context.create_builder(),
         };
 
-        let mut functions = Vec::new();
-
-        for (i, expression) in program.expressions.into_iter().enumerate() {
-            // Create a prototype
-            let fn_type = self.context.i64_type().fn_type(&[], false);
-            let fn_value = pass
-                .module
-                .add_function(&format!("expression_{i}"), fn_type, None);
-
-            // Create the entry point and position the builder
-            let entry = self.context.append_basic_block(fn_value, "entry");
-            pass.builder.position_at_end(entry);
-
-            // Compile the expression
-            let return_value = pass.compile_expression(expression);
-
-            pass.builder.build_return(Some(&return_value)).unwrap();
-
-            // Verify and optimise the function
-            if fn_value.verify(true) {
-                functions.push(fn_value);
-            }
+        // Compile each of the individual functions
+        for function in program.functions {
+            pass.compile_function(function);
         }
+
+        // Compile the main function
+        let main = pass.compile_function(program.main);
 
         let module = CompiledModule {
             module: pass.module,
-            functions,
+            main,
         };
 
         module.run_passes();
@@ -88,11 +72,38 @@ impl<'ctx> CompilePass<'ctx> {
                 .const_int(integer.literal as u64, true),
         }
     }
+
+    fn compile_function(&self, function: Function) -> FunctionValue<'ctx> {
+        // Create a prototype
+        let fn_type = self.context.i64_type().fn_type(&[], false);
+        let fn_value = self.module.add_function(&function.name, fn_type, None);
+
+        // Create the entry point and position the builder
+        let entry = self.context.append_basic_block(fn_value, "entry");
+        self.builder.position_at_end(entry);
+
+        // Compile the body
+        let mut return_value = None;
+        for expression in function.body {
+            return_value = Some(self.compile_expression(expression));
+        }
+
+        self.builder
+            .build_return(Some(
+                &return_value.expect("return value to be provided in function"),
+            ))
+            .unwrap();
+
+        // Verify and optimise the function
+        fn_value.verify(true);
+
+        fn_value
+    }
 }
 
 pub struct CompiledModule<'ctx> {
     module: Module<'ctx>,
-    functions: Vec<FunctionValue<'ctx>>,
+    main: FunctionValue<'ctx>,
 }
 
 impl<'ctx> CompiledModule<'ctx> {
@@ -135,18 +146,16 @@ impl<'ctx> CompiledModule<'ctx> {
             .create_jit_execution_engine(OptimizationLevel::None)
             .unwrap();
 
-        for function in &self.functions {
-            let name = function.get_name().to_str().unwrap();
+        let main = self.main.get_name().to_str().unwrap();
 
-            match unsafe { engine.get_function::<unsafe extern "C" fn() -> i64>(name) } {
-                Ok(f) => {
-                    // run function
-                    let result = unsafe { f.call() };
-                    println!("{name} = {result}");
-                }
-                Err(e) => {
-                    eprintln!("unable to execute function: {e:?}");
-                }
+        match unsafe { engine.get_function::<unsafe extern "C" fn() -> i64>(main) } {
+            Ok(f) => {
+                // run function
+                let result = unsafe { f.call() };
+                println!("{result}");
+            }
+            Err(e) => {
+                eprintln!("unable to execute function: {e:?}");
             }
         }
     }
