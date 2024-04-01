@@ -5,7 +5,7 @@ use lumina::{
 };
 
 fn main() {
-    let source = "fn main() -> int { 3 + 4; }";
+    let source = "fn main() -> int { 1 + 2; return 26 + 104 + 11; }";
 
     let program = parse(Lexer::new(Source::new("hardcoded", source.chars()))).unwrap();
 

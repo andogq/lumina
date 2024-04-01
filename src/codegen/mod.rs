@@ -8,7 +8,7 @@ use inkwell::{
     OptimizationLevel,
 };
 
-use crate::core::ast::{Expression, Function, InfixOperation, Program};
+use crate::core::ast::{Expression, Function, InfixOperation, Program, Statement};
 
 pub struct Compiler {
     context: Context,
@@ -73,6 +73,18 @@ impl<'ctx> CompilePass<'ctx> {
         }
     }
 
+    fn compile_statement(&self, statement: Statement) {
+        match statement {
+            Statement::Return(s) => {
+                let value = self.compile_expression(s.value);
+                self.builder.build_return(Some(&value)).unwrap();
+            }
+            Statement::Expression(s) => {
+                self.compile_expression(s.expression);
+            }
+        };
+    }
+
     fn compile_function(&self, function: Function) -> FunctionValue<'ctx> {
         // Create a prototype
         let fn_type = self.context.i64_type().fn_type(&[], false);
@@ -83,16 +95,9 @@ impl<'ctx> CompilePass<'ctx> {
         self.builder.position_at_end(entry);
 
         // Compile the body
-        let mut return_value = None;
-        for expression in function.body {
-            return_value = Some(self.compile_expression(expression));
+        for statement in function.body {
+            self.compile_statement(statement);
         }
-
-        self.builder
-            .build_return(Some(
-                &return_value.expect("return value to be provided in function"),
-            ))
-            .unwrap();
 
         // Verify and optimise the function
         fn_value.verify(true);

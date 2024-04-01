@@ -1,6 +1,6 @@
-use super::Expression;
+use super::Statement;
 
 pub struct Function {
     pub name: String,
-    pub body: Vec<Expression>,
+    pub body: Vec<Statement>,
 }

@@ -3,10 +3,7 @@ use crate::core::{
     lexer::{token::Token, Lexer},
 };
 
-use super::{
-    expression::{parse_expression, Precedence},
-    ParseError,
-};
+use super::{statement::parse_statement, ParseError};
 
 pub fn parse_function<S>(lexer: &mut Lexer<S>) -> Result<Function, ParseError>
 where
@@ -57,13 +54,7 @@ where
         if matches!(lexer.peek(), Token::RightBrace(_)) {
             None
         } else {
-            let expression = parse_expression(lexer, Precedence::Lowest);
-
-            if !matches!(lexer.next(), Token::Semicolon(_)) {
-                return Some(Err(ParseError::ExpectedToken(";".to_string())));
-            }
-
-            Some(expression)
+            Some(parse_statement(lexer))
         }
     })
     .collect::<Result<Vec<_>, _>>()?;
