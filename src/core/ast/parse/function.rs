@@ -59,7 +59,7 @@ where
     })
     .collect::<Result<Vec<_>, _>>()?;
 
-    if !matches!(body.get(0), Some(Statement::Return(_))) {
+    if !matches!(body.last(), Some(Statement::Return(_))) {
         return Err(ParseError::MissingReturn);
     }
 

@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use inkwell::{
     builder::Builder,
     context::Context,
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{FunctionValue, IntValue},
+    values::{FunctionValue, IntValue, PointerValue},
     OptimizationLevel,
 };
 
@@ -54,11 +56,15 @@ struct CompilePass<'ctx> {
 }
 
 impl<'ctx> CompilePass<'ctx> {
-    fn compile_expression(&self, expression: Expression) -> IntValue {
+    fn compile_expression(
+        &self,
+        expression: Expression,
+        symbol_table: &HashMap<String, PointerValue<'ctx>>,
+    ) -> IntValue {
         match expression {
             Expression::Infix(infix) => {
-                let left = self.compile_expression(*infix.left);
-                let right = self.compile_expression(*infix.right);
+                let left = self.compile_expression(*infix.left, symbol_table);
+                let right = self.compile_expression(*infix.right, symbol_table);
 
                 match infix.operation {
                     InfixOperation::Plus(_) => {
@@ -70,17 +76,65 @@ impl<'ctx> CompilePass<'ctx> {
                 .context
                 .i64_type()
                 .const_int(integer.literal as u64, true),
+            Expression::Ident(ident) => self
+                .builder
+                .build_load(
+                    self.context.i64_type(),
+                    symbol_table.get(&ident.name).unwrap().clone(),
+                    &ident.name,
+                )
+                .unwrap()
+                .into_int_value(),
         }
     }
 
-    fn compile_statement(&self, statement: Statement) {
+    fn compile_statement(
+        &self,
+        statement: Statement,
+        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
+    ) {
         match statement {
             Statement::Return(s) => {
-                let value = self.compile_expression(s.value);
+                let value = self.compile_expression(s.value, symbol_table);
                 self.builder.build_return(Some(&value)).unwrap();
             }
             Statement::Expression(s) => {
-                self.compile_expression(s.expression);
+                self.compile_expression(s.expression, symbol_table);
+            }
+            Statement::Let(s) => {
+                // Compile value of let statement
+                let value = self.compile_expression(s.value, symbol_table);
+
+                // Create a place for the variable to be stored
+                let entry = self
+                    .builder
+                    .get_insert_block()
+                    .unwrap()
+                    .get_parent()
+                    .unwrap()
+                    .get_first_basic_block()
+                    .unwrap();
+
+                // Create a new builder to not change the position of the current builder
+                let stack_builder = self.context.create_builder();
+
+                // Position builder to be at the start of the entry block
+                match entry.get_first_instruction() {
+                    Some(instr) => stack_builder.position_before(&instr),
+                    None => stack_builder.position_at_end(entry),
+                };
+
+                // Stack address that this variable will be stored at
+                let addr = self
+                    .builder
+                    .build_alloca(self.context.i64_type(), &s.name)
+                    .unwrap();
+
+                // Move statement value onto stack
+                self.builder.build_store(addr, value).unwrap();
+
+                // Add address to the symbol table
+                symbol_table.insert(s.name, addr);
             }
         };
     }
@@ -94,9 +148,11 @@ impl<'ctx> CompilePass<'ctx> {
         let entry = self.context.append_basic_block(fn_value, "entry");
         self.builder.position_at_end(entry);
 
+        let mut symbol_table = HashMap::new();
+
         // Compile the body
         for statement in function.body {
-            self.compile_statement(statement);
+            self.compile_statement(statement, &mut symbol_table);
         }
 
         // Verify and optimise the function

@@ -34,6 +34,10 @@ where
                     expected: "integer".to_string(),
                 })?,
         })),
+        Token::Ident(token) => Ok(node::Expression::Ident(node::Ident {
+            span: token.span,
+            name: token.literal,
+        })),
         token => Err(ParseError::UnexpectedToken(token)),
     }
 }

@@ -42,6 +42,7 @@ where
 
         let token = match c {
             '+' => Token::Plus(PlusToken { span }),
+            '=' => Token::Equals(EqualsToken { span }),
 
             '(' => Token::LeftParen(LeftParenToken { span }),
             ')' => Token::RightParen(RightParenToken { span }),
@@ -82,6 +83,7 @@ where
                 match literal.as_str() {
                     "fn" => Token::Fn(FnToken { span }),
                     "return" => Token::Return(ReturnToken { span }),
+                    "let" => Token::Let(LetToken { span }),
                     _ => Token::Ident(IdentToken { span, literal }),
                 }
             }

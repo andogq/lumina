@@ -88,6 +88,7 @@ token!(IntegerToken { literal: String });
 token!(IdentToken { literal: String });
 
 token!(PlusToken);
+token!(EqualsToken);
 
 token!(SemicolonToken);
 token!(ThinArrowToken);
@@ -99,6 +100,7 @@ token!(RightBraceToken);
 
 token!(FnToken);
 token!(ReturnToken);
+token!(LetToken);
 
 token_enum! {
     Illegal: IllegalToken,
@@ -108,6 +110,7 @@ token_enum! {
     Ident: IdentToken,
 
     Plus: PlusToken,
+    Equals: EqualsToken,
 
     Semicolon: SemicolonToken,
     ThinArrow: ThinArrowToken,
@@ -118,5 +121,6 @@ token_enum! {
     RightBrace: RightBraceToken,
 
     Fn: FnToken,
-    Return: ReturnToken
+    Return: ReturnToken,
+    Let: LetToken
 }

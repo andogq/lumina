@@ -1,5 +1,5 @@
 use crate::core::{
-    ast::{ExpressionStatement, ReturnStatement, Statement},
+    ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
     lexer::{token::Token, Lexer},
 };
 
@@ -20,6 +20,22 @@ where
             lexer.next();
 
             Statement::Return(ReturnStatement {
+                value: parse_expression(lexer, Precedence::Lowest)?,
+            })
+        }
+        Token::Let(_) => {
+            lexer.next();
+
+            let Token::Ident(name) = lexer.next() else {
+                return Err(ParseError::ExpectedToken("ident".to_string()));
+            };
+
+            if !matches!(lexer.next(), Token::Equals(_)) {
+                return Err(ParseError::ExpectedToken("=".to_string()));
+            }
+
+            Statement::Let(LetStatement {
+                name: name.literal,
                 value: parse_expression(lexer, Precedence::Lowest)?,
             })
         }
