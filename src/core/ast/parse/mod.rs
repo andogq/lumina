@@ -8,7 +8,7 @@ use crate::core::lexer::{token::Token, Lexer};
 
 use self::function::parse_function;
 
-use super::node::Program;
+use super::source::Program;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {

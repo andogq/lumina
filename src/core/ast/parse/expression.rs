@@ -1,5 +1,5 @@
 use crate::core::{
-    ast::node,
+    ast::source,
     lexer::{token::Token, Lexer},
 };
 
@@ -20,12 +20,12 @@ impl Precedence {
     }
 }
 
-fn parse_prefix<S>(lexer: &mut Lexer<S>) -> Result<node::Expression, ParseError>
+fn parse_prefix<S>(lexer: &mut Lexer<S>) -> Result<source::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
     match lexer.next() {
-        Token::Integer(token) => Ok(node::Expression::Integer(node::Integer {
+        Token::Integer(token) => Ok(source::Expression::Integer(source::Integer {
             span: token.span,
             literal: token
                 .literal
@@ -34,15 +34,15 @@ where
                     expected: "integer".to_string(),
                 })?,
         })),
-        Token::Ident(token) => Ok(node::Expression::Ident(node::Ident {
+        Token::Ident(token) => Ok(source::Expression::Ident(source::Ident {
             span: token.span,
             name: token.literal,
         })),
-        Token::True(token) => Ok(node::Expression::Boolean(node::Boolean {
+        Token::True(token) => Ok(source::Expression::Boolean(source::Boolean {
             span: token.span,
             literal: true,
         })),
-        Token::False(token) => Ok(node::Expression::Boolean(node::Boolean {
+        Token::False(token) => Ok(source::Expression::Boolean(source::Boolean {
             span: token.span,
             literal: false,
         })),
@@ -53,18 +53,18 @@ where
 pub fn parse_expression<S>(
     lexer: &mut Lexer<S>,
     precedence: Precedence,
-) -> Result<node::Expression, ParseError>
+) -> Result<source::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
     let mut left = parse_prefix(lexer)?;
 
     while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
-        if let Ok(operation) = node::InfixOperation::try_from(lexer.peek()) {
+        if let Ok(operation) = source::InfixOperation::try_from(lexer.peek()) {
             let token = lexer.next();
             let precedence = Precedence::of(&token);
 
-            left = node::Expression::Infix(node::Infix {
+            left = source::Expression::Infix(source::Infix {
                 left: Box::new(left),
                 operation,
                 right: Box::new(parse_expression(lexer, precedence)?),
@@ -89,20 +89,20 @@ mod test {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4".chars()));
         let expression = parse_expression(&mut lexer, Precedence::Lowest);
 
-        assert!(matches!(expression, Ok(node::Expression::Infix(_))));
-        if let Ok(node::Expression::Infix(node::Infix {
+        assert!(matches!(expression, Ok(source::Expression::Infix(_))));
+        if let Ok(source::Expression::Infix(source::Infix {
             left,
-            operation: node::InfixOperation::Plus(_),
+            operation: source::InfixOperation::Plus(_),
             right,
         })) = expression
         {
             assert!(matches!(
                 *left,
-                node::Expression::Integer(node::Integer { literal: 3, .. })
+                source::Expression::Integer(source::Integer { literal: 3, .. })
             ));
             assert!(matches!(
                 *right,
-                node::Expression::Integer(node::Integer { literal: 4, .. })
+                source::Expression::Integer(source::Integer { literal: 4, .. })
             ));
         }
     }
@@ -112,33 +112,33 @@ mod test {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4 + 10".chars()));
         let expression = parse_expression(&mut lexer, Precedence::Lowest);
 
-        assert!(matches!(expression, Ok(node::Expression::Infix(_))));
-        if let Ok(node::Expression::Infix(node::Infix {
+        assert!(matches!(expression, Ok(source::Expression::Infix(_))));
+        if let Ok(source::Expression::Infix(source::Infix {
             left,
-            operation: node::InfixOperation::Plus(_),
+            operation: source::InfixOperation::Plus(_),
             right,
         })) = expression
         {
-            assert!(matches!(*left, node::Expression::Infix(_)));
-            if let node::Expression::Infix(node::Infix {
+            assert!(matches!(*left, source::Expression::Infix(_)));
+            if let source::Expression::Infix(source::Infix {
                 left,
-                operation: node::InfixOperation::Plus(_),
+                operation: source::InfixOperation::Plus(_),
                 right,
             }) = *left
             {
                 assert!(matches!(
                     *left,
-                    node::Expression::Integer(node::Integer { literal: 3, .. })
+                    source::Expression::Integer(source::Integer { literal: 3, .. })
                 ));
                 assert!(matches!(
                     *right,
-                    node::Expression::Integer(node::Integer { literal: 4, .. })
+                    source::Expression::Integer(source::Integer { literal: 4, .. })
                 ));
             }
 
             assert!(matches!(
                 *right,
-                node::Expression::Integer(node::Integer { literal: 10, .. })
+                source::Expression::Integer(source::Integer { literal: 10, .. })
             ));
         }
     }
