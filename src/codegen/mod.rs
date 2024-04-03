@@ -10,7 +10,7 @@ use inkwell::{
     OptimizationLevel,
 };
 
-use crate::core::ast::{Expression, Function, InfixOperation, Program, Statement};
+use crate::core::ast::{Block, Expression, Function, InfixOperation, Program, Statement};
 
 pub struct Compiler {
     context: Context,
@@ -59,7 +59,7 @@ impl<'ctx> CompilePass<'ctx> {
     fn compile_expression(
         &self,
         expression: Expression,
-        symbol_table: &HashMap<String, PointerValue<'ctx>>,
+        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
     ) -> IntValue {
         match expression {
             Expression::Infix(infix) => {
@@ -92,22 +92,38 @@ impl<'ctx> CompilePass<'ctx> {
                     self.context.bool_type().const_zero()
                 }
             }
+            Expression::Block(block) => self
+                .compile_block(block, symbol_table)
+                .expect("block must evaluate to a value"),
         }
+    }
+
+    fn compile_block(
+        &self,
+        block: Block,
+        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
+    ) -> Option<IntValue> {
+        let mut value = None;
+
+        for statement in block.statements {
+            value = self.compile_statement(statement, symbol_table);
+        }
+
+        value
     }
 
     fn compile_statement(
         &self,
         statement: Statement,
         symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
-    ) {
+    ) -> Option<IntValue> {
         match statement {
             Statement::Return(s) => {
                 let value = self.compile_expression(s.value, symbol_table);
                 self.builder.build_return(Some(&value)).unwrap();
+                None
             }
-            Statement::Expression(s) => {
-                self.compile_expression(s.expression, symbol_table);
-            }
+            Statement::Expression(s) => Some(self.compile_expression(s.expression, symbol_table)),
             Statement::Let(s) => {
                 // Compile value of let statement
                 let value = self.compile_expression(s.value, symbol_table);
@@ -142,8 +158,10 @@ impl<'ctx> CompilePass<'ctx> {
 
                 // Add address to the symbol table
                 symbol_table.insert(s.name, addr);
+
+                None
             }
-        };
+        }
     }
 
     fn compile_function(&self, function: Function) -> FunctionValue<'ctx> {
@@ -158,9 +176,7 @@ impl<'ctx> CompilePass<'ctx> {
         let mut symbol_table = HashMap::new();
 
         // Compile the body
-        for statement in function.body {
-            self.compile_statement(statement, &mut symbol_table);
-        }
+        self.compile_block(function.body, &mut symbol_table);
 
         // Verify and optimise the function
         fn_value.verify(true);

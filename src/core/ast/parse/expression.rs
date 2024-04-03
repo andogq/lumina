@@ -3,7 +3,7 @@ use crate::core::{
     lexer::{token::Token, Lexer},
 };
 
-use super::ParseError;
+use super::{block::parse_block, ParseError};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
@@ -24,7 +24,9 @@ fn parse_prefix<S>(lexer: &mut Lexer<S>) -> Result<source::Expression, ParseErro
 where
     S: Iterator<Item = char>,
 {
-    match lexer.next() {
+    let mut advance = true;
+
+    let prefix = match lexer.peek() {
         Token::Integer(token) => Ok(source::Expression::Integer(source::Integer {
             span: token.span,
             literal: token
@@ -46,8 +48,19 @@ where
             span: token.span,
             literal: false,
         })),
+        Token::LeftBrace(_) => {
+            advance = false;
+
+            Ok(source::Expression::Block(parse_block(lexer)?))
+        }
         token => Err(ParseError::UnexpectedToken(token)),
+    };
+
+    if advance {
+        lexer.next();
     }
+
+    prefix
 }
 
 pub fn parse_expression<S>(

@@ -1,3 +1,4 @@
+mod block;
 mod expression;
 mod function;
 mod statement;

@@ -7,7 +7,7 @@ use lumina::{
 fn main() {
     let source = r#"
 fn main() -> int {
-    let a = 1 + 2;
+    let a = { 5; 1 + 2; };
     let b = 4;
     let value = true;
     return b + a + 10;

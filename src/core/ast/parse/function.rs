@@ -1,9 +1,9 @@
 use crate::core::{
-    ast::{Function, Statement},
+    ast::Function,
     lexer::{token::Token, Lexer},
 };
 
-use super::{statement::parse_statement, ParseError};
+use super::{block::parse_block, ParseError};
 
 pub fn parse_function<S>(lexer: &mut Lexer<S>) -> Result<Function, ParseError>
 where
@@ -44,32 +44,8 @@ where
         _ => return Err(ParseError::ExpectedToken("return type".to_string())),
     }
 
-    // opening brace for body
-    if !matches!(lexer.next(), Token::LeftBrace(_)) {
-        return Err(ParseError::ExpectedToken("{".to_string()));
-    }
-
-    // parse the body
-    let body = std::iter::from_fn(|| {
-        if matches!(lexer.peek(), Token::RightBrace(_)) {
-            None
-        } else {
-            Some(parse_statement(lexer))
-        }
-    })
-    .collect::<Result<Vec<_>, _>>()?;
-
-    if !matches!(body.last(), Some(Statement::Return(_))) {
-        return Err(ParseError::MissingReturn);
-    }
-
-    // closing brace for body
-    if !matches!(lexer.next(), Token::RightBrace(_)) {
-        return Err(ParseError::ExpectedToken("}".to_string()));
-    }
-
     Ok(Function {
         name: fn_name.literal,
-        body,
+        body: parse_block(lexer)?,
     })
 }
