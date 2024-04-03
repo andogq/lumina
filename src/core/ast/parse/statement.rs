@@ -1,5 +1,5 @@
 use crate::core::{
-    ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
+    ast::{symbol::SymbolMap, ExpressionStatement, LetStatement, ReturnStatement, Statement},
     lexer::{token::Token, Lexer},
 };
 
@@ -8,7 +8,10 @@ use super::{
     ParseError,
 };
 
-pub fn parse_statement<S>(lexer: &mut Lexer<S>) -> Result<Statement, ParseError>
+pub fn parse_statement<S>(
+    lexer: &mut Lexer<S>,
+    symbols: &mut SymbolMap,
+) -> Result<Statement, ParseError>
 where
     S: Iterator<Item = char>,
 {
@@ -20,7 +23,7 @@ where
             lexer.next();
 
             Statement::Return(ReturnStatement {
-                value: parse_expression(lexer, Precedence::Lowest)?,
+                value: parse_expression(lexer, Precedence::Lowest, symbols)?,
             })
         }
         Token::Let(_) => {
@@ -35,14 +38,14 @@ where
             }
 
             Statement::Let(LetStatement {
-                name: name.literal,
-                value: parse_expression(lexer, Precedence::Lowest)?,
+                name: symbols.get(name.literal),
+                value: parse_expression(lexer, Precedence::Lowest, symbols)?,
             })
         }
         _ => {
             // Parse expression
             Statement::Expression(ExpressionStatement {
-                expression: parse_expression(lexer, Precedence::Lowest)?,
+                expression: parse_expression(lexer, Precedence::Lowest, symbols)?,
             })
         }
     };

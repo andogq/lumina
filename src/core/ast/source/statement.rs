@@ -1,3 +1,5 @@
+use crate::core::ast::symbol::Symbol;
+
 use super::Expression;
 
 pub enum Statement {
@@ -11,7 +13,7 @@ pub struct ReturnStatement {
 }
 
 pub struct LetStatement {
-    pub name: String,
+    pub name: Symbol,
     pub value: Expression,
 }
 

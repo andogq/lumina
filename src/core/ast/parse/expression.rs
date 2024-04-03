@@ -1,5 +1,5 @@
 use crate::core::{
-    ast::source,
+    ast::{source, symbol::SymbolMap},
     lexer::{token::Token, Lexer},
 };
 
@@ -20,7 +20,10 @@ impl Precedence {
     }
 }
 
-fn parse_prefix<S>(lexer: &mut Lexer<S>) -> Result<source::Expression, ParseError>
+fn parse_prefix<S>(
+    lexer: &mut Lexer<S>,
+    symbols: &mut SymbolMap,
+) -> Result<source::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
@@ -29,7 +32,7 @@ where
     let prefix = match lexer.peek() {
         Token::Integer(token) => Ok(source::Expression::Integer(source::Integer {
             span: token.span,
-            literal: token
+            value: token
                 .literal
                 .parse()
                 .map_err(|_| ParseError::InvalidLiteral {
@@ -38,20 +41,20 @@ where
         })),
         Token::Ident(token) => Ok(source::Expression::Ident(source::Ident {
             span: token.span,
-            name: token.literal,
+            name: symbols.get(token.literal),
         })),
         Token::True(token) => Ok(source::Expression::Boolean(source::Boolean {
             span: token.span,
-            literal: true,
+            value: true,
         })),
         Token::False(token) => Ok(source::Expression::Boolean(source::Boolean {
             span: token.span,
-            literal: false,
+            value: false,
         })),
         Token::LeftBrace(_) => {
             advance = false;
 
-            Ok(source::Expression::Block(parse_block(lexer)?))
+            Ok(source::Expression::Block(parse_block(lexer, symbols)?))
         }
         token => Err(ParseError::UnexpectedToken(token)),
     };
@@ -66,11 +69,12 @@ where
 pub fn parse_expression<S>(
     lexer: &mut Lexer<S>,
     precedence: Precedence,
+    symbols: &mut SymbolMap,
 ) -> Result<source::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
-    let mut left = parse_prefix(lexer)?;
+    let mut left = parse_prefix(lexer, symbols)?;
 
     while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
         if let Ok(operation) = source::InfixOperation::try_from(lexer.peek()) {
@@ -80,7 +84,7 @@ where
             left = source::Expression::Infix(source::Infix {
                 left: Box::new(left),
                 operation,
-                right: Box::new(parse_expression(lexer, precedence)?),
+                right: Box::new(parse_expression(lexer, precedence, symbols)?),
             });
         } else {
             // Probably aren't in the expression any more
@@ -100,7 +104,7 @@ mod test {
     #[test]
     fn simple_addition() {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4".chars()));
-        let expression = parse_expression(&mut lexer, Precedence::Lowest);
+        let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
         assert!(matches!(expression, Ok(source::Expression::Infix(_))));
         if let Ok(source::Expression::Infix(source::Infix {
@@ -111,11 +115,11 @@ mod test {
         {
             assert!(matches!(
                 *left,
-                source::Expression::Integer(source::Integer { literal: 3, .. })
+                source::Expression::Integer(source::Integer { value: 3, .. })
             ));
             assert!(matches!(
                 *right,
-                source::Expression::Integer(source::Integer { literal: 4, .. })
+                source::Expression::Integer(source::Integer { value: 4, .. })
             ));
         }
     }
@@ -123,7 +127,7 @@ mod test {
     #[test]
     fn multi_addition() {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4 + 10".chars()));
-        let expression = parse_expression(&mut lexer, Precedence::Lowest);
+        let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
         assert!(matches!(expression, Ok(source::Expression::Infix(_))));
         if let Ok(source::Expression::Infix(source::Infix {
@@ -141,17 +145,17 @@ mod test {
             {
                 assert!(matches!(
                     *left,
-                    source::Expression::Integer(source::Integer { literal: 3, .. })
+                    source::Expression::Integer(source::Integer { value: 3, .. })
                 ));
                 assert!(matches!(
                     *right,
-                    source::Expression::Integer(source::Integer { literal: 4, .. })
+                    source::Expression::Integer(source::Integer { value: 4, .. })
                 ));
             }
 
             assert!(matches!(
                 *right,
-                source::Expression::Integer(source::Integer { literal: 10, .. })
+                source::Expression::Integer(source::Integer { value: 10, .. })
             ));
         }
     }

@@ -10,7 +10,10 @@ use inkwell::{
     OptimizationLevel,
 };
 
-use crate::core::ast::{Block, Expression, Function, InfixOperation, Program, Statement};
+use crate::core::ast::{
+    symbol::{Symbol, SymbolMap},
+    Block, Expression, Function, InfixOperation, Program, Statement,
+};
 
 pub struct Compiler {
     context: Context,
@@ -28,6 +31,7 @@ impl<'ctx> Compiler {
             context: &self.context,
             module: self.context.create_module("module"),
             builder: self.context.create_builder(),
+            symbol_map: program.symbol_map,
         };
 
         // Compile each of the individual functions
@@ -53,13 +57,14 @@ struct CompilePass<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
+    symbol_map: SymbolMap,
 }
 
 impl<'ctx> CompilePass<'ctx> {
     fn compile_expression(
         &self,
         expression: Expression,
-        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
+        symbol_table: &mut HashMap<Symbol, PointerValue<'ctx>>,
     ) -> IntValue {
         match expression {
             Expression::Infix(infix) => {
@@ -75,18 +80,18 @@ impl<'ctx> CompilePass<'ctx> {
             Expression::Integer(integer) => self
                 .context
                 .i64_type()
-                .const_int(integer.literal as u64, true),
+                .const_int(integer.value as u64, true),
             Expression::Ident(ident) => self
                 .builder
                 .build_load(
                     self.context.i64_type(),
                     symbol_table.get(&ident.name).unwrap().clone(),
-                    &ident.name,
+                    &self.symbol_map.name(ident.name).unwrap(),
                 )
                 .unwrap()
                 .into_int_value(),
             Expression::Boolean(boolean) => {
-                if boolean.literal {
+                if boolean.value {
                     self.context.bool_type().const_all_ones()
                 } else {
                     self.context.bool_type().const_zero()
@@ -101,7 +106,7 @@ impl<'ctx> CompilePass<'ctx> {
     fn compile_block(
         &self,
         block: Block,
-        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
+        symbol_table: &mut HashMap<Symbol, PointerValue<'ctx>>,
     ) -> Option<IntValue> {
         let mut value = None;
 
@@ -115,7 +120,7 @@ impl<'ctx> CompilePass<'ctx> {
     fn compile_statement(
         &self,
         statement: Statement,
-        symbol_table: &mut HashMap<String, PointerValue<'ctx>>,
+        symbol_table: &mut HashMap<Symbol, PointerValue<'ctx>>,
     ) -> Option<IntValue> {
         match statement {
             Statement::Return(s) => {
@@ -150,7 +155,10 @@ impl<'ctx> CompilePass<'ctx> {
                 // Stack address that this variable will be stored at
                 let addr = self
                     .builder
-                    .build_alloca(self.context.i64_type(), &s.name)
+                    .build_alloca(
+                        self.context.i64_type(),
+                        &self.symbol_map.name(s.name).unwrap(),
+                    )
                     .unwrap();
 
                 // Move statement value onto stack
@@ -167,7 +175,9 @@ impl<'ctx> CompilePass<'ctx> {
     fn compile_function(&self, function: Function) -> FunctionValue<'ctx> {
         // Create a prototype
         let fn_type = self.context.i64_type().fn_type(&[], false);
-        let fn_value = self.module.add_function(&function.name, fn_type, None);
+        let fn_value =
+            self.module
+                .add_function(&self.symbol_map.name(function.name).unwrap(), fn_type, None);
 
         // Create the entry point and position the builder
         let entry = self.context.append_basic_block(fn_value, "entry");

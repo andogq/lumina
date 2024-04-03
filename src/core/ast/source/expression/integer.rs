@@ -3,5 +3,5 @@ use crate::util::source::Span;
 pub struct Integer {
     pub span: Span,
 
-    pub literal: i64,
+    pub value: i64,
 }

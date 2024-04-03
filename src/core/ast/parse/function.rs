@@ -1,11 +1,14 @@
 use crate::core::{
-    ast::Function,
+    ast::{symbol::SymbolMap, ty::Ty, Function},
     lexer::{token::Token, Lexer},
 };
 
 use super::{block::parse_block, ParseError};
 
-pub fn parse_function<S>(lexer: &mut Lexer<S>) -> Result<Function, ParseError>
+pub fn parse_function<S>(
+    lexer: &mut Lexer<S>,
+    symbols: &mut SymbolMap,
+) -> Result<Function, ParseError>
 where
     S: Iterator<Item = char>,
 {
@@ -23,6 +26,8 @@ where
     if !matches!(lexer.next(), Token::LeftParen(_)) {
         return Err(ParseError::ExpectedToken("(".to_string()));
     }
+    // TODO: this
+    let parameters = Vec::new();
     if !matches!(lexer.next(), Token::RightParen(_)) {
         return Err(ParseError::ExpectedToken(")".to_string()));
     }
@@ -33,19 +38,22 @@ where
     }
 
     // return type (can currently only be `int`)
-    match lexer.next() {
-        Token::Ident(ident) => {
-            if ident.literal != "int" {
+    let return_ty = match lexer.next() {
+        Token::Ident(ident) => match ident.literal.as_str() {
+            "int" => Some(Ty::Int),
+            _ => {
                 return Err(ParseError::ExpectedToken(
                     "int type is only supported type".to_string(),
                 ));
             }
-        }
+        },
         _ => return Err(ParseError::ExpectedToken("return type".to_string())),
-    }
+    };
 
     Ok(Function {
-        name: fn_name.literal,
-        body: parse_block(lexer)?,
+        name: symbols.get(fn_name.literal),
+        parameters,
+        return_ty,
+        body: parse_block(lexer, symbols)?,
     })
 }

@@ -9,7 +9,7 @@ use crate::core::lexer::{token::Token, Lexer};
 
 use self::function::parse_function;
 
-use super::source::Program;
+use super::{source::Program, symbol::SymbolMap};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
@@ -33,21 +33,25 @@ pub fn parse<S>(mut lexer: Lexer<S>) -> Result<Program, ParseError>
 where
     S: Iterator<Item = char>,
 {
+    let mut symbol_map = SymbolMap::new();
+    let main = symbol_map.get("main");
+
     // Parse each expression which should be followed by a semi colon
     let mut functions = std::iter::from_fn(|| {
         (!matches!(lexer.peek(), Token::EOF(_))).then(|| {
-            let function = parse_function(&mut lexer)?;
+            let function = parse_function(&mut lexer, &mut symbol_map)?;
             Ok((function.name.clone(), function))
         })
     })
     .collect::<Result<HashMap<_, _>, _>>()?;
 
-    let Some(main) = functions.remove("main") else {
+    let Some(main) = functions.remove(&main) else {
         return Err(ParseError::MissingMain);
     };
 
     Ok(Program {
         functions: functions.into_values().collect(),
         main,
+        symbol_map,
     })
 }
