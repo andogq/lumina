@@ -1,4 +1,4 @@
-use crate::core::ast::{symbol::Symbol, ty::Ty};
+use crate::core::{symbol::Symbol, ty::Ty};
 
 use super::Block;
 

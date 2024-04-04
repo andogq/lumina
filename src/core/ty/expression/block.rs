@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use crate::core::ast::{
-    ty::{InferTy, Symbol, Ty, TyError},
-    Block,
+use crate::core::{
+    ast::Block,
+    symbol::Symbol,
+    ty::{InferTy, Ty, TyError},
 };
 
 impl InferTy for Block {

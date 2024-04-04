@@ -1,6 +1,8 @@
 use crate::core::{
-    ast::{symbol::SymbolMap, ty::Ty, Function},
+    ast::Function,
     lexer::{token::Token, Lexer},
+    symbol::SymbolMap,
+    ty::Ty,
 };
 
 use super::{block::parse_block, ParseError};

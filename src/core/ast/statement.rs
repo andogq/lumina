@@ -1,4 +1,4 @@
-use crate::core::ast::symbol::Symbol;
+use crate::core::symbol::Symbol;
 
 use super::Expression;
 

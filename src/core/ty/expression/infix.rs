@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::core::ast::{
+use crate::core::{
+    ast::Infix,
     ty::{InferTy, Symbol, Ty, TyError},
-    Infix,
 };
 
 impl InferTy for Infix {

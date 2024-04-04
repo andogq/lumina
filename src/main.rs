@@ -1,6 +1,6 @@
 use lumina::{
     codegen::Compiler,
-    core::{ast::parse::parse, lexer::Lexer},
+    core::{lexer::Lexer, parse::parse},
     util::source::Source,
 };
 

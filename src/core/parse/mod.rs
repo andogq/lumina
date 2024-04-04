@@ -9,7 +9,7 @@ use crate::core::lexer::{token::Token, Lexer};
 
 use self::function::parse_function;
 
-use super::{source::Program, symbol::SymbolMap};
+use super::{ast::Program, symbol::SymbolMap};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {

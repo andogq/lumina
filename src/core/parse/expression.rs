@@ -1,6 +1,7 @@
 use crate::core::{
-    ast::{source, symbol::SymbolMap},
+    ast,
     lexer::{token::Token, Lexer},
+    symbol::SymbolMap,
 };
 
 use super::{block::parse_block, ParseError};
@@ -23,14 +24,14 @@ impl Precedence {
 fn parse_prefix<S>(
     lexer: &mut Lexer<S>,
     symbols: &mut SymbolMap,
-) -> Result<source::Expression, ParseError>
+) -> Result<ast::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
     let mut advance = true;
 
     let prefix = match lexer.peek() {
-        Token::Integer(token) => Ok(source::Expression::Integer(source::Integer {
+        Token::Integer(token) => Ok(ast::Expression::Integer(ast::Integer {
             span: token.span,
             value: token
                 .literal
@@ -39,22 +40,22 @@ where
                     expected: "integer".to_string(),
                 })?,
         })),
-        Token::Ident(token) => Ok(source::Expression::Ident(source::Ident {
+        Token::Ident(token) => Ok(ast::Expression::Ident(ast::Ident {
             span: token.span,
             name: symbols.get(token.literal),
         })),
-        Token::True(token) => Ok(source::Expression::Boolean(source::Boolean {
+        Token::True(token) => Ok(ast::Expression::Boolean(ast::Boolean {
             span: token.span,
             value: true,
         })),
-        Token::False(token) => Ok(source::Expression::Boolean(source::Boolean {
+        Token::False(token) => Ok(ast::Expression::Boolean(ast::Boolean {
             span: token.span,
             value: false,
         })),
         Token::LeftBrace(_) => {
             advance = false;
 
-            Ok(source::Expression::Block(parse_block(lexer, symbols)?))
+            Ok(ast::Expression::Block(parse_block(lexer, symbols)?))
         }
         token => Err(ParseError::UnexpectedToken(token)),
     };
@@ -70,18 +71,18 @@ pub fn parse_expression<S>(
     lexer: &mut Lexer<S>,
     precedence: Precedence,
     symbols: &mut SymbolMap,
-) -> Result<source::Expression, ParseError>
+) -> Result<ast::Expression, ParseError>
 where
     S: Iterator<Item = char>,
 {
     let mut left = parse_prefix(lexer, symbols)?;
 
     while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
-        if let Ok(operation) = source::InfixOperation::try_from(lexer.peek()) {
+        if let Ok(operation) = ast::InfixOperation::try_from(lexer.peek()) {
             let token = lexer.next();
             let precedence = Precedence::of(&token);
 
-            left = source::Expression::Infix(source::Infix {
+            left = ast::Expression::Infix(ast::Infix {
                 left: Box::new(left),
                 operation,
                 right: Box::new(parse_expression(lexer, precedence, symbols)?),
@@ -106,20 +107,20 @@ mod test {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4".chars()));
         let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
-        assert!(matches!(expression, Ok(source::Expression::Infix(_))));
-        if let Ok(source::Expression::Infix(source::Infix {
+        assert!(matches!(expression, Ok(ast::Expression::Infix(_))));
+        if let Ok(ast::Expression::Infix(ast::Infix {
             left,
-            operation: source::InfixOperation::Plus(_),
+            operation: ast::InfixOperation::Plus(_),
             right,
         })) = expression
         {
             assert!(matches!(
                 *left,
-                source::Expression::Integer(source::Integer { value: 3, .. })
+                ast::Expression::Integer(ast::Integer { value: 3, .. })
             ));
             assert!(matches!(
                 *right,
-                source::Expression::Integer(source::Integer { value: 4, .. })
+                ast::Expression::Integer(ast::Integer { value: 4, .. })
             ));
         }
     }
@@ -129,33 +130,33 @@ mod test {
         let mut lexer = Lexer::new(Source::new("test", "3 + 4 + 10".chars()));
         let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
-        assert!(matches!(expression, Ok(source::Expression::Infix(_))));
-        if let Ok(source::Expression::Infix(source::Infix {
+        assert!(matches!(expression, Ok(ast::Expression::Infix(_))));
+        if let Ok(ast::Expression::Infix(ast::Infix {
             left,
-            operation: source::InfixOperation::Plus(_),
+            operation: ast::InfixOperation::Plus(_),
             right,
         })) = expression
         {
-            assert!(matches!(*left, source::Expression::Infix(_)));
-            if let source::Expression::Infix(source::Infix {
+            assert!(matches!(*left, ast::Expression::Infix(_)));
+            if let ast::Expression::Infix(ast::Infix {
                 left,
-                operation: source::InfixOperation::Plus(_),
+                operation: ast::InfixOperation::Plus(_),
                 right,
             }) = *left
             {
                 assert!(matches!(
                     *left,
-                    source::Expression::Integer(source::Integer { value: 3, .. })
+                    ast::Expression::Integer(ast::Integer { value: 3, .. })
                 ));
                 assert!(matches!(
                     *right,
-                    source::Expression::Integer(source::Integer { value: 4, .. })
+                    ast::Expression::Integer(ast::Integer { value: 4, .. })
                 ));
             }
 
             assert!(matches!(
                 *right,
-                source::Expression::Integer(source::Integer { value: 10, .. })
+                ast::Expression::Integer(ast::Integer { value: 10, .. })
             ));
         }
     }

@@ -1,6 +1,7 @@
 use crate::core::{
-    ast::{source, symbol::SymbolMap, Block},
+    ast::Block,
     lexer::{token::Token, Lexer},
+    symbol::SymbolMap,
 };
 
 use super::{statement::parse_statement, ParseError};
@@ -11,7 +12,7 @@ where
 {
     lexer.next();
 
-    let block = source::Block {
+    let block = Block {
         statements: std::iter::from_fn(|| {
             if !matches!(lexer.peek(), Token::RightBrace(_)) {
                 Some(parse_statement(lexer, symbols))

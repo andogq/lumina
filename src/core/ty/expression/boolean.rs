@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use crate::core::ast::{
+use crate::core::{
+    ast::Boolean,
     ty::{InferTy, Symbol, Ty, TyError},
-    Integer,
 };
 
-impl InferTy for Integer {
+impl InferTy for Boolean {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        Ok(Ty::Int)
+        Ok(Ty::Boolean)
     }
 
     fn return_ty(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
@@ -16,30 +16,30 @@ impl InferTy for Integer {
 }
 
 #[cfg(test)]
-mod test_integer {
+mod test_boolean {
     use crate::util::source::Span;
 
     use super::*;
 
     #[test]
-    fn integer_infer() {
+    fn boolean_infer() {
         assert_eq!(
-            Integer {
+            Boolean {
                 span: Span::default(),
-                value: 0,
+                value: false
             }
             .infer(&mut HashMap::new())
             .unwrap(),
-            Ty::Int
+            Ty::Boolean
         );
     }
 
     #[test]
-    fn integer_return() {
+    fn boolean_return() {
         assert_eq!(
-            Integer {
+            Boolean {
                 span: Span::default(),
-                value: 0
+                value: false
             }
             .return_ty(&mut HashMap::new())
             .unwrap(),

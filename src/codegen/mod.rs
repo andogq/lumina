@@ -10,9 +10,9 @@ use inkwell::{
     OptimizationLevel,
 };
 
-use crate::core::ast::{
+use crate::core::{
+    ast::{Block, Expression, Function, InfixOperation, Program, Statement},
     symbol::{Symbol, SymbolMap},
-    Block, Expression, Function, InfixOperation, Program, Statement,
 };
 
 pub struct Compiler {

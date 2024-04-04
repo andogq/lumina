@@ -1,6 +1,7 @@
 use crate::core::{
-    ast::{symbol::SymbolMap, ExpressionStatement, LetStatement, ReturnStatement, Statement},
+    ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
     lexer::{token::Token, Lexer},
+    symbol::SymbolMap,
 };
 
 use super::{
