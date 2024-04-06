@@ -7,7 +7,7 @@ use super::{InferTy, TyError};
 impl Function {
     pub fn check(&self) -> Result<(), TyError> {
         let inferred_ty = self.body.return_ty(&mut HashMap::new())?;
-        if self.return_ty != inferred_ty {
+        if self.return_ty == inferred_ty {
             Ok(())
         } else {
             Err(TyError::Return {

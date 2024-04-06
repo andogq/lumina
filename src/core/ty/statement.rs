@@ -113,6 +113,8 @@ impl InferTy for LetStatement {
     }
 
     fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
+        self.infer(symbols)?;
+
         self.value.return_ty(symbols)
     }
 }

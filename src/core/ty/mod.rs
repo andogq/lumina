@@ -1,5 +1,6 @@
 mod expression;
 mod function;
+mod program;
 mod statement;
 
 use std::collections::HashMap;

@@ -15,6 +15,11 @@ fn main() -> int {
 
     let program = parse(Lexer::new(Source::new("hardcoded", source.chars()))).unwrap();
 
+    if let Err(e) = program.type_check() {
+        eprintln!("{e}");
+        return;
+    }
+
     let compiler = Compiler::new();
     let module = compiler.compile(program);
     module.jit();
