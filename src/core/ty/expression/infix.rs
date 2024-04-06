@@ -31,75 +31,52 @@ impl InferTy for Infix {
 }
 #[cfg(test)]
 mod test_infix {
-    use crate::{
-        core::ast::{Boolean, Expression, InfixOperation, Integer},
-        util::source::Span,
-    };
+    use crate::core::ast::{Expression, InfixOperation};
 
     use super::*;
 
     #[test]
     fn infer_same() {
-        let infix = Infix {
-            left: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-            operation: InfixOperation::Plus(Span::default()),
-            right: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-        };
+        // 0 + 0
+        let infix = Infix::new(
+            Expression::integer(0),
+            InfixOperation::plus(),
+            Expression::integer(0),
+        );
 
         assert_eq!(infix.infer(&mut HashMap::new()).unwrap(), Ty::Int);
     }
     #[test]
     fn infer_different() {
-        let infix = Infix {
-            left: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-            operation: InfixOperation::Plus(Span::default()),
-            right: Box::new(Expression::Boolean(Boolean {
-                span: Span::default(),
-                value: false,
-            })),
-        };
+        // 0 + false
+        let infix = Infix::new(
+            Expression::integer(0),
+            InfixOperation::plus(),
+            Expression::boolean(false),
+        );
 
         assert!(infix.infer(&mut HashMap::new()).is_err());
     }
 
     #[test]
     fn return_same() {
-        let infix = Infix {
-            left: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-            operation: InfixOperation::Plus(Span::default()),
-            right: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-        };
+        // 0 + 0
+        let infix = Infix::new(
+            Expression::integer(0),
+            InfixOperation::plus(),
+            Expression::integer(0),
+        );
 
         assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);
     }
     #[test]
     fn return_different() {
-        let infix = Infix {
-            left: Box::new(Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            })),
-            operation: InfixOperation::Plus(Span::default()),
-            right: Box::new(Expression::Boolean(Boolean {
-                span: Span::default(),
-                value: false,
-            })),
-        };
+        // 0 + 0
+        let infix = Infix::new(
+            Expression::integer(0),
+            InfixOperation::plus(),
+            Expression::integer(0),
+        );
 
         assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);
     }

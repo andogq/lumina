@@ -15,9 +15,10 @@ where
     S: Iterator<Item = char>,
 {
     // `fn` keyword
-    if !matches!(lexer.next(), Token::Fn(_)) {
+    let Token::Fn(fn_token) = lexer.next() else {
         return Err(ParseError::ExpectedToken("fn".to_string()));
-    }
+    };
+    let span = fn_token.span;
 
     // function name
     let Token::Ident(fn_name) = lexer.next() else {
@@ -28,8 +29,10 @@ where
     if !matches!(lexer.next(), Token::LeftParen(_)) {
         return Err(ParseError::ExpectedToken("(".to_string()));
     }
+
     // TODO: this
     let parameters = Vec::new();
+
     if !matches!(lexer.next(), Token::RightParen(_)) {
         return Err(ParseError::ExpectedToken(")".to_string()));
     }
@@ -52,10 +55,13 @@ where
         _ => return Err(ParseError::ExpectedToken("return type".to_string())),
     };
 
+    let body = parse_block(lexer, symbols)?;
+
     Ok(Function {
+        span: span.to(&body),
         name: symbols.get(fn_name.literal),
         parameters,
         return_ty,
-        body: parse_block(lexer, symbols)?,
+        body,
     })
 }

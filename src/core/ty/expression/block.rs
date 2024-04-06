@@ -44,131 +44,69 @@ impl InferTy for Block {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        core::ast::{
-            Boolean, Expression, ExpressionStatement, Integer, LetStatement, ReturnStatement,
-            Statement,
-        },
-        util::source::Span,
-    };
+    use crate::core::ast::{Expression, Statement};
 
     use super::*;
 
     #[test]
     fn infer_block() {
-        let b = Block {
-            statements: vec![
-                Statement::Let(LetStatement {
-                    name: Symbol::default(),
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Expression(ExpressionStatement {
-                    expression: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                    implicit_return: false,
-                }),
-                Statement::Return(ReturnStatement {
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-            ],
-        };
+        // {
+        //     let a = 1;
+        //     1;
+        //     return 1;
+        // }
+        let b = Block::new(&[
+            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::expression(Expression::integer(1), false),
+            Statement::_return(Expression::integer(1)),
+        ]);
 
         assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }
     #[test]
     fn return_block() {
-        let b = Block {
-            statements: vec![
-                Statement::Let(LetStatement {
-                    name: Symbol::default(),
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Expression(ExpressionStatement {
-                    expression: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                    implicit_return: false,
-                }),
-                Statement::Return(ReturnStatement {
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-            ],
-        };
+        // {
+        //     let a = 1;
+        //     1;
+        //     return 1;
+        // }
+        let b = Block::new(&[
+            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::expression(Expression::integer(1), false),
+            Statement::_return(Expression::integer(1)),
+        ]);
 
         assert_eq!(b.return_ty(&mut HashMap::new()).unwrap(), Some(Ty::Int));
     }
 
     #[test]
     fn return_block_conflicting_return() {
-        let b = Block {
-            statements: vec![
-                Statement::Let(LetStatement {
-                    name: Symbol::default(),
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Expression(ExpressionStatement {
-                    expression: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                    implicit_return: false,
-                }),
-                Statement::Return(ReturnStatement {
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Return(ReturnStatement {
-                    value: Expression::Boolean(Boolean {
-                        span: Span::default(),
-                        value: true,
-                    }),
-                }),
-            ],
-        };
+        // {
+        //     let a = 1;
+        //     1;
+        //     return 1;
+        //     return true;
+        // }
+        let b = Block::new(&[
+            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::expression(Expression::integer(1), false),
+            Statement::_return(Expression::integer(1)),
+            Statement::_return(Expression::boolean(true)),
+        ]);
 
         assert!(b.return_ty(&mut HashMap::new()).is_err());
     }
 
     #[test]
     fn return_block_no_return() {
-        let b = Block {
-            statements: vec![
-                Statement::Let(LetStatement {
-                    name: Symbol::default(),
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Expression(ExpressionStatement {
-                    expression: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                    implicit_return: false,
-                }),
-            ],
-        };
+        // {
+        //     let a = 1;
+        //     1;
+        // }
+        let b = Block::new(&[
+            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::expression(Expression::integer(1), false),
+        ]);
 
         assert_eq!(b.return_ty(&mut HashMap::new()).unwrap(), None);
     }
@@ -179,24 +117,10 @@ mod test {
         //     let a = 1;
         //     1;
         // }
-        let b = Block {
-            statements: vec![
-                Statement::Let(LetStatement {
-                    name: Symbol::default(),
-                    value: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                }),
-                Statement::Expression(ExpressionStatement {
-                    expression: Expression::Integer(Integer {
-                        span: Span::default(),
-                        value: 1,
-                    }),
-                    implicit_return: false,
-                }),
-            ],
-        };
+        let b = Block::new(&[
+            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::expression(Expression::integer(1), false),
+        ]);
 
         assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }

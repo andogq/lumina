@@ -1,7 +1,10 @@
-use crate::core::{
-    ast,
-    lexer::{token::Token, Lexer},
-    symbol::SymbolMap,
+use crate::{
+    core::{
+        ast,
+        lexer::{token::Token, Lexer},
+        symbol::SymbolMap,
+    },
+    util::source::Spanned,
 };
 
 use super::{block::parse_block, ParseError};
@@ -57,20 +60,33 @@ where
 
             Ok(ast::Expression::Block(parse_block(lexer, symbols)?))
         }
-        Token::If(_) => {
+        Token::If(token) => {
             advance = false;
             lexer.next();
 
-            Ok(ast::Expression::If(ast::If {
-                condition: Box::new(parse_expression(lexer, Precedence::Lowest, symbols)?),
-                success: parse_block(lexer, symbols)?,
-                otherwise: if matches!(lexer.peek(), Token::Else(_)) {
-                    lexer.next();
+            let mut span = token.span;
 
-                    Some(parse_block(lexer, symbols)?)
-                } else {
-                    None
-                },
+            let condition = parse_expression(lexer, Precedence::Lowest, symbols)?;
+
+            let success = parse_block(lexer, symbols)?;
+            span = span.to(&success);
+
+            let otherwise = if matches!(lexer.peek(), Token::Else(_)) {
+                lexer.next();
+
+                let otherwise = parse_block(lexer, symbols)?;
+                span = span.to(&otherwise);
+
+                Some(otherwise)
+            } else {
+                None
+            };
+
+            Ok(ast::Expression::If(ast::If {
+                condition: Box::new(condition),
+                success,
+                otherwise,
+                span,
             }))
         }
         token => Err(ParseError::UnexpectedToken(token)),
@@ -98,10 +114,13 @@ where
             let token = lexer.next();
             let precedence = Precedence::of(&token);
 
+            let right = parse_expression(lexer, precedence, symbols)?;
+
             left = ast::Expression::Infix(ast::Infix {
+                span: token.span().to(&right),
                 left: Box::new(left),
                 operation,
-                right: Box::new(parse_expression(lexer, precedence, symbols)?),
+                right: Box::new(right),
             });
         } else {
             // Probably aren't in the expression any more
@@ -128,6 +147,7 @@ mod test {
             left,
             operation: ast::InfixOperation::Plus(_),
             right,
+            ..
         })) = expression
         {
             assert!(matches!(
@@ -151,6 +171,7 @@ mod test {
             left,
             operation: ast::InfixOperation::Plus(_),
             right,
+            ..
         })) = expression
         {
             assert!(matches!(*left, ast::Expression::Infix(_)));
@@ -158,6 +179,7 @@ mod test {
                 left,
                 operation: ast::InfixOperation::Plus(_),
                 right,
+                ..
             }) = *left
             {
                 assert!(matches!(

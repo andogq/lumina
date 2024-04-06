@@ -1,4 +1,4 @@
-use crate::util::source::Span;
+use crate::util::source::{Span, Spanned};
 
 /// Creates a struct for a token without having to repeat all of the boiler plate, namely the span
 /// for each token.
@@ -29,6 +29,12 @@ macro_rules! token {
             pub span: Span,
             $(pub $field: $value,)*
         }
+
+        impl Spanned for $name {
+            fn span(&self) -> &Span {
+                &self.span
+            }
+        }
     };
 
     (condition $field:expr) => {
@@ -46,6 +52,14 @@ macro_rules! token_enum {
         #[derive(Clone, Debug, PartialEq)]
         pub enum Token {
             $($name($token)),*
+        }
+
+        impl Spanned for Token {
+            fn span(&self) -> &Span {
+                match self {
+                    $(Self::$name(token) => token.span()),*
+                }
+            }
         }
 
         $(

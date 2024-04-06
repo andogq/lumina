@@ -1,10 +1,19 @@
-use crate::{core::lexer::token::Token, util::source::Span};
+use crate::{
+    core::lexer::token::Token,
+    util::source::{Span, Spanned},
+};
 
 use super::Expression;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InfixOperation {
     Plus(Span),
+}
+
+impl InfixOperation {
+    pub fn plus() -> Self {
+        Self::Plus(Span::default())
+    }
 }
 
 impl TryFrom<Token> for InfixOperation {
@@ -18,9 +27,27 @@ impl TryFrom<Token> for InfixOperation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Infix {
+    pub span: Span,
     pub left: Box<Expression>,
     pub operation: InfixOperation,
     pub right: Box<Expression>,
+}
+
+impl Infix {
+    pub fn new(left: Expression, operation: InfixOperation, right: Expression) -> Self {
+        Self {
+            span: Span::default(),
+            left: Box::new(left),
+            operation,
+            right: Box::new(right),
+        }
+    }
+}
+
+impl Spanned for Infix {
+    fn span(&self) -> &Span {
+        &self.span
+    }
 }

@@ -24,45 +24,29 @@ impl InferTy for Statement {
 
 #[cfg(test)]
 mod test_statement {
-    use crate::{
-        core::ast::{Expression, Integer},
-        util::source::Span,
-    };
+    use crate::core::ast::Expression;
 
     use super::*;
 
     #[test]
     fn infer_return() {
-        let s = Statement::Return(ReturnStatement {
-            value: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-        });
+        // return 0;
+        let s = Statement::_return(Expression::integer(0));
 
         assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }
     #[test]
     fn return_return() {
-        let s = Statement::Return(ReturnStatement {
-            value: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-        });
+        // return 0;
+        let s = Statement::_return(Expression::integer(0));
 
         assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), Some(Ty::Int));
     }
 
     #[test]
     fn infer_let() {
-        let s = Statement::Let(LetStatement {
-            name: Symbol::default(),
-            value: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-        });
+        // let a = 0;
+        let s = Statement::_let(Symbol::default(), Expression::integer(0));
 
         let mut symbols = HashMap::new();
         assert_eq!(s.infer(&mut symbols).unwrap(), Ty::Unit);
@@ -70,63 +54,38 @@ mod test_statement {
     }
     #[test]
     fn return_let() {
-        let s = Statement::Let(LetStatement {
-            name: Symbol::default(),
-            value: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-        });
+        // let a = 0;
+        let s = Statement::_let(Symbol::default(), Expression::integer(0));
 
         assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
     }
 
     #[test]
     fn infer_expression() {
-        let s = Statement::Expression(ExpressionStatement {
-            expression: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-            implicit_return: false,
-        });
+        // 0;
+        let s = Statement::expression(Expression::integer(0), false);
 
         assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }
     #[test]
     fn return_expression() {
-        let s = Statement::Expression(ExpressionStatement {
-            expression: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-            implicit_return: false,
-        });
+        // 0;
+        let s = Statement::expression(Expression::integer(0), false);
 
         assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
     }
 
     #[test]
     fn infer_expression_implicit() {
-        let s = Statement::Expression(ExpressionStatement {
-            expression: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-            implicit_return: true,
-        });
+        // 0
+        let s = Statement::expression(Expression::integer(0), true);
 
         assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Int);
     }
     #[test]
     fn return_expression_implicit() {
-        let s = Statement::Expression(ExpressionStatement {
-            expression: Expression::Integer(Integer {
-                span: Span::default(),
-                value: 0,
-            }),
-            implicit_return: true,
-        });
+        // 0
+        let s = Statement::expression(Expression::integer(0), true);
 
         assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
     }

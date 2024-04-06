@@ -1,7 +1,10 @@
-use crate::core::{
-    ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
-    lexer::{token::Token, Lexer},
-    symbol::SymbolMap,
+use crate::{
+    core::{
+        ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
+        lexer::{token::Token, Lexer},
+        symbol::SymbolMap,
+    },
+    util::source::Spanned,
 };
 
 use super::{
@@ -19,15 +22,16 @@ where
     let mut expecting_semicolon = true;
 
     let statement = match lexer.peek() {
-        Token::Return(_) => {
+        Token::Return(return_token) => {
             // Parse as return statement
             lexer.next();
 
             Statement::Return(ReturnStatement {
                 value: parse_expression(lexer, Precedence::Lowest, symbols)?,
+                span: return_token.span,
             })
         }
-        Token::Let(_) => {
+        Token::Let(let_token) => {
             lexer.next();
 
             let Token::Ident(name) = lexer.next() else {
@@ -38,15 +42,20 @@ where
                 return Err(ParseError::ExpectedToken("=".to_string()));
             }
 
+            let value = parse_expression(lexer, Precedence::Lowest, symbols)?;
+
             Statement::Let(LetStatement {
+                span: let_token.span().to(&value),
                 name: symbols.get(name.literal),
-                value: parse_expression(lexer, Precedence::Lowest, symbols)?,
+                value,
             })
         }
         _ => {
             // Parse expression
+            let expression = parse_expression(lexer, Precedence::Lowest, symbols)?;
             Statement::Expression(ExpressionStatement {
-                expression: parse_expression(lexer, Precedence::Lowest, symbols)?,
+                span: expression.span().clone(),
+                expression,
                 implicit_return: if matches!(lexer.peek(), Token::Semicolon(_)) {
                     false
                 } else {
