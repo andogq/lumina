@@ -23,4 +23,5 @@ pub struct LetStatement {
 #[derive(Debug)]
 pub struct ExpressionStatement {
     pub expression: Expression,
+    pub implicit_return: bool,
 }

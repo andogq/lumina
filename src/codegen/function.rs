@@ -21,7 +21,10 @@ impl Function {
         let mut scope = HashMap::new();
 
         // Compile the body
-        self.body.compile(pass, &mut scope);
+        if let Some(implicit) = self.body.compile(pass, &mut scope) {
+            // Insert a manual return statement for the implicit value
+            pass.builder.build_return(Some(&implicit)).unwrap();
+        }
 
         // Verify and optimise the function
         fn_value.verify(true);

@@ -70,6 +70,7 @@ mod test {
                         span: Span::default(),
                         value: 1,
                     }),
+                    implicit_return: false,
                 }),
                 Statement::Return(ReturnStatement {
                     value: Expression::Integer(Integer {
@@ -98,6 +99,7 @@ mod test {
                         span: Span::default(),
                         value: 1,
                     }),
+                    implicit_return: false,
                 }),
                 Statement::Return(ReturnStatement {
                     value: Expression::Integer(Integer {
@@ -127,6 +129,7 @@ mod test {
                         span: Span::default(),
                         value: 1,
                     }),
+                    implicit_return: false,
                 }),
                 Statement::Return(ReturnStatement {
                     value: Expression::Integer(Integer {
@@ -162,6 +165,7 @@ mod test {
                         span: Span::default(),
                         value: 1,
                     }),
+                    implicit_return: false,
                 }),
             ],
         };
@@ -171,6 +175,10 @@ mod test {
 
     #[test]
     fn infer_block_expression() {
+        // {
+        //     let a = 1;
+        //     1;
+        // }
         let b = Block {
             statements: vec![
                 Statement::Let(LetStatement {
@@ -185,10 +193,11 @@ mod test {
                         span: Span::default(),
                         value: 1,
                     }),
+                    implicit_return: false,
                 }),
             ],
         };
 
-        assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Int);
+        assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }
 }

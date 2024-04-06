@@ -16,7 +16,7 @@ pub fn parse_statement<S>(
 where
     S: Iterator<Item = char>,
 {
-    let expecting_semicolon = true;
+    let mut expecting_semicolon = true;
 
     let statement = match lexer.peek() {
         Token::Return(_) => {
@@ -47,6 +47,13 @@ where
             // Parse expression
             Statement::Expression(ExpressionStatement {
                 expression: parse_expression(lexer, Precedence::Lowest, symbols)?,
+                implicit_return: if matches!(lexer.peek(), Token::Semicolon(_)) {
+                    false
+                } else {
+                    expecting_semicolon = false;
+
+                    true
+                },
             })
         }
     };

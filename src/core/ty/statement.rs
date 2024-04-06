@@ -88,9 +88,10 @@ mod test_statement {
                 span: Span::default(),
                 value: 0,
             }),
+            implicit_return: false,
         });
 
-        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Int);
+        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
     }
     #[test]
     fn return_expression() {
@@ -99,6 +100,32 @@ mod test_statement {
                 span: Span::default(),
                 value: 0,
             }),
+            implicit_return: false,
+        });
+
+        assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
+    }
+
+    #[test]
+    fn infer_expression_implicit() {
+        let s = Statement::Expression(ExpressionStatement {
+            expression: Expression::Integer(Integer {
+                span: Span::default(),
+                value: 0,
+            }),
+            implicit_return: true,
+        });
+
+        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Int);
+    }
+    #[test]
+    fn return_expression_implicit() {
+        let s = Statement::Expression(ExpressionStatement {
+            expression: Expression::Integer(Integer {
+                span: Span::default(),
+                value: 0,
+            }),
+            implicit_return: true,
         });
 
         assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
@@ -132,7 +159,13 @@ impl InferTy for ReturnStatement {
 
 impl InferTy for ExpressionStatement {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        self.expression.infer(symbols)
+        let ty = self.expression.infer(symbols);
+
+        if self.implicit_return {
+            ty
+        } else {
+            Ok(Ty::Unit)
+        }
     }
 
     fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
