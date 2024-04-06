@@ -104,6 +104,8 @@ token!(FalseToken);
 token!(FnToken);
 token!(ReturnToken);
 token!(LetToken);
+token!(IfToken);
+token!(ElseToken);
 
 token_enum! {
     Illegal: IllegalToken,
@@ -128,5 +130,7 @@ token_enum! {
 
     Fn: FnToken,
     Return: ReturnToken,
-    Let: LetToken
+    Let: LetToken,
+    If: IfToken,
+    Else: ElseToken
 }

@@ -7,6 +7,7 @@ use super::{InferTy, Symbol, Ty, TyError};
 mod block;
 mod boolean;
 mod ident;
+mod if_else;
 mod infix;
 mod integer;
 
@@ -18,6 +19,7 @@ impl InferTy for Expression {
             Expression::Boolean(s) => s.infer(symbols),
             Expression::Ident(s) => s.infer(symbols),
             Expression::Block(s) => s.infer(symbols),
+            Expression::If(s) => s.infer(symbols),
         }
     }
 
@@ -28,6 +30,7 @@ impl InferTy for Expression {
             Expression::Boolean(s) => s.return_ty(symbols),
             Expression::Ident(s) => s.return_ty(symbols),
             Expression::Block(s) => s.return_ty(symbols),
+            Expression::If(s) => s.return_ty(symbols),
         }
     }
 }

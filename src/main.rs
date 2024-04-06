@@ -9,8 +9,16 @@ fn main() {
 fn main() -> int {
     let a = { 5; 1 + 2; };
     let b = 4;
+
     let value = true;
-    return b + a + 10;
+
+    let z = if false {
+        4;
+    } else {
+        5;
+    };
+
+    return b + a + 10 + z;
 }"#;
 
     let program = parse(Lexer::new(Source::new("hardcoded", source.chars()))).unwrap();

@@ -46,6 +46,7 @@ impl Statement {
                 let addr = pass
                     .builder
                     .build_alloca(
+                        // TODO: This allocation should depend on the type of the variable
                         pass.context.i64_type(),
                         &pass.symbol_map.name(s.name).unwrap(),
                     )

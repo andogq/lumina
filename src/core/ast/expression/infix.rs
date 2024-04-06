@@ -2,6 +2,7 @@ use crate::{core::lexer::token::Token, util::source::Span};
 
 use super::Expression;
 
+#[derive(Debug)]
 pub enum InfixOperation {
     Plus(Span),
 }
@@ -17,6 +18,7 @@ impl TryFrom<Token> for InfixOperation {
     }
 }
 
+#[derive(Debug)]
 pub struct Infix {
     pub left: Box<Expression>,
     pub operation: InfixOperation,

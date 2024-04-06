@@ -1,6 +1,7 @@
 mod block;
 mod boolean;
 mod ident;
+mod if_else;
 mod infix;
 mod integer;
 
@@ -26,6 +27,7 @@ impl Expression {
             Expression::Block(block) => block
                 .compile(pass, scope)
                 .expect("block must evaluate to a value"),
+            Expression::If(if_else) => if_else.compile(pass, scope),
         }
     }
 }

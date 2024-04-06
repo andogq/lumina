@@ -91,6 +91,8 @@ where
                     "fn" => Token::Fn(FnToken { span }),
                     "return" => Token::Return(ReturnToken { span }),
                     "let" => Token::Let(LetToken { span }),
+                    "if" => Token::If(IfToken { span }),
+                    "else" => Token::Else(ElseToken { span }),
                     _ => Token::Ident(IdentToken { span, literal }),
                 }
             }

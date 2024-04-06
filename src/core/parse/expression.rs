@@ -57,6 +57,22 @@ where
 
             Ok(ast::Expression::Block(parse_block(lexer, symbols)?))
         }
+        Token::If(_) => {
+            advance = false;
+            lexer.next();
+
+            Ok(ast::Expression::If(ast::If {
+                condition: Box::new(parse_expression(lexer, Precedence::Lowest, symbols)?),
+                success: parse_block(lexer, symbols)?,
+                otherwise: if matches!(lexer.peek(), Token::Else(_)) {
+                    lexer.next();
+
+                    Some(parse_block(lexer, symbols)?)
+                } else {
+                    None
+                },
+            }))
+        }
         token => Err(ParseError::UnexpectedToken(token)),
     };
 
