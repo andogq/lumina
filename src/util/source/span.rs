@@ -33,8 +33,8 @@ impl Spanned for Span {
 /// Location of a current line and column.
 #[derive(Clone, Debug)]
 pub struct Location {
-    line: usize,
-    column: usize,
+    pub(super) line: usize,
+    pub(super) column: usize,
 
     // Offset into a buffer of the source
     pub(super) offset: usize,

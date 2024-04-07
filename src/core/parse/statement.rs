@@ -29,16 +29,34 @@ pub fn parse_statement(
             })
         }
         Token::Let(let_token) => {
+            // let token
             lexer.next();
 
-            let Token::Ident(name) = lexer.next() else {
-                return Err(ParseError::ExpectedToken("ident".to_string()));
+            // variable binding
+            let name = match lexer.next() {
+                Token::Ident(name) => name,
+                token => {
+                    return Err(ParseError::ExpectedToken {
+                        found: token,
+                        expected: Token::Ident(Default::default()),
+                        reason: "ident must follow let binding".to_string(),
+                    });
+                }
             };
 
-            if !matches!(lexer.next(), Token::Equals(_)) {
-                return Err(ParseError::ExpectedToken("=".to_string()));
-            }
+            // equals sign
+            match lexer.next() {
+                Token::Equals(_) => (),
+                token => {
+                    return Err(ParseError::ExpectedToken {
+                        found: token,
+                        expected: Token::Equals(Default::default()),
+                        reason: "equals sign must follow ident".to_string(),
+                    });
+                }
+            };
 
+            // value
             let value = parse_expression(lexer, Precedence::Lowest, symbols)?;
 
             Statement::Let(LetStatement {
@@ -64,8 +82,17 @@ pub fn parse_statement(
         }
     };
 
-    if expecting_semicolon && !matches!(lexer.next(), Token::Semicolon(_)) {
-        return Err(ParseError::ExpectedToken(";".to_string()));
+    if expecting_semicolon {
+        match lexer.next() {
+            Token::Semicolon(_) => (),
+            token => {
+                return Err(ParseError::ExpectedToken {
+                    found: token,
+                    expected: Token::Equals(Default::default()),
+                    reason: "semicolon must follow statement".to_string(),
+                });
+            }
+        };
     }
 
     Ok(statement)

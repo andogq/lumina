@@ -13,11 +13,15 @@ use super::{ast::Program, symbol::SymbolMap};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
-    #[error("unexpected token encountered")]
+    #[error("unexpected token encountered: '{0}")]
     UnexpectedToken(Token),
 
-    #[error("expected token {0}")]
-    ExpectedToken(String),
+    #[error("expected token '{expected}' but found '{found}': {reason}")]
+    ExpectedToken {
+        expected: Token,
+        found: Token,
+        reason: String,
+    },
 
     #[error("invalid literal, expected `{expected}`")]
     InvalidLiteral { expected: String },

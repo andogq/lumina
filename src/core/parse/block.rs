@@ -1,7 +1,10 @@
 use crate::{
     core::{
         ast::Block,
-        lexer::{token::Token, Lexer},
+        lexer::{
+            token::{LeftBraceToken, RightBraceToken, Token},
+            Lexer,
+        },
         symbol::SymbolMap,
     },
     util::source::Spanned,
@@ -10,8 +13,15 @@ use crate::{
 use super::{statement::parse_statement, ParseError};
 
 pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, ParseError> {
-    let Token::LeftBrace(open_brace) = lexer.next() else {
-        return Err(ParseError::ExpectedToken("{".to_string()));
+    let open_brace = match lexer.next() {
+        Token::LeftBrace(ident) => ident,
+        token => {
+            return Err(ParseError::ExpectedToken {
+                expected: Token::LeftBrace(LeftBraceToken::default()),
+                found: token,
+                reason: "block must begin with an opening brace".to_string(),
+            });
+        }
     };
 
     let statements = std::iter::from_fn(|| {
@@ -24,8 +34,15 @@ pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, 
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let Token::RightBrace(close_brace) = lexer.next() else {
-        return Err(ParseError::ExpectedToken("}".to_string()));
+    let close_brace = match lexer.next() {
+        Token::RightBrace(ident) => ident,
+        token => {
+            return Err(ParseError::ExpectedToken {
+                expected: Token::RightBrace(RightBraceToken::default()),
+                found: token,
+                reason: "block must end with a closing brace".to_string(),
+            });
+        }
     };
 
     Ok(Block {

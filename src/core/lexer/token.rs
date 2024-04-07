@@ -1,8 +1,15 @@
+use std::fmt::Display;
+
 use crate::util::source::{Span, Spanned};
 
 /// Creates a struct for a token without having to repeat all of the boiler plate, namely the span
 /// for each token.
 macro_rules! token {
+    ($name:ident { $($field:ident: $value:ty),* }, $display:expr) => {
+        token!($name { $($field: $value),* });
+        token!(display $name $display);
+    };
+
     ($name:ident { $($field:ident: $value:ty),* }) => {
         token!(struct $name { $($field: $value,)* });
 
@@ -11,6 +18,11 @@ macro_rules! token {
                 token!(condition $(self.$field == other.$field);*)
             }
         }
+    };
+
+    ($name:ident, $display:expr) => {
+        token!($name);
+        token!(display $name $display);
     };
 
     ($name:ident) => {
@@ -33,6 +45,14 @@ macro_rules! token {
         impl Spanned for $name {
             fn span(&self) -> &Span {
                 &self.span
+            }
+        }
+    };
+
+    (display $name:ident $display:expr) => {
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+                $display.fmt(f)
             }
         }
     };
@@ -61,6 +81,15 @@ macro_rules! token_enum {
                 }
             }
         }
+
+        impl std::fmt::Display for Token {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+                match self {
+                    $(Self::$name(token) => token.fmt(f)),*
+                }
+            }
+        }
+
 
         $(
         impl GetAs<$token> for Token {
@@ -95,31 +124,37 @@ pub trait Name {
     fn name() -> &'static str;
 }
 
-token!(IllegalToken);
-token!(EOFToken);
+token!(IllegalToken { c: char });
+impl Display for IllegalToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.c.fmt(f)
+    }
+}
 
-token!(IntegerToken { literal: String });
-token!(IdentToken { literal: String });
+token!(EOFToken, "<EOF>");
 
-token!(PlusToken);
-token!(EqualsToken);
+token!(IntegerToken { literal: String }, "integer");
+token!(IdentToken { literal: String }, "ident");
 
-token!(SemicolonToken);
-token!(ThinArrowToken);
+token!(PlusToken, "+");
+token!(EqualsToken, "=");
 
-token!(LeftParenToken);
-token!(RightParenToken);
-token!(LeftBraceToken);
-token!(RightBraceToken);
+token!(SemicolonToken, ";");
+token!(ThinArrowToken, "->");
 
-token!(TrueToken);
-token!(FalseToken);
+token!(LeftParenToken, "(");
+token!(RightParenToken, ")");
+token!(LeftBraceToken, "{");
+token!(RightBraceToken, "}");
 
-token!(FnToken);
-token!(ReturnToken);
-token!(LetToken);
-token!(IfToken);
-token!(ElseToken);
+token!(TrueToken, "true");
+token!(FalseToken, "false");
+
+token!(FnToken, "fn");
+token!(ReturnToken, "return");
+token!(LetToken, "let");
+token!(IfToken, "if");
+token!(ElseToken, "else");
 
 token_enum! {
     Illegal: IllegalToken,

@@ -88,7 +88,7 @@ impl Lexer {
                 }
             }
 
-            _ => Token::Illegal(token::IllegalToken { span }),
+            c => Token::Illegal(token::IllegalToken { span, c }),
         };
 
         self.consume_whitespace();

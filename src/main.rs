@@ -5,7 +5,8 @@ use lumina::{
 };
 
 fn main() {
-    let source = r#"
+    let source = Source::new(
+        r#"
 fn main() -> int {
     let a = { 5; 1 + 2 };
     let b = 4;
@@ -19,9 +20,16 @@ fn main() -> int {
     };
 
     return b + a + 10 + z;
-}"#;
+}"#,
+    );
 
-    let program = parse(Lexer::new(Source::new(source))).unwrap();
+    let program = match parse(Lexer::new(source)) {
+        Ok(program) => program,
+        Err(e) => {
+            eprintln!("{e}");
+            return;
+        }
+    };
 
     if let Err(e) = program.type_check() {
         eprintln!("{e}");
