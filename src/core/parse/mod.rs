@@ -29,10 +29,7 @@ pub enum ParseError {
     MissingReturn,
 }
 
-pub fn parse<S>(mut lexer: Lexer<S>) -> Result<Program, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
     let mut symbol_map = SymbolMap::new();
     let main = symbol_map.get("main");
 

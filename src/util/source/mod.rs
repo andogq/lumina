@@ -1,97 +1,76 @@
 mod span;
 
-use std::ops::{Deref, DerefMut};
+use std::str::Chars;
 
 pub use self::span::*;
 
-use super::multi_peek::{MultiPeekIterator, MultiPeekable};
+pub struct Source {
+    chars: Chars<'static>,
 
-pub struct Source<S>
-where
-    S: Iterator,
-{
-    name: String,
-
-    source: MultiPeekable<S>,
-    location: Location,
+    next_location: Location,
+    next_char: Option<char>,
 }
 
-impl<S> Source<S>
-where
-    S: Iterator<Item = char>,
-{
-    pub fn new(name: impl ToString, source: impl IntoIterator<Item = char, IntoIter = S>) -> Self {
+impl Source {
+    pub fn new(source: &'static str) -> Self {
         Self {
-            name: name.to_string(),
+            chars: source.chars(),
 
-            source: source.into_iter().multi_peekable(),
-            location: Location { line: 1, column: 0 },
+            next_location: Location::default(),
+            next_char: None,
         }
     }
 
     /// Emit a location for the current point in the file.
     pub fn location(&self) -> Location {
-        self.location.clone()
-    }
-
-    /// Emit a span starting from the provided location to the current location in the file.
-    pub fn span(&self, start: Location) -> Span {
-        Span {
-            file_name: self.name.clone(),
-            start,
-            end: self.location(),
-        }
+        self.next_location.clone()
     }
 
     /// Consume the source whilst the closure is true, returning a string.
-    pub fn consume_while(&mut self, mut condition: impl FnMut(&char) -> bool) -> String {
-        std::iter::from_fn(|| {
-            if self.source.peek().filter(|c| condition(c)).is_some() {
+    pub fn consume_while(&mut self, mut condition: impl FnMut(&char) -> bool) -> (String, Span) {
+        let (str, locations): (String, Vec<_>) = std::iter::from_fn(|| {
+            if self.peek().filter(|c| condition(c)).is_some() {
                 self.next()
             } else {
                 None
             }
         })
-        .collect()
+        .unzip();
+
+        (
+            str,
+            (
+                // WARN: May misreport on zero-sized strings
+                locations.first().unwrap_or(&self.next_location).clone(),
+                locations.last().unwrap_or(&self.next_location).clone(),
+            )
+                .into(),
+        )
+    }
+
+    pub fn peek(&mut self) -> Option<char> {
+        if let Some(c) = self.next_char {
+            Some(c)
+        } else {
+            self.next_char = self.chars.next();
+            self.next_char.clone()
+        }
     }
 }
 
-impl<S> Iterator for Source<S>
-where
-    S: Iterator<Item = char>,
-{
-    type Item = char;
+impl Iterator for Source {
+    type Item = (char, Location);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let c = self.source.next()?;
+        let c = self.next_char.take().or_else(|| self.chars.next())?;
+        let location = self.next_location.clone();
 
         if c == '\n' {
-            self.location.line += 1;
-            self.location.column = 0;
+            self.next_location.next_line();
         } else {
-            self.location.column += 1;
+            self.next_location.next();
         }
 
-        Some(c)
-    }
-}
-
-impl<S> Deref for Source<S>
-where
-    S: Iterator<Item = char>,
-{
-    type Target = MultiPeekable<S>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.source
-    }
-}
-
-impl<S> DerefMut for Source<S>
-where
-    S: Iterator<Item = char>,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.source
+        Some((c, location))
     }
 }

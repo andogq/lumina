@@ -12,13 +12,10 @@ use super::{
     ParseError,
 };
 
-pub fn parse_statement<S>(
-    lexer: &mut Lexer<S>,
+pub fn parse_statement(
+    lexer: &mut Lexer,
     symbols: &mut SymbolMap,
-) -> Result<Statement, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
     let statement = match lexer.peek() {

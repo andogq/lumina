@@ -24,13 +24,7 @@ impl Precedence {
     }
 }
 
-fn parse_prefix<S>(
-    lexer: &mut Lexer<S>,
-    symbols: &mut SymbolMap,
-) -> Result<ast::Expression, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expression, ParseError> {
     let mut advance = true;
 
     let prefix = match lexer.peek() {
@@ -99,14 +93,11 @@ where
     prefix
 }
 
-pub fn parse_expression<S>(
-    lexer: &mut Lexer<S>,
+pub fn parse_expression(
+    lexer: &mut Lexer,
     precedence: Precedence,
     symbols: &mut SymbolMap,
-) -> Result<ast::Expression, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+) -> Result<ast::Expression, ParseError> {
     let mut left = parse_prefix(lexer, symbols)?;
 
     while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
@@ -139,7 +130,7 @@ mod test {
 
     #[test]
     fn simple_addition() {
-        let mut lexer = Lexer::new(Source::new("test", "3 + 4".chars()));
+        let mut lexer = Lexer::new(Source::new("3 + 4"));
         let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
         assert!(matches!(expression, Ok(ast::Expression::Infix(_))));
@@ -163,7 +154,7 @@ mod test {
 
     #[test]
     fn multi_addition() {
-        let mut lexer = Lexer::new(Source::new("test", "3 + 4 + 10".chars()));
+        let mut lexer = Lexer::new(Source::new("3 + 4 + 10"));
         let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
 
         assert!(matches!(expression, Ok(ast::Expression::Infix(_))));

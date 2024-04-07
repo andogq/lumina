@@ -4,21 +4,15 @@ use crate::util::source::Source;
 
 use self::token::*;
 
-pub struct Lexer<S>
-where
-    S: Iterator,
-{
-    source: Source<S>,
+pub struct Lexer {
+    source: Source,
 
     next: Option<Token>,
 }
 
-impl<S> Lexer<S>
-where
-    S: Iterator<Item = char>,
-{
+impl Lexer {
     /// Create a new lexer with the provided source.
-    pub fn new(source: Source<S>) -> Self {
+    pub fn new(source: Source) -> Self {
         let mut lexer = Self { source, next: None };
 
         // Consume all whitespace at the start of the file
@@ -34,16 +28,15 @@ where
             return token;
         }
 
-        // Track the start of the span
-        let span_start = self.source.location();
+        // Fetch the next character
+        let Some((c, location)) = self.source.next() else {
+            return Token::EOF(EOFToken {
+                span: self.source.location().span(),
+            });
+        };
 
         // Pre-emptively create a span for this character
-        let span = self.source.span(span_start.clone());
-
-        // Fetch the next character
-        let Some(c) = self.source.next() else {
-            return Token::EOF(EOFToken { span });
-        };
+        let span = location.clone().span();
 
         let token = match c {
             '+' => Token::Plus(PlusToken { span }),
@@ -55,36 +48,34 @@ where
             '}' => Token::RightBrace(RightBraceToken { span }),
 
             '-' if matches!(self.source.peek(), Some('>')) => {
-                self.source.next();
+                let (_, end_location) = self.source.next().expect("arrow close");
 
                 Token::ThinArrow(ThinArrowToken {
-                    span: self.source.span(span_start),
+                    span: (location, end_location).into(),
                 })
             }
 
             ';' => Token::Semicolon(SemicolonToken { span }),
 
             c if c.is_digit(10) => {
-                let integer = {
-                    let mut s = self.source.consume_while(|c| c.is_digit(10));
-                    s.insert(0, c);
-                    s
-                };
+                let (mut literal, str_span) = self.source.consume_while(|c| c.is_digit(10));
 
-                Token::Integer(IntegerToken {
-                    span: self.source.span(span_start),
-                    literal: integer,
-                })
+                // Add the first digit of the number
+                literal.insert(0, c);
+
+                // Expand the span to include the first digit
+                let span = span.to(&str_span);
+
+                Token::Integer(IntegerToken { span, literal })
             }
 
             c if c.is_alphabetic() => {
-                let literal = {
-                    let mut s = self.source.consume_while(|c| c.is_alphabetic());
-                    s.insert(0, c);
-                    s
-                };
+                let (mut literal, str_span) = self.source.consume_while(|c| c.is_alphabetic());
 
-                let span = self.source.span(span_start);
+                literal.insert(0, c);
+
+                let span = span.to(&str_span);
+
                 match literal.as_str() {
                     "true" => Token::True(TrueToken { span }),
                     "false" => Token::False(FalseToken { span }),
@@ -97,9 +88,7 @@ where
                 }
             }
 
-            _ => Token::Illegal(token::IllegalToken {
-                span: self.source.span(span_start),
-            }),
+            _ => Token::Illegal(token::IllegalToken { span }),
         };
 
         self.consume_whitespace();
@@ -125,7 +114,7 @@ mod test {
 
     #[test]
     fn simple_addition() {
-        let mut lexer = Lexer::new(Source::new("test", "1 + 3;".chars()));
+        let mut lexer = Lexer::new(Source::new("1 + 3;"));
 
         let tokens = std::iter::from_fn(|| match lexer.next() {
             Token::EOF(_) => None,

@@ -21,7 +21,7 @@ fn main() -> int {
     return b + a + 10 + z;
 }"#;
 
-    let program = parse(Lexer::new(Source::new("hardcoded", source.chars()))).unwrap();
+    let program = parse(Lexer::new(Source::new(source))).unwrap();
 
     if let Err(e) = program.type_check() {
         eprintln!("{e}");

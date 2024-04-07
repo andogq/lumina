@@ -9,10 +9,7 @@ use crate::{
 
 use super::{statement::parse_statement, ParseError};
 
-pub fn parse_block<S>(lexer: &mut Lexer<S>, symbols: &mut SymbolMap) -> Result<Block, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, ParseError> {
     let Token::LeftBrace(open_brace) = lexer.next() else {
         return Err(ParseError::ExpectedToken("{".to_string()));
     };

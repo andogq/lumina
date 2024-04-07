@@ -7,13 +7,7 @@ use crate::core::{
 
 use super::{block::parse_block, ParseError};
 
-pub fn parse_function<S>(
-    lexer: &mut Lexer<S>,
-    symbols: &mut SymbolMap,
-) -> Result<Function, ParseError>
-where
-    S: Iterator<Item = char>,
-{
+pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Function, ParseError> {
     // `fn` keyword
     let Token::Fn(fn_token) = lexer.next() else {
         return Err(ParseError::ExpectedToken("fn".to_string()));
