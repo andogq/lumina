@@ -9,7 +9,7 @@ pub struct Function {
     pub span: Span,
     pub name: Symbol,
     pub parameters: Vec<(Symbol, Ty)>,
-    pub return_ty: Option<Ty>,
+    pub return_ty: Ty,
     pub body: Block,
 }
 

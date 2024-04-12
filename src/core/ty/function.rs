@@ -14,19 +14,13 @@ impl Function {
 
         // Make sure explicit returns are correct
         if let Some(return_ty) = return_ty {
-            if return_ty != self.return_ty.unwrap_or(Ty::Unit) {
-                return Err(TyError::Return {
-                    expected: self.return_ty,
-                    found: Some(return_ty),
-                });
+            if return_ty != self.return_ty {
+                return Err(TyError::Mismatch(self.return_ty, return_ty));
             }
         }
 
-        if !matches!(inferred_ty, Ty::Unit) && inferred_ty != self.return_ty.unwrap_or(Ty::Unit) {
-            return Err(TyError::Return {
-                expected: self.return_ty,
-                found: Some(inferred_ty),
-            });
+        if !matches!(inferred_ty, Ty::Unit) && inferred_ty != self.return_ty {
+            return Err(TyError::Mismatch(self.return_ty, inferred_ty));
         }
 
         Ok(())

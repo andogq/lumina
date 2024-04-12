@@ -77,7 +77,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     // return type (can currently only be `int`)
     let return_ty = match lexer.next() {
         Token::Ident(ident) => match ident.literal.as_str() {
-            "int" => Some(Ty::Int),
+            "int" => Ty::Int,
             _ => {
                 panic!("only int can be returned from a function")
             }
