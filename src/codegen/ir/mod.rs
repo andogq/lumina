@@ -8,6 +8,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use self::{basic_block::*, index::*};
 
+pub use basic_block::{BasicBlock, BasicBlockData, Terminator};
+pub use function::Function;
+
 #[derive(Default)]
 struct ContextInner {
     /// All of the basic blocks created in this pass.

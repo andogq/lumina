@@ -17,6 +17,8 @@ pub fn lower_function(ctx: &Context, node: ast::Function) -> Function {
                     entry: lower_expression(ctx, entry, s.value, RETURN_LOCAL)
                         // Trigger the return terminator
                         .t_return(),
+
+                    name: node.name,
                 };
             }
             ast::Statement::Let(_) => todo!(),
