@@ -17,10 +17,10 @@ pub const RETURN_LOCAL: Local = Index::<LocalDecl>(0, PhantomData);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Scalar {
     /// The value of this scalar.
-    data: u64,
+    pub data: u64,
 
     /// Number of bytes the scalar value takes up.
-    size: NonZeroU8,
+    pub size: NonZeroU8,
 }
 
 impl Scalar {

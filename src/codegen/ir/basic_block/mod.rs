@@ -6,6 +6,7 @@ pub use terminator::*;
 
 use super::{Context, Index};
 
+#[derive(Clone)]
 pub struct BasicBlockData {
     pub statements: Vec<Statement>,
     pub terminator: Terminator,

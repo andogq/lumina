@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, hash::Hash, marker::PhantomData};
 
 pub struct Index<T>(pub(super) usize, pub(super) PhantomData<T>);
 impl<T> PartialEq for Index<T> {
@@ -18,6 +18,11 @@ impl<T> Clone for Index<T> {
     }
 }
 impl<T> Copy for Index<T> {}
+impl<T> Hash for Index<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
+    }
+}
 impl<T> Index<T> {
     pub fn new(i: usize) -> Self {
         Self(i, PhantomData::default())

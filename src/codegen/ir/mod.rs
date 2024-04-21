@@ -1,26 +1,27 @@
 mod basic_block;
 mod function;
-mod index;
-mod lowering;
-mod value;
+pub mod index;
+pub mod lowering;
+pub mod value;
 
 use std::{cell::RefCell, rc::Rc};
 
 use self::{basic_block::*, index::*};
 
-pub use basic_block::{BasicBlock, BasicBlockData, Terminator};
+pub use basic_block::{BasicBlock, BasicBlockData, Statement, Terminator};
 pub use function::Function;
+pub use value::RETURN_LOCAL;
 
 #[derive(Default)]
-struct ContextInner {
+pub struct ContextInner {
     /// All of the basic blocks created in this pass.
-    basic_blocks: IndexVec<BasicBlockData>,
+    pub basic_blocks: IndexVec<BasicBlockData>,
 }
 
 /// The context tracks any objects created in this compile pass. It is actually a wrapper type
 /// around a shared pointer to the actual data structures.
 #[derive(Clone)]
-struct Context(Rc<RefCell<ContextInner>>);
+pub struct Context(Rc<RefCell<ContextInner>>);
 
 impl Context {
     /// Create a new instance of the context.
@@ -31,5 +32,9 @@ impl Context {
     /// Utility method to create a new basic block builder.
     fn basic_block(&self) -> BasicBlockBuilder {
         BasicBlockBuilder::new(self.clone())
+    }
+
+    pub fn into_inner(self) -> ContextInner {
+        self.0.take()
     }
 }

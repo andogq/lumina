@@ -1,12 +1,27 @@
-use inkwell::context::Context;
+use std::collections::HashMap;
 
-use crate::codegen::ir::Terminator;
+use inkwell::{
+    context::Context,
+    module::Module,
+    values::{FunctionValue, PointerValue},
+};
 
-use super::ir::{BasicBlockData, Function};
+use crate::codegen::ir::{Statement, Terminator};
 
-pub fn compile(ctx: &mut Context, function: Function) {
-    // TODO: Resolve the actual name of the function
-    let module = ctx.create_module(&function.name.to_string());
+use super::ir::{
+    index::IndexVec,
+    value::{Local, RValue},
+    BasicBlockData, Function, RETURN_LOCAL,
+};
+
+type Locals<'ctx> = HashMap<Local, PointerValue<'ctx>>;
+
+pub fn compile<'ctx>(
+    ctx: &'ctx Context,
+    module: &Module<'ctx>,
+    function: Function,
+    bbs: IndexVec<BasicBlockData>,
+) -> FunctionValue<'ctx> {
     let builder = ctx.create_builder();
 
     // Create the prototype of the function
@@ -17,22 +32,63 @@ pub fn compile(ctx: &mut Context, function: Function) {
     // Create the entry basic block
     let entry = ctx.append_basic_block(fn_value, "entry");
     builder.position_at_end(entry);
+
+    // Prepare locals for the function body
+    let mut locals = HashMap::new();
+    locals.insert(RETURN_LOCAL, {
+        builder
+            .build_alloca(ctx.i64_type(), "return value")
+            .unwrap()
+    });
+
+    compile_basic_block(
+        ctx,
+        entry,
+        locals,
+        bbs.get(function.entry).unwrap().to_owned(),
+    );
+
+    fn_value
 }
 
 fn compile_basic_block(
-    ctx: &mut Context,
+    ctx: &Context,
     target: inkwell::basic_block::BasicBlock,
+    locals: Locals,
     basic_block: BasicBlockData,
 ) {
     let builder = ctx.create_builder();
     builder.position_at_end(target);
 
-    // TODO: Compile statements
-    assert!(basic_block.statements.is_empty());
+    for statement in basic_block.statements {
+        match statement {
+            Statement::Assign(local, value) => {
+                let ptr = locals.get(&local).unwrap().to_owned();
+
+                let value = match value {
+                    RValue::Scalar(s) => {
+                        // TODO: Properly handle arbitrary precision
+                        ctx.i64_type().const_int(s.data, false)
+                    }
+                };
+
+                builder.build_store(ptr, value).unwrap();
+            }
+        }
+    }
 
     match basic_block.terminator {
         Terminator::Return => {
-            builder.build_return(todo!()).unwrap();
+            builder
+                .build_return(Some({
+                    // TODO: Assumes that there is a return value
+                    let ptr = locals.get(&RETURN_LOCAL).unwrap();
+
+                    &builder
+                        .build_load(ctx.i64_type(), *ptr, "load return")
+                        .unwrap()
+                }))
+                .unwrap();
         }
     }
 }
