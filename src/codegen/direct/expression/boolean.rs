@@ -1,6 +1,6 @@
 use inkwell::values::IntValue;
 
-use crate::{codegen::CompilePass, core::ast::Boolean};
+use crate::{codegen::direct::CompilePass, core::ast::Boolean};
 
 impl Boolean {
     pub fn compile<'ctx>(&self, pass: &mut CompilePass<'ctx>) -> IntValue<'ctx> {

@@ -1,5 +1,5 @@
 use lumina::{
-    codegen::Compiler,
+    codegen::direct::Compiler,
     core::{lexer::Lexer, parse::parse},
     util::source::Source,
 };

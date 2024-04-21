@@ -6,7 +6,7 @@ use inkwell::{
 };
 
 use crate::{
-    codegen::CompilePass,
+    codegen::direct::CompilePass,
     core::{ast::If, symbol::Symbol},
 };
 

@@ -1,6 +1,6 @@
 use inkwell::values::IntValue;
 
-use crate::{codegen::CompilePass, core::ast::Integer};
+use crate::{codegen::direct::CompilePass, core::ast::Integer};
 
 impl Integer {
     pub fn compile<'ctx>(&self, pass: &mut CompilePass<'ctx>) -> IntValue<'ctx> {

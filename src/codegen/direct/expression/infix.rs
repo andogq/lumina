@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use inkwell::values::{IntValue, PointerValue};
 
 use crate::{
-    codegen::CompilePass,
+    codegen::direct::CompilePass,
     core::{
         ast::{Infix, InfixOperation},
         symbol::Symbol,
