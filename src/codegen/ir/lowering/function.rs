@@ -1,4 +1,9 @@
-use crate::core::ir::{lowering::lower_expression, *};
+use crate::{
+    codegen::ir::{lowering::lower_expression, value::*, *},
+    core::ast,
+};
+
+use self::function::Function;
 
 /// Lower the provided function AST node.
 pub fn lower_function(ctx: &Context, node: ast::Function) -> Function {

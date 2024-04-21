@@ -1,4 +1,6 @@
-use crate::core::ir::*;
+use crate::{codegen::ir::*, core::ast};
+
+use self::value::*;
 
 /// Lower the provided expression into the provided basic block, ensuring that the result of the
 /// expression is stored into the target. The resulting basic block of the control flow must be
@@ -21,4 +23,3 @@ pub fn lower_expression(
         ast::Expression::If(_) => todo!(),
     }
 }
-

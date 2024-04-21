@@ -6,9 +6,7 @@ mod value;
 
 use std::{cell::RefCell, rc::Rc};
 
-use self::{basic_block::*, function::*, index::*, value::*};
-
-use super::ast;
+use self::{basic_block::*, index::*};
 
 #[derive(Default)]
 struct ContextInner {

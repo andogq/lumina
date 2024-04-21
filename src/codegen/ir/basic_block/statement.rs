@@ -1,4 +1,4 @@
-use crate::core::ir::{Local, RValue};
+use crate::codegen::ir::value::{Local, RValue};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Statement {

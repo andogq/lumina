@@ -1,5 +1,6 @@
 mod expression;
 mod function;
+mod ir;
 mod program;
 mod statement;
 
