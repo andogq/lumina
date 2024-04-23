@@ -6,10 +6,12 @@ use inkwell::{
     values::{FunctionValue, PointerValue},
 };
 
-use crate::codegen::ir::{Statement, Terminator};
+use crate::{
+    codegen::ir::{Statement, Terminator},
+    util::index::IndexVec,
+};
 
 use super::ir::{
-    index::IndexVec,
     value::{Local, RValue},
     BasicBlockData, Function, RETURN_LOCAL,
 };

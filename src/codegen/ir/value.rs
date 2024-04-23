@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, num::NonZeroU8};
 
-use super::index::Index;
+use crate::util::index::Index;
 
 /// Declaration of a local, which represents some place in memory, most likely on the stack. Will
 /// eventually include type information.

@@ -1,12 +1,13 @@
 mod basic_block;
 mod function;
-pub mod index;
 pub mod lowering;
 pub mod value;
 
 use std::{cell::RefCell, rc::Rc};
 
-use self::{basic_block::*, index::*};
+use crate::util::index::IndexVec;
+
+use self::basic_block::*;
 
 pub use basic_block::{BasicBlock, BasicBlockData, Statement, Terminator};
 pub use function::Function;

@@ -4,7 +4,9 @@ mod terminator;
 pub use statement::*;
 pub use terminator::*;
 
-use super::{Context, Index};
+use crate::util::index::Index;
+
+use super::Context;
 
 #[derive(Clone)]
 pub struct BasicBlockData {

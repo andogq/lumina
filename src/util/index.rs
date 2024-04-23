@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash, marker::PhantomData};
 
-pub struct Index<T>(pub(super) usize, pub(super) PhantomData<T>);
+pub struct Index<T>(pub usize, pub PhantomData<T>);
 impl<T> PartialEq for Index<T> {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
