@@ -11,7 +11,8 @@ fn main() {
     let source = Source::new(
         r#"
 fn main() -> int {
-    return 10;
+    let a = 10;
+    return a;
 }"#,
     );
 

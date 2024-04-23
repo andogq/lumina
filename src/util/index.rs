@@ -29,6 +29,7 @@ impl<T> Index<T> {
     }
 }
 
+#[derive(Clone)]
 pub struct IndexVec<T>(Vec<T>, PhantomData<Index<T>>);
 impl<T> Default for IndexVec<T> {
     fn default() -> Self {
