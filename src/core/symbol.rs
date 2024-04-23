@@ -3,6 +3,7 @@ use std::{
     fmt::{Display, Formatter},
 };
 
+#[derive(Clone, Default)]
 pub struct SymbolMap {
     next: usize,
     map: HashMap<String, Symbol>,

@@ -5,7 +5,7 @@ pub mod value;
 
 use std::{cell::RefCell, rc::Rc};
 
-use crate::util::index::IndexVec;
+use crate::{core::symbol::SymbolMap, util::index::IndexVec};
 
 use self::basic_block::*;
 
@@ -15,6 +15,8 @@ pub use value::RETURN_LOCAL;
 
 #[derive(Default)]
 pub struct ContextInner {
+    pub symbols: SymbolMap,
+
     /// All of the basic blocks created in this pass.
     pub basic_blocks: IndexVec<BasicBlockData>,
 }
