@@ -1,0 +1,7 @@
+[build]
+# Compiler can't find zstd for some reason
+rustflags = ["-C", "link-args=-L/opt/homebrew/opt/zstd/lib"]
+
+[env]
+# llvm-sys needs to be told where LLVM 17 is saved
+LLVM_SYS_170_PREFIX = "/opt/homebrew/opt/llvm@17"
