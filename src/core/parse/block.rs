@@ -13,12 +13,12 @@ use crate::{
 use super::{statement::parse_statement, ParseError};
 
 pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, ParseError> {
-    let open_brace = match lexer.next() {
+    let open_brace = match lexer.next_token() {
         Token::LeftBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Token::LeftBrace(LeftBraceToken::default()),
-                found: token,
+                expected: Box::new(Token::LeftBrace(LeftBraceToken::default())),
+                found: Box::new(token),
                 reason: "block must begin with an opening brace".to_string(),
             });
         }
@@ -34,12 +34,12 @@ pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, 
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let close_brace = match lexer.next() {
+    let close_brace = match lexer.next_token() {
         Token::RightBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Token::RightBrace(RightBraceToken::default()),
-                found: token,
+                expected: Box::new(Token::RightBrace(RightBraceToken::default())),
+                found: Box::new(token),
                 reason: "block must end with a closing brace".to_string(),
             });
         }

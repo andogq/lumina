@@ -20,18 +20,15 @@ impl SymbolMap {
     }
 
     pub fn get(&mut self, symbol: impl ToString) -> Symbol {
-        self.map
-            .entry(symbol.to_string())
-            .or_insert_with(|| {
-                let id = self.next;
-                self.next += 1;
+        *self.map.entry(symbol.to_string()).or_insert_with(|| {
+            let id = self.next;
+            self.next += 1;
 
-                let s = Symbol(id);
-                self.names.insert(s, symbol.to_string());
+            let s = Symbol(id);
+            self.names.insert(s, symbol.to_string());
 
-                s
-            })
-            .clone()
+            s
+        })
     }
 
     pub fn name(&self, symbol: Symbol) -> Option<String> {

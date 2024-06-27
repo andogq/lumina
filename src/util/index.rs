@@ -14,7 +14,7 @@ impl<T> Debug for Index<T> {
 }
 impl<T> Clone for Index<T> {
     fn clone(&self) -> Self {
-        Self(self.0, self.1.clone())
+        *self
     }
 }
 impl<T> Copy for Index<T> {}

@@ -16,7 +16,7 @@ impl Ident {
         pass.builder
             .build_load(
                 pass.context.i64_type(),
-                scope.get(&self.name).unwrap().clone(),
+                *scope.get(&self.name).unwrap(),
                 &pass.symbol_map.name(self.name).unwrap(),
             )
             .unwrap()

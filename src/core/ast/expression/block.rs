@@ -13,7 +13,7 @@ impl Block {
     pub fn new(statements: &[Statement]) -> Self {
         Self {
             span: Span::default(),
-            statements: statements.into_iter().cloned().collect(),
+            statements: statements.to_vec(),
         }
     }
 }

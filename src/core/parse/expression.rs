@@ -56,7 +56,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
         }
         Token::If(token) => {
             advance = false;
-            lexer.next();
+            lexer.next_token();
 
             let mut span = token.span;
 
@@ -66,7 +66,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
             span = span.to(&success);
 
             let otherwise = if matches!(lexer.peek(), Token::Else(_)) {
-                lexer.next();
+                lexer.next_token();
 
                 let otherwise = parse_block(lexer, symbols)?;
                 span = span.to(&otherwise);
@@ -87,7 +87,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
     };
 
     if advance {
-        lexer.next();
+        lexer.next_token();
     }
 
     prefix
@@ -102,7 +102,7 @@ pub fn parse_expression(
 
     while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
         if let Ok(operation) = ast::InfixOperation::try_from(lexer.peek()) {
-            let token = lexer.next();
+            let token = lexer.next_token();
             let precedence = Precedence::of(&token);
 
             let right = parse_expression(lexer, precedence, symbols)?;

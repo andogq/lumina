@@ -23,7 +23,7 @@ impl Lexer {
 
     /// Get the next token. Will continually produce [`EOFToken`] if no more tokens can be
     /// produced.
-    pub fn next(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         if let Some(token) = self.next.take() {
             return token;
         }
@@ -57,8 +57,8 @@ impl Lexer {
 
             ';' => Token::Semicolon(SemicolonToken { span }),
 
-            c if c.is_digit(10) => {
-                let (mut literal, str_span) = self.source.consume_while(|c| c.is_digit(10));
+            c if c.is_ascii_digit() => {
+                let (mut literal, str_span) = self.source.consume_while(|c| c.is_ascii_digit());
 
                 // Add the first digit of the number
                 literal.insert(0, c);
@@ -97,7 +97,7 @@ impl Lexer {
     }
 
     pub fn peek(&mut self) -> Token {
-        let token = self.next();
+        let token = self.next_token();
         self.next = Some(token.clone());
         token
     }
@@ -116,7 +116,7 @@ mod test {
     fn simple_addition() {
         let mut lexer = Lexer::new(Source::new("1 + 3;"));
 
-        let tokens = std::iter::from_fn(|| match lexer.next() {
+        let tokens = std::iter::from_fn(|| match lexer.next_token() {
             Token::EOF(_) => None,
             token => Some(token),
         })

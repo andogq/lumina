@@ -18,8 +18,8 @@ pub enum ParseError {
 
     #[error("expected token '{expected}' but found '{found}': {reason}")]
     ExpectedToken {
-        expected: Token,
-        found: Token,
+        expected: Box<Token>,
+        found: Box<Token>,
         reason: String,
     },
 
@@ -41,7 +41,7 @@ pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
     let mut functions = std::iter::from_fn(|| {
         (!matches!(lexer.peek(), Token::EOF(_))).then(|| {
             let function = parse_function(&mut lexer, &mut symbol_map)?;
-            Ok((function.name.clone(), function))
+            Ok((function.name, function))
         })
     })
     .collect::<Result<HashMap<_, _>, _>>()?;

@@ -41,3 +41,9 @@ impl Context {
         self.0.take()
     }
 }
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}

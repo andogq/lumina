@@ -53,7 +53,7 @@ impl Source {
             Some(c)
         } else {
             self.next_char = self.chars.next();
-            self.next_char.clone()
+            self.next_char
         }
     }
 }

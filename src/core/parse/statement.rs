@@ -21,7 +21,7 @@ pub fn parse_statement(
     let statement = match lexer.peek() {
         Token::Return(return_token) => {
             // Parse as return statement
-            lexer.next();
+            lexer.next_token();
 
             Statement::Return(ReturnStatement {
                 value: parse_expression(lexer, Precedence::Lowest, symbols)?,
@@ -30,27 +30,27 @@ pub fn parse_statement(
         }
         Token::Let(let_token) => {
             // let token
-            lexer.next();
+            lexer.next_token();
 
             // variable binding
-            let name = match lexer.next() {
+            let name = match lexer.next_token() {
                 Token::Ident(name) => name,
                 token => {
                     return Err(ParseError::ExpectedToken {
-                        found: token,
-                        expected: Token::Ident(Default::default()),
+                        found: Box::new(token),
+                        expected: Box::new(Token::Ident(Default::default())),
                         reason: "ident must follow let binding".to_string(),
                     });
                 }
             };
 
             // equals sign
-            match lexer.next() {
+            match lexer.next_token() {
                 Token::Equals(_) => (),
                 token => {
                     return Err(ParseError::ExpectedToken {
-                        found: token,
-                        expected: Token::Equals(Default::default()),
+                        found: Box::new(token),
+                        expected: Box::new(Token::Equals(Default::default())),
                         reason: "equals sign must follow ident".to_string(),
                     });
                 }
@@ -83,12 +83,12 @@ pub fn parse_statement(
     };
 
     if expecting_semicolon {
-        match lexer.next() {
+        match lexer.next_token() {
             Token::Semicolon(_) => (),
             token => {
                 return Err(ParseError::ExpectedToken {
-                    found: token,
-                    expected: Token::Equals(Default::default()),
+                    found: Box::new(token),
+                    expected: Box::new(Token::Equals(Default::default())),
                     reason: "semicolon must follow statement".to_string(),
                 });
             }

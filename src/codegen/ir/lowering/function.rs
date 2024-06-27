@@ -92,7 +92,7 @@ impl Scope {
     /// returned, even if it is unchanged.
     fn lower_expression(
         &mut self,
-        ctx: &Context,
+        _ctx: &Context,
         target: BasicBlockBuilder,
         expression: ast::Expression,
         local: Local,
@@ -111,6 +111,12 @@ impl Scope {
             ast::Expression::Block(_) => todo!(),
             ast::Expression::If(_) => todo!(),
         }
+    }
+}
+
+impl Default for Scope {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

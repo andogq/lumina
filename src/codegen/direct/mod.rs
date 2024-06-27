@@ -53,6 +53,12 @@ impl<'ctx> Compiler {
     }
 }
 
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct CompilePass<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,

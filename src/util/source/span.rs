@@ -26,7 +26,7 @@ pub trait Spanned {
 
 impl Spanned for Span {
     fn span(&self) -> &Span {
-        &self
+        self
     }
 }
 
