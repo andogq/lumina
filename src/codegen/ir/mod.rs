@@ -7,9 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{core::symbol::SymbolMap, util::index::IndexVec};
 
-use self::basic_block::*;
-
-pub use basic_block::{BasicBlock, BasicBlockData, BinaryOperation, Statement, Terminator};
+pub use basic_block::*;
 pub use function::Function;
 pub use value::RETURN_LOCAL;
 

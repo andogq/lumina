@@ -50,5 +50,7 @@ impl PartialEq<Scalar> for &Scalar {
 /// is loaded by the compiler, but could also include some other local.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RValue {
+    Local(Local),
     Scalar(Scalar),
+    Statement(usize),
 }

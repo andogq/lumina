@@ -11,10 +11,16 @@ use crate::{
 use self::function::Function;
 
 #[derive(Clone)]
+pub struct Value;
+type ValueMap = IndexVec<Value>;
+
+#[derive(Clone)]
 pub struct Scope {
     /// Locals contained within this scope
     pub locals: IndexVec<LocalDecl>,
     pub symbols: HashMap<Symbol, Local>,
+    // WARN: Probably should be in some global context rather than here
+    pub values: ValueMap,
 }
 
 impl Scope {
@@ -30,6 +36,7 @@ impl Scope {
                 locals
             },
             symbols: HashMap::new(),
+            values: ValueMap::default(),
         }
     }
 
@@ -61,24 +68,26 @@ impl Scope {
     fn lower_block(
         &mut self,
         ctx: &Context,
-        mut target: BasicBlockBuilder,
+        target: &mut BasicBlockBuilder,
         block: ast::Block,
     ) -> BasicBlock {
         for s in block.statements {
             match s {
                 ast::Statement::Return(s) => {
                     // Evaluate the expression into the return local
-                    return self
-                        .lower_expression(ctx, target, s.value, RETURN_LOCAL)
-                        // Trigger the return terminator
-                        .t_return();
+                    let return_value = self.lower_expression(ctx, target, s.value);
+
+                    // Trigger the return terminator
+                    return target.t_return(return_value);
                 }
                 ast::Statement::Let(s) => {
                     // Create a place for the variable
                     let local = self.register_symbol(s.name);
 
                     // Generate the IR for the value
-                    target = self.lower_expression(ctx, target, s.value, local);
+                    let value = self.lower_expression(ctx, target, s.value);
+
+                    target.statement(Statement::Assign(local, value));
                 }
                 ast::Statement::Expression(_) => todo!(),
             }
@@ -93,37 +102,27 @@ impl Scope {
     fn lower_expression(
         &mut self,
         ctx: &Context,
-        target: BasicBlockBuilder,
+        target: &mut BasicBlockBuilder,
         expression: ast::Expression,
-        local: Local,
-    ) -> BasicBlockBuilder {
+    ) -> RValue {
         match expression {
             ast::Expression::Infix(infix) => {
-                // WARN: Probably not great to create a local for lhs and rhs
-                let lhs = self.new_local();
-                let rhs = self.new_local();
+                let lhs = self.lower_expression(ctx, target, *infix.left);
+                let rhs = self.lower_expression(ctx, target, *infix.right);
 
-                let target = self.lower_expression(ctx, target, *infix.left, lhs);
-                let target = self.lower_expression(ctx, target, *infix.right, rhs);
-
-                target.statement(Statement::Infix {
+                let StatementValue(value) = target.statement(Statement::Infix {
                     lhs,
                     rhs,
                     op: match infix.operation {
                         ast::InfixOperation::Plus(_) => BinaryOperation::Plus,
                     },
-                    target: local,
-                })
+                });
+
+                RValue::Statement(value)
             }
-            ast::Expression::Integer(i) => target.statement(Statement::Assign(
-                local,
-                RValue::Scalar(Scalar::int(i.value)),
-            )),
+            ast::Expression::Integer(i) => RValue::Scalar(Scalar::int(i.value)),
             ast::Expression::Boolean(_) => todo!(),
-            ast::Expression::Ident(ident) => target.statement(Statement::Load {
-                result: local,
-                target: self.get_symbol(ident.name),
-            }),
+            ast::Expression::Ident(ident) => RValue::Local(self.get_symbol(ident.name)),
             ast::Expression::Block(_) => todo!(),
             ast::Expression::If(_) => todo!(),
         }
@@ -140,7 +139,7 @@ impl Default for Scope {
 pub fn lower_function(ctx: &Context, node: ast::Function) -> Function {
     let mut scope = Scope::new();
 
-    let entry = scope.lower_block(ctx, ctx.basic_block(), node.body);
+    let entry = scope.lower_block(ctx, &mut ctx.basic_block(), node.body);
 
     Function {
         entry,

@@ -8,14 +8,9 @@ pub enum BinaryOperation {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Statement {
     Assign(Local, RValue),
-    Load {
-        result: Local,
-        target: Local,
-    },
     Infix {
-        lhs: Local,
-        rhs: Local,
+        lhs: RValue,
+        rhs: RValue,
         op: BinaryOperation,
-        target: Local,
     },
 }

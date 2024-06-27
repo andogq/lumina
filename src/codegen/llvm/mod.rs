@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use inkwell::{
+    builder::Builder,
     context::Context as LLVMContext,
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{FunctionValue, PointerValue},
+    values::{BasicValue, FunctionValue, IntValue, PointerValue},
     OptimizationLevel,
 };
 
@@ -124,86 +125,76 @@ impl<'ctx> Pass<'ctx> {
     fn compile_basic_block(
         &self,
         target: inkwell::basic_block::BasicBlock,
-        locals: Locals,
+        locals: Locals<'ctx>,
         basic_block: BasicBlockData,
     ) {
         let builder = self.llvm_ctx.create_builder();
         builder.position_at_end(target);
 
-        for statement in basic_block.statements {
+        let mut statement_results = vec![None; basic_block.statements.len()];
+
+        for (i, statement) in basic_block.statements.into_iter().enumerate() {
+            let mut result = None;
+
             match statement {
                 Statement::Assign(local, value) => {
+                    // Determine the pointer of the local that it will be saved in
                     let ptr = locals.get(&local).unwrap().to_owned();
 
-                    let value = match value {
-                        RValue::Scalar(s) => {
-                            // TODO: Properly handle arbitrary precision
-                            self.llvm_ctx.i64_type().const_int(s.data, false)
-                        }
-                    };
+                    // Determine the actual value
+                    let value = self.rvalue_to_value(value, &builder, &locals, &statement_results);
 
+                    // Emit the instruction
                     builder.build_store(ptr, value).unwrap();
                 }
-                Statement::Load { result, target } => {
-                    let val = builder
-                        .build_load(
-                            self.llvm_ctx.i64_type(),
-                            locals.get(&target).unwrap().to_owned(),
-                            "load var",
-                        )
-                        .unwrap();
-                    builder
-                        .build_store(locals.get(&result).unwrap().to_owned(), val)
-                        .unwrap();
-                }
-                Statement::Infix {
-                    lhs,
-                    rhs,
-                    op,
-                    target,
-                } => {
-                    // WARN: These loads are incorrect, but do work
-                    let lhs = builder
-                        .build_load(
-                            self.llvm_ctx.i64_type(),
-                            *locals.get(&lhs).unwrap(),
-                            "load lhs",
-                        )
-                        .unwrap()
-                        .into_int_value();
-                    let rhs = builder
-                        .build_load(
-                            self.llvm_ctx.i64_type(),
-                            *locals.get(&rhs).unwrap(),
-                            "load rhs",
-                        )
-                        .unwrap()
-                        .into_int_value();
+                Statement::Infix { lhs, rhs, op } => {
+                    let lhs = self.rvalue_to_value(lhs, &builder, &locals, &statement_results);
+                    let rhs = self.rvalue_to_value(rhs, &builder, &locals, &statement_results);
 
-                    let result = match op {
+                    result = Some(match op {
                         BinaryOperation::Plus => builder.build_int_add(lhs, rhs, "add").unwrap(),
-                    };
-
-                    builder
-                        .build_store(locals.get(&target).unwrap().to_owned(), result)
-                        .unwrap();
+                    });
                 }
             }
+
+            statement_results[i] = result;
         }
 
         match basic_block.terminator {
-            Terminator::Return => {
-                builder
-                    .build_return(Some({
-                        // TODO: Assumes that there is a return value
-                        let ptr = locals.get(&RETURN_LOCAL).unwrap();
+            Terminator::Return(value) => {
+                let value = self
+                    .rvalue_to_value(value, &builder, &locals, &statement_results)
+                    .as_basic_value_enum();
 
-                        &builder
-                            .build_load(self.llvm_ctx.i64_type(), *ptr, "load return")
-                            .unwrap()
-                    }))
-                    .unwrap();
+                builder.build_return(Some(&value)).unwrap();
             }
+        }
+    }
+
+    fn rvalue_to_value(
+        &self,
+        value: RValue,
+        builder: &Builder<'ctx>,
+        locals: &Locals<'ctx>,
+        statement_results: &[Option<IntValue<'ctx>>],
+    ) -> IntValue<'ctx> {
+        match value {
+            RValue::Scalar(s) => {
+                // TODO: Properly handle arbitrary precision
+                self.llvm_ctx.i64_type().const_int(s.data, false)
+            }
+            RValue::Local(local) => builder
+                .build_load(
+                    self.llvm_ctx.i64_type(),
+                    *locals.get(&local).unwrap(),
+                    "load local",
+                )
+                .unwrap()
+                .into_int_value(),
+            RValue::Statement(statement) => statement_results
+                .get(statement)
+                .expect("statement result request must be for previous value")
+                .expect("statement to have produced result"),
         }
     }
 }
