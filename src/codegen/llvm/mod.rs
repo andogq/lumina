@@ -13,7 +13,7 @@ use crate::codegen::ir::{Statement, Terminator};
 
 use super::ir::{
     value::{Local, RValue},
-    BasicBlockData, Context, ContextInner, Function, RETURN_LOCAL,
+    BasicBlockData, BinaryOperation, Context, ContextInner, Function, RETURN_LOCAL,
 };
 
 type Locals<'ctx> = HashMap<Local, PointerValue<'ctx>>;
@@ -154,6 +154,38 @@ impl<'ctx> Pass<'ctx> {
                         .unwrap();
                     builder
                         .build_store(locals.get(&result).unwrap().to_owned(), val)
+                        .unwrap();
+                }
+                Statement::Infix {
+                    lhs,
+                    rhs,
+                    op,
+                    target,
+                } => {
+                    // WARN: These loads are incorrect, but do work
+                    let lhs = builder
+                        .build_load(
+                            self.llvm_ctx.i64_type(),
+                            *locals.get(&lhs).unwrap(),
+                            "load lhs",
+                        )
+                        .unwrap()
+                        .into_int_value();
+                    let rhs = builder
+                        .build_load(
+                            self.llvm_ctx.i64_type(),
+                            *locals.get(&rhs).unwrap(),
+                            "load rhs",
+                        )
+                        .unwrap()
+                        .into_int_value();
+
+                    let result = match op {
+                        BinaryOperation::Plus => builder.build_int_add(lhs, rhs, "add").unwrap(),
+                    };
+
+                    builder
+                        .build_store(locals.get(&target).unwrap().to_owned(), result)
                         .unwrap();
                 }
             }

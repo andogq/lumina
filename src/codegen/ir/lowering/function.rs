@@ -92,13 +92,29 @@ impl Scope {
     /// returned, even if it is unchanged.
     fn lower_expression(
         &mut self,
-        _ctx: &Context,
+        ctx: &Context,
         target: BasicBlockBuilder,
         expression: ast::Expression,
         local: Local,
     ) -> BasicBlockBuilder {
         match expression {
-            ast::Expression::Infix(_) => todo!(),
+            ast::Expression::Infix(infix) => {
+                // WARN: Probably not great to create a local for lhs and rhs
+                let lhs = self.new_local();
+                let rhs = self.new_local();
+
+                let target = self.lower_expression(ctx, target, *infix.left, lhs);
+                let target = self.lower_expression(ctx, target, *infix.right, rhs);
+
+                target.statement(Statement::Infix {
+                    lhs,
+                    rhs,
+                    op: match infix.operation {
+                        ast::InfixOperation::Plus(_) => BinaryOperation::Plus,
+                    },
+                    target: local,
+                })
+            }
             ast::Expression::Integer(i) => target.statement(Statement::Assign(
                 local,
                 RValue::Scalar(Scalar::int(i.value)),

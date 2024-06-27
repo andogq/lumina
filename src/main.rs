@@ -11,10 +11,9 @@ fn main() {
     let source = Source::new(
         r#"
 fn main() -> int {
-    let a = 10;
-    let b = 7;
-    let c = a;
-    return c;
+    let a = 1;
+    let b = 5;
+    return a + b;
 }"#,
     );
 
@@ -39,13 +38,13 @@ fn main() -> int {
     let llvm_pass = Pass::new(&ctx, ir_ctx);
     let main = llvm_pass.compile(ir);
 
-    llvm_pass.run_passes(&[
-        "instcombine",
-        "reassociate",
-        "gvn",
-        "simplifycfg",
-        "mem2reg",
-    ]);
+    // llvm_pass.run_passes(&[
+    //     "instcombine",
+    //     "reassociate",
+    //     "gvn",
+    //     "simplifycfg",
+    //     "mem2reg",
+    // ]);
 
     llvm_pass.debug_print();
 
