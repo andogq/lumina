@@ -56,6 +56,15 @@ impl<'ctx> Pass<'ctx> {
                 .unwrap()
         });
 
+        locals.extend(function.scope.locals.iter().map(|local| {
+            (
+                local,
+                builder
+                    .build_alloca(self.llvm_ctx.i64_type(), "var")
+                    .unwrap(),
+            )
+        }));
+
         self.compile_basic_block(
             entry,
             locals,
@@ -134,6 +143,18 @@ impl<'ctx> Pass<'ctx> {
                     };
 
                     builder.build_store(ptr, value).unwrap();
+                }
+                Statement::Load { result, target } => {
+                    let val = builder
+                        .build_load(
+                            self.llvm_ctx.i64_type(),
+                            locals.get(&target).unwrap().to_owned(),
+                            "load var",
+                        )
+                        .unwrap();
+                    builder
+                        .build_store(locals.get(&result).unwrap().to_owned(), val)
+                        .unwrap();
                 }
             }
         }

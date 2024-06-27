@@ -12,7 +12,9 @@ fn main() {
         r#"
 fn main() -> int {
     let a = 10;
-    return a;
+    let b = 7;
+    let c = a;
+    return c;
 }"#,
     );
 

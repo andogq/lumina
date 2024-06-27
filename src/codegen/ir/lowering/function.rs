@@ -1,6 +1,11 @@
+use std::collections::HashMap;
+
 use crate::{
     codegen::ir::{value::*, *},
-    core::ast,
+    core::{
+        ast::{self},
+        symbol::Symbol,
+    },
 };
 
 use self::function::Function;
@@ -8,7 +13,8 @@ use self::function::Function;
 #[derive(Clone)]
 pub struct Scope {
     /// Locals contained within this scope
-    locals: IndexVec<LocalDecl>,
+    pub locals: IndexVec<LocalDecl>,
+    pub symbols: HashMap<Symbol, Local>,
 }
 
 impl Scope {
@@ -23,6 +29,7 @@ impl Scope {
 
                 locals
             },
+            symbols: HashMap::new(),
         }
     }
 
@@ -34,6 +41,21 @@ impl Scope {
     // Create a new local within this scope.
     pub fn new_local(&mut self) -> Local {
         self.locals.push(LocalDecl)
+    }
+
+    pub fn register_symbol(&mut self, symbol: Symbol) -> Local {
+        assert!(
+            !self.symbols.contains_key(&symbol),
+            "symbol {symbol:?} already has been registered"
+        );
+
+        let local = self.new_local();
+        self.symbols.insert(symbol, local);
+        local
+    }
+
+    pub fn get_symbol(&mut self, symbol: Symbol) -> Local {
+        *self.symbols.get(&symbol).expect("symbol to be registered")
     }
 
     fn lower_block(
@@ -53,7 +75,7 @@ impl Scope {
                 }
                 ast::Statement::Let(s) => {
                     // Create a place for the variable
-                    let local = self.new_local();
+                    let local = self.register_symbol(s.name);
 
                     // Generate the IR for the value
                     target = self.lower_expression(ctx, target, s.value, local);
@@ -71,7 +93,7 @@ impl Scope {
     fn lower_expression(
         &mut self,
         ctx: &Context,
-        mut target: BasicBlockBuilder,
+        target: BasicBlockBuilder,
         expression: ast::Expression,
         local: Local,
     ) -> BasicBlockBuilder {
@@ -82,7 +104,10 @@ impl Scope {
                 RValue::Scalar(Scalar::int(i.value)),
             )),
             ast::Expression::Boolean(_) => todo!(),
-            ast::Expression::Ident(_) => todo!(),
+            ast::Expression::Ident(ident) => target.statement(Statement::Load {
+                result: local,
+                target: self.get_symbol(ident.name),
+            }),
             ast::Expression::Block(_) => todo!(),
             ast::Expression::If(_) => todo!(),
         }
@@ -91,11 +116,14 @@ impl Scope {
 
 /// Lower the provided function AST node.
 pub fn lower_function(ctx: &Context, node: ast::Function) -> Function {
-    let entry = Scope::new().lower_block(ctx, ctx.basic_block(), node.body);
+    let mut scope = Scope::new();
+
+    let entry = scope.lower_block(ctx, ctx.basic_block(), node.body);
 
     Function {
         entry,
         name: node.name,
+        scope,
     }
 }
 

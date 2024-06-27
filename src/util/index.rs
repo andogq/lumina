@@ -25,7 +25,7 @@ impl<T> Hash for Index<T> {
 }
 impl<T> Index<T> {
     pub fn new(i: usize) -> Self {
-        Self(i, PhantomData::default())
+        Self(i, PhantomData)
     }
 }
 
@@ -54,5 +54,9 @@ impl<T> IndexVec<T> {
 
     pub fn get(&self, index: Index<T>) -> Option<&T> {
         self.0.get(index.0)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = Index<T>> {
+        (0..self.0.len()).map(|i| Index::new(i))
     }
 }

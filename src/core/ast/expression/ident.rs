@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use crate::{
     core::symbol::Symbol,
     util::source::{Span, Spanned},
@@ -23,3 +25,17 @@ impl Spanned for Ident {
         &self.span
     }
 }
+
+impl Hash for Ident {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
+impl PartialEq for Ident {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Eq for Ident {}
