@@ -6,79 +6,137 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{BasicValue, FunctionValue, IntValue, PointerValue},
+    values::{FunctionValue, IntValue, PointerValue},
     OptimizationLevel,
 };
 
-use crate::codegen::ir::{Statement, Terminator};
-
-use super::ir::{
-    value::{Local, RValue},
-    BasicBlockData, BinaryOperation, Context, ContextInner, Function, RETURN_LOCAL,
+use crate::{
+    codegen::ir::{BinaryOp, IRContext, Triple, UnaryOp, Value},
+    core::symbol::Symbol,
 };
-
-pub mod llvm2;
-
-type Locals<'ctx> = HashMap<Local, PointerValue<'ctx>>;
 
 pub struct Pass<'ctx> {
     llvm_ctx: &'ctx LLVMContext,
-    ir_ctx: ContextInner,
+    ir_ctx: IRContext,
     module: Module<'ctx>,
+
+    symbols: HashMap<Symbol, PointerValue<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
-    /// Create a LLVM pass to compile the IR into LLVM IR.
-    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: Context) -> Self {
+    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: IRContext) -> Self {
         Self {
             llvm_ctx,
-            ir_ctx: ir_ctx.into_inner(),
+            ir_ctx,
             module: llvm_ctx.create_module("module"),
+            symbols: HashMap::new(),
         }
     }
 
-    pub fn compile(&self, function: Function) -> FunctionValue<'ctx> {
+    /// Compile the provided function, returning the LLVM handle to it.
+    pub fn compile(&mut self, function_id: usize) -> FunctionValue<'ctx> {
         let builder = self.llvm_ctx.create_builder();
 
-        // Create the prototype of the function
         // TODO: Currently only accepts functions that return an integer
         let fn_type = self.llvm_ctx.i64_type().fn_type(&[], false);
-        let fn_value = self
-            .module
-            .add_function(&function.name.to_string(), fn_type, None);
+        let fn_value = self.module.add_function("some function", fn_type, None);
 
         // Create the entry basic block
         let entry = self.llvm_ctx.append_basic_block(fn_value, "entry");
         builder.position_at_end(entry);
 
-        // Prepare locals for the function body
-        let mut locals = HashMap::new();
-        locals.insert(RETURN_LOCAL, {
-            builder
-                .build_alloca(self.llvm_ctx.i64_type(), "return value")
-                .unwrap()
-        });
+        // Create locals for all symbols
+        self.symbols
+            .extend(self.ir_ctx.symbols.iter().map(|symbol| {
+                (
+                    symbol.to_owned(),
+                    builder
+                        .build_alloca(self.llvm_ctx.i64_type(), &symbol.to_string())
+                        .unwrap(),
+                )
+            }));
 
-        locals.extend(function.scope.locals.iter().map(|local| {
-            (
-                local,
-                builder
-                    .build_alloca(self.llvm_ctx.i64_type(), "var")
-                    .unwrap(),
-            )
-        }));
-
-        self.compile_basic_block(
-            entry,
-            locals,
-            self.ir_ctx
-                .basic_blocks
-                .get(function.entry)
-                .unwrap()
-                .to_owned(),
-        );
+        self.compile_basic_block(entry, function_id);
 
         fn_value
+    }
+
+    fn compile_basic_block(&self, target: inkwell::basic_block::BasicBlock, basic_block_id: usize) {
+        let builder = self.llvm_ctx.create_builder();
+        builder.position_at_end(target);
+
+        let basic_block = self
+            .ir_ctx
+            .basic_blocks
+            .get(basic_block_id)
+            .expect("requested basic block must exist");
+
+        let mut results = Vec::with_capacity(basic_block.triples.len());
+
+        for triple in &basic_block.triples {
+            let result = match triple {
+                Triple::BinaryOp { lhs, rhs, op } => {
+                    let lhs = self.retrive_value(&builder, &results, lhs);
+                    let rhs = self.retrive_value(&builder, &results, rhs);
+
+                    Some(match op {
+                        BinaryOp::Add => builder.build_int_add(lhs, rhs, "add").unwrap(),
+                        BinaryOp::Sub => builder.build_int_sub(lhs, rhs, "sub").unwrap(),
+                    })
+                }
+                Triple::UnaryOp { rhs, op } => {
+                    let rhs = self.retrive_value(&builder, &results, rhs);
+
+                    Some(match op {
+                        UnaryOp::Minus => builder.build_int_neg(rhs, "neg").unwrap(),
+                        UnaryOp::Not => builder.build_not(rhs, "not").unwrap(),
+                    })
+                }
+                Triple::Copy(value) => Some(self.retrive_value(&builder, &results, value)),
+                Triple::Jump(_) => todo!(),
+                Triple::CondJump(_, _) => todo!(),
+                Triple::Call(_) => todo!(),
+                Triple::Return(value) => {
+                    let value = self.retrive_value(&builder, &results, value);
+
+                    builder.build_return(Some(&value)).unwrap();
+
+                    None
+                }
+                Triple::Assign(symbol, value) => {
+                    let value = self.retrive_value(&builder, &results, value);
+                    let ptr = self.symbols.get(symbol).expect("symbol must be defined");
+
+                    builder.build_store(*ptr, value).unwrap();
+
+                    None
+                }
+            };
+
+            results.push(result);
+        }
+    }
+
+    fn retrive_value(
+        &self,
+        builder: &Builder<'ctx>,
+        results: &[Option<IntValue<'ctx>>],
+        value: &Value,
+    ) -> IntValue<'ctx> {
+        match value {
+            Value::Name(symbol) => {
+                let ptr = self.symbols.get(symbol).expect("symbol must be defined");
+                builder
+                    .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol}"))
+                    .unwrap()
+                    .into_int_value()
+            }
+            Value::Constant(value) => self.llvm_ctx.i64_type().const_int(*value as u64, false),
+            Value::Triple(triple) => results
+                .get(triple.triple)
+                .expect("triple must exist")
+                .expect("triple must produce value"),
+        }
     }
 
     pub fn run_passes(&self, passes: &[&str]) {
@@ -122,81 +180,5 @@ impl<'ctx> Pass<'ctx> {
 
     pub fn debug_print(&self) {
         self.module.print_to_stderr();
-    }
-
-    fn compile_basic_block(
-        &self,
-        target: inkwell::basic_block::BasicBlock,
-        locals: Locals<'ctx>,
-        basic_block: BasicBlockData,
-    ) {
-        let builder = self.llvm_ctx.create_builder();
-        builder.position_at_end(target);
-
-        let mut statement_results = vec![None; basic_block.statements.len()];
-
-        for (i, statement) in basic_block.statements.into_iter().enumerate() {
-            let mut result = None;
-
-            match statement {
-                Statement::Assign(local, value) => {
-                    // Determine the pointer of the local that it will be saved in
-                    let ptr = locals.get(&local).unwrap().to_owned();
-
-                    // Determine the actual value
-                    let value = self.rvalue_to_value(value, &builder, &locals, &statement_results);
-
-                    // Emit the instruction
-                    builder.build_store(ptr, value).unwrap();
-                }
-                Statement::Infix { lhs, rhs, op } => {
-                    let lhs = self.rvalue_to_value(lhs, &builder, &locals, &statement_results);
-                    let rhs = self.rvalue_to_value(rhs, &builder, &locals, &statement_results);
-
-                    result = Some(match op {
-                        BinaryOperation::Plus => builder.build_int_add(lhs, rhs, "add").unwrap(),
-                    });
-                }
-            }
-
-            statement_results[i] = result;
-        }
-
-        match basic_block.terminator {
-            Terminator::Return(value) => {
-                let value = self
-                    .rvalue_to_value(value, &builder, &locals, &statement_results)
-                    .as_basic_value_enum();
-
-                builder.build_return(Some(&value)).unwrap();
-            }
-        }
-    }
-
-    fn rvalue_to_value(
-        &self,
-        value: RValue,
-        builder: &Builder<'ctx>,
-        locals: &Locals<'ctx>,
-        statement_results: &[Option<IntValue<'ctx>>],
-    ) -> IntValue<'ctx> {
-        match value {
-            RValue::Scalar(s) => {
-                // TODO: Properly handle arbitrary precision
-                self.llvm_ctx.i64_type().const_int(s.data, false)
-            }
-            RValue::Local(local) => builder
-                .build_load(
-                    self.llvm_ctx.i64_type(),
-                    *locals.get(&local).unwrap(),
-                    "load local",
-                )
-                .unwrap()
-                .into_int_value(),
-            RValue::Statement(statement) => statement_results
-                .get(statement)
-                .expect("statement result request must be for previous value")
-                .expect("statement to have produced result"),
-        }
     }
 }

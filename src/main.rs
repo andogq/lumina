@@ -1,5 +1,5 @@
 use lumina::{
-    codegen::{ir2::Builder, llvm::llvm2::Pass},
+    codegen::{ir::Builder, llvm::Pass},
     core::{lexer::Lexer, parse::parse},
     util::source::Source,
 };
