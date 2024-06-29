@@ -17,6 +17,8 @@ use super::ir::{
     BasicBlockData, BinaryOperation, Context, ContextInner, Function, RETURN_LOCAL,
 };
 
+pub mod llvm2;
+
 type Locals<'ctx> = HashMap<Local, PointerValue<'ctx>>;
 
 pub struct Pass<'ctx> {

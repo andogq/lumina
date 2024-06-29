@@ -1,8 +1,5 @@
 use lumina::{
-    codegen::{
-        ir::{lowering::lower_function, Context},
-        llvm::Pass,
-    },
+    codegen::{ir2::Builder, llvm::llvm2::Pass},
     core::{lexer::Lexer, parse::parse},
     util::source::Source,
 };
@@ -30,13 +27,14 @@ fn main() -> int {
         return;
     }
 
-    let ir_ctx = Context::new();
-    let ir = lower_function(&ir_ctx, program.main);
+    let mut ir_builder = Builder::default();
+    let function_id = ir_builder.lower_function(program.main);
+    let ir_ctx = ir_builder.consume();
 
     let ctx = inkwell::context::Context::create();
 
-    let llvm_pass = Pass::new(&ctx, ir_ctx);
-    let main = llvm_pass.compile(ir);
+    let mut llvm_pass = Pass::new(&ctx, ir_ctx);
+    let main = llvm_pass.compile(function_id);
 
     // llvm_pass.run_passes(&[
     //     "instcombine",
