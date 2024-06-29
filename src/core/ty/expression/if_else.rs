@@ -9,9 +9,9 @@ use crate::core::{
 impl InferTy for If {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let condition_ty = self.condition.infer(symbols)?;
-        if condition_ty != Ty::Boolean {
-            return Err(TyError::Mismatch(Ty::Boolean, condition_ty));
-        }
+        // if condition_ty != Ty::Boolean {
+        //     return Err(TyError::Mismatch(Ty::Boolean, condition_ty));
+        // }
 
         match (
             self.success.infer(symbols)?,

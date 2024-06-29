@@ -10,7 +10,13 @@ fn main() {
 fn main() -> int {
     let a = 1;
     let b = 5;
-    return a + b;
+    let c = {
+        let myvalue = 10;
+
+        a + b + myvalue
+    };
+
+    return c;
 }"#,
     );
 

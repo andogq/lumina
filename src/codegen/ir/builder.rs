@@ -31,8 +31,15 @@ impl Builder {
 
     /// Lower the provided block into the current basic block. May lead to the current basic block
     /// changing.
-    fn lower_block(&mut self, block: Block) {
-        for statement in block.statements {
+    fn lower_block(&mut self, block: Block) -> Option<Value> {
+        let statement_count = block.statements.len();
+
+        for (end, statement) in block
+            .statements
+            .into_iter()
+            .enumerate()
+            .map(|(i, statement)| (i == statement_count - 1, statement))
+        {
             match statement {
                 ast::Statement::Return(ReturnStatement { value, .. }) => {
                     let value = self.lower_expression(value);
@@ -44,11 +51,17 @@ impl Builder {
                     self.add_triple(Triple::Assign(name, value));
                 }
                 ast::Statement::Expression(ExpressionStatement { expression, .. }) => {
-                    // TODO: Likely will need to somehow return from this block with a value
-                    self.lower_expression(expression);
+                    let result = self.lower_expression(expression);
+
+                    // If this is the last statement in the block, return the value
+                    if end {
+                        return Some(result);
+                    }
                 }
             }
         }
+
+        None
     }
 
     /// Lower an expression into the current basic block.
@@ -71,8 +84,53 @@ impl Builder {
             Expression::Integer(integer) => Value::Constant(integer.value),
             Expression::Boolean(_) => todo!(),
             Expression::Ident(Ident { name, .. }) => Value::Name(name),
-            Expression::Block(_) => todo!(),
-            Expression::If(_) => todo!(),
+            Expression::Block(block) => self.lower_block(block).expect("block should yield value"),
+            Expression::If(If {
+                condition,
+                success,
+                otherwise,
+                ..
+            }) => {
+                todo!()
+                // let condition = self.lower_expression(*condition);
+                //
+                // // Save the current basic block
+                // let here = self
+                //     .basic_block
+                //     .expect("must currently be in a basic block");
+                //
+                // // Pre-emptively create a basic block to merge back in to
+                // let merge_bb = self.new_basic_block();
+                //
+                // // Lower success block into newly created basic block
+                // let success_bb = self.new_basic_block();
+                // self.lower_block(success);
+                //
+                // // Lower the otherwise block, if it exists
+                // let otherwise_bb = otherwise.map(|otherwise| {
+                //     let otherwise_bb = self.new_basic_block();
+                //     self.lower_block(otherwise);
+                //     otherwise_bb
+                // });
+                //
+                // // Continue appending to original block
+                // self.basic_block = Some(here);
+                //
+                // // Success jump
+                // self.add_triple(Triple::CondJump(condition, success_bb));
+                // // TODO: Capture value from success bb
+                //
+                // // Optional otherwise jump
+                // if let Some(otherwise_bb) = otherwise_bb {
+                //     self.add_triple(Triple::Jump(otherwise_bb));
+                //     // TODO: Capture value from otherwise bb
+                // } else {
+                //     // No otherwise, immediately jump to merge
+                //     self.add_triple(Triple::Jump(merge_bb));
+                // }
+                //
+                // self.basic_block = Some(merge_bb);
+            }
         }
     }
 
@@ -91,8 +149,9 @@ impl Builder {
     }
 
     /// Create a new basic block, and switch to it.
-    fn new_basic_block(&mut self) {
+    fn new_basic_block(&mut self) -> usize {
         let id = self.ctx.new_basic_block();
         self.basic_block = Some(id);
+        id
     }
 }
