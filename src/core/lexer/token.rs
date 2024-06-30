@@ -183,3 +183,68 @@ token_enum! {
     If: IfToken,
     Else: ElseToken
 }
+
+impl Token {
+    pub fn integer(literal: &str) -> Self {
+        Self::Integer(IntegerToken {
+            literal: literal.to_string(),
+            ..Default::default()
+        })
+    }
+    pub fn ident(literal: &str) -> Self {
+        Self::Ident(IdentToken {
+            literal: literal.to_string(),
+            ..Default::default()
+        })
+    }
+
+    pub fn plus() -> Self {
+        Self::Plus(Default::default())
+    }
+    pub fn equals() -> Self {
+        Self::Equals(Default::default())
+    }
+
+    pub fn semicolon() -> Self {
+        Self::Semicolon(Default::default())
+    }
+    pub fn thin_arrow() -> Self {
+        Self::ThinArrow(Default::default())
+    }
+
+    pub fn left_paren() -> Self {
+        Self::LeftParen(Default::default())
+    }
+    pub fn right_paren() -> Self {
+        Self::RightParen(Default::default())
+    }
+    pub fn left_brace() -> Self {
+        Self::LeftBrace(Default::default())
+    }
+    pub fn right_brace() -> Self {
+        Self::RightBrace(Default::default())
+    }
+
+    pub fn t_true() -> Self {
+        Self::True(Default::default())
+    }
+    pub fn t_false() -> Self {
+        Self::False(Default::default())
+    }
+
+    pub fn t_fn() -> Self {
+        Self::Fn(Default::default())
+    }
+    pub fn t_return() -> Self {
+        Self::Return(Default::default())
+    }
+    pub fn t_let() -> Self {
+        Self::Let(Default::default())
+    }
+    pub fn t_if() -> Self {
+        Self::If(Default::default())
+    }
+    pub fn t_else() -> Self {
+        Self::Else(Default::default())
+    }
+}
