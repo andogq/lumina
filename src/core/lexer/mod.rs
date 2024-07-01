@@ -1,19 +1,22 @@
 pub mod token;
 
+use std::{
+    iter::Peekable,
+    ops::{Deref, DerefMut},
+};
+
 use crate::util::source::Source;
 
 use self::token::*;
 
-pub struct Lexer {
+pub struct TokenIter {
     source: Source,
-
-    next: Option<Token>,
 }
 
-impl Lexer {
+impl TokenIter {
     /// Create a new lexer with the provided source.
     pub fn new(source: Source) -> Self {
-        let mut lexer = Self { source, next: None };
+        let mut lexer = Self { source };
 
         // Consume all whitespace at the start of the file
         lexer.consume_whitespace();
@@ -21,19 +24,18 @@ impl Lexer {
         lexer
     }
 
-    /// Get the next token. Will continually produce [`EOFToken`] if no more tokens can be
-    /// produced.
-    pub fn next_token(&mut self) -> Token {
-        if let Some(token) = self.next.take() {
-            return token;
-        }
+    /// Consume the underlying source whilst whitespace is detected.
+    fn consume_whitespace(&mut self) {
+        self.source.consume_while(|c| c.is_whitespace());
+    }
+}
 
+impl Iterator for TokenIter {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
         // Fetch the next character
-        let Some((c, location)) = self.source.next() else {
-            return Token::EOF(EOFToken {
-                span: self.source.location().span(),
-            });
-        };
+        let (c, location) = self.source.next()?;
 
         // Pre-emptively create a span for this character
         let span = location.clone().span();
@@ -93,18 +95,53 @@ impl Lexer {
 
         self.consume_whitespace();
 
-        token
+        Some(token)
+    }
+}
+
+pub struct Lexer(Peekable<TokenIter>);
+
+impl Lexer {
+    pub fn new(source: Source) -> Self {
+        Self(TokenIter::new(source).peekable())
     }
 
-    pub fn peek(&mut self) -> Token {
-        let token = self.next_token();
-        self.next = Some(token.clone());
-        token
+    /// Retrieve the next token, or [`Token::EOF`] if no more tokens follow.
+    pub fn next_token(&mut self) -> Token {
+        // WARN: Not sure if the span matters for this token
+        self.0.next().unwrap_or(Token::EOF(Default::default()))
     }
 
-    /// Consume the underlying source whilst whitespace is detected.
-    fn consume_whitespace(&mut self) {
-        self.source.consume_while(|c| c.is_whitespace());
+    /// Peek the next token, or [`Token::EOF`] if no more tokens follow.
+    pub fn peek_token(&mut self) -> Token {
+        self.0
+            .peek()
+            .cloned()
+            // WARN: Not sure if the span matters for this token
+            .unwrap_or(Token::EOF(Default::default()))
+    }
+}
+
+impl IntoIterator for Lexer {
+    type Item = Token;
+    type IntoIter = Peekable<TokenIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0
+    }
+}
+
+impl Deref for Lexer {
+    type Target = Peekable<TokenIter>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Lexer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -172,13 +209,8 @@ mod test {
         ],
     )]
     fn test_tokens(#[case] source: &'static str, #[case] expected: &[Token]) {
-        let mut lexer = Lexer::new(Source::new(source));
-
-        let tokens = std::iter::from_fn(|| match lexer.next_token() {
-            Token::EOF(_) => None,
-            token => Some(token),
-        })
-        .collect::<Vec<_>>();
+        let lexer = Lexer::new(Source::new(source));
+        let tokens = Vec::from_iter(lexer.into_iter());
 
         assert_eq!(tokens, expected);
     }

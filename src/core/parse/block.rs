@@ -25,7 +25,7 @@ pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, 
     };
 
     let statements = std::iter::from_fn(|| {
-        if !matches!(lexer.peek(), Token::RightBrace(_)) {
+        if !matches!(lexer.peek_token(), Token::RightBrace(_)) {
             Some(parse_statement(lexer, symbols))
         } else {
             None

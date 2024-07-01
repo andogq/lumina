@@ -18,7 +18,7 @@ pub fn parse_statement(
 ) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
-    let statement = match lexer.peek() {
+    let statement = match lexer.peek_token() {
         Token::Return(return_token) => {
             // Parse as return statement
             lexer.next_token();
@@ -71,7 +71,7 @@ pub fn parse_statement(
             Statement::Expression(ExpressionStatement {
                 span: expression.span().clone(),
                 expression,
-                implicit_return: if matches!(lexer.peek(), Token::Semicolon(_)) {
+                implicit_return: if matches!(lexer.peek_token(), Token::Semicolon(_)) {
                     false
                 } else {
                     expecting_semicolon = false;

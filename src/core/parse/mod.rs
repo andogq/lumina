@@ -39,7 +39,7 @@ pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
 
     // Parse each expression which should be followed by a semi colon
     let mut functions = std::iter::from_fn(|| {
-        (!matches!(lexer.peek(), Token::EOF(_))).then(|| {
+        lexer.peek().is_some().then(|| {
             let function = parse_function(&mut lexer, &mut symbol_map)?;
             Ok((function.name, function))
         })

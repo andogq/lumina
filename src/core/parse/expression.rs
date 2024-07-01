@@ -27,7 +27,7 @@ impl Precedence {
 fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expression, ParseError> {
     let mut advance = true;
 
-    let prefix = match lexer.peek() {
+    let prefix = match lexer.peek_token() {
         Token::Integer(token) => Ok(ast::Expression::Integer(ast::Integer {
             span: token.span,
             value: token
@@ -65,7 +65,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
             let success = parse_block(lexer, symbols)?;
             span = span.to(&success);
 
-            let otherwise = if matches!(lexer.peek(), Token::Else(_)) {
+            let otherwise = if matches!(lexer.peek_token(), Token::Else(_)) {
                 lexer.next_token();
 
                 let otherwise = parse_block(lexer, symbols)?;
@@ -100,8 +100,10 @@ pub fn parse_expression(
 ) -> Result<ast::Expression, ParseError> {
     let mut left = parse_prefix(lexer, symbols)?;
 
-    while !matches!(lexer.peek(), Token::EOF(_)) && precedence < Precedence::of(&lexer.peek()) {
-        if let Ok(operation) = ast::InfixOperation::try_from(lexer.peek()) {
+    while !matches!(lexer.peek_token(), Token::EOF(_))
+        && precedence < Precedence::of(&lexer.peek_token())
+    {
+        if let Ok(operation) = ast::InfixOperation::try_from(lexer.peek_token()) {
             let token = lexer.next_token();
             let precedence = Precedence::of(&token);
 
