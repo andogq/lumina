@@ -7,10 +7,13 @@ use crate::{
     util::source::Spanned,
 };
 
+use self::e_ident::parse_ident;
+
 use super::{block::parse_block, ParseError};
 
 use e_integer::parse_integer;
 
+mod e_ident;
 mod e_integer;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -37,10 +40,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
             advance = false;
             Ok(ast::Expression::Integer(parse_integer(lexer)?))
         }
-        Token::Ident(token) => Ok(ast::Expression::Ident(ast::Ident {
-            span: token.span,
-            name: symbols.get(token.literal),
-        })),
+        Token::Ident(_) => Ok(ast::Expression::Ident(parse_ident(lexer, symbols)?)),
         Token::True(token) => Ok(ast::Expression::Boolean(ast::Boolean {
             span: token.span,
             value: true,

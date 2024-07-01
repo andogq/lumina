@@ -9,7 +9,11 @@ use crate::core::lexer::{token::Token, Lexer};
 
 use self::function::parse_function;
 
-use super::{ast::Program, lexer::token::IntegerToken, symbol::SymbolMap};
+use super::{
+    ast::Program,
+    lexer::token::{IdentToken, IntegerToken},
+    symbol::SymbolMap,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
@@ -63,6 +67,17 @@ impl Lexer {
             Token::Integer(token) => Ok(token),
             token => Err(ParseError::ExpectedToken {
                 expected: Box::new(Token::Integer(Default::default())),
+                found: Box::new(token),
+                reason: reason.to_string(),
+            }),
+        }
+    }
+
+    fn ident(&mut self, reason: impl ToString) -> Result<IdentToken, ParseError> {
+        match self.next_token() {
+            Token::Ident(token) => Ok(token),
+            token => Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::Ident(Default::default())),
                 found: Box::new(token),
                 reason: reason.to_string(),
             }),
