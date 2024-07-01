@@ -9,6 +9,10 @@ use crate::{
 
 use super::{block::parse_block, ParseError};
 
+use e_integer::parse_integer;
+
+mod e_integer;
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     Lowest,
@@ -25,18 +29,14 @@ impl Precedence {
 }
 
 fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expression, ParseError> {
+    // TODO: Remove once parsing is cut up
     let mut advance = true;
 
     let prefix = match lexer.peek_token() {
-        Token::Integer(token) => Ok(ast::Expression::Integer(ast::Integer {
-            span: token.span,
-            value: token
-                .literal
-                .parse()
-                .map_err(|_| ParseError::InvalidLiteral {
-                    expected: "integer".to_string(),
-                })?,
-        })),
+        Token::Integer(_) => {
+            advance = false;
+            Ok(ast::Expression::Integer(parse_integer(lexer)?))
+        }
         Token::Ident(token) => Ok(ast::Expression::Ident(ast::Ident {
             span: token.span,
             name: symbols.get(token.literal),
