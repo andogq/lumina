@@ -1,5 +1,7 @@
+use std::fmt::{Debug, Display};
+
 /// A region within a specific file.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Span {
     pub(super) start: Location,
     pub(super) end: Location,
@@ -11,6 +13,12 @@ impl Span {
             start: self.start.clone(),
             end: end.span().end.clone(),
         }
+    }
+}
+
+impl Debug for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{start} -> {end}", start = self.start, end = self.end,)
     }
 }
 
@@ -31,7 +39,7 @@ impl Spanned for Span {
 }
 
 /// Location of a current line and column.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Location {
     pub(super) line: usize,
     pub(super) column: usize,
@@ -64,5 +72,17 @@ impl Default for Location {
             column: 0,
             offset: 0,
         }
+    }
+}
+
+impl Debug for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self} ({offset})", offset = self.offset)
+    }
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{line}:{column}", line = self.line, column = self.column)
     }
 }

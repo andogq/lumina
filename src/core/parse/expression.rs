@@ -126,69 +126,89 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
-    use crate::util::source::Source;
-
     use super::*;
 
     #[test]
     fn simple_addition() {
-        let mut lexer = Lexer::new(Source::new("3 + 4"));
-        let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
+        let mut lexer = Lexer::with_tokens(vec![
+            Token::integer("3"),
+            Token::plus(),
+            Token::integer("4"),
+        ]);
+        let expression =
+            parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new()).unwrap();
 
-        assert!(matches!(expression, Ok(ast::Expression::Infix(_))));
-        if let Ok(ast::Expression::Infix(ast::Infix {
-            left,
-            operation: ast::InfixOperation::Plus(_),
-            right,
-            ..
-        })) = expression
-        {
-            assert!(matches!(
-                *left,
-                ast::Expression::Integer(ast::Integer { value: 3, .. })
-            ));
-            assert!(matches!(
-                *right,
-                ast::Expression::Integer(ast::Integer { value: 4, .. })
-            ));
-        }
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                span: 1:0 -> 1:0,
+                left: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 3,
+                    },
+                ),
+                operation: Plus(
+                    1:0 -> 1:0,
+                ),
+                right: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 4,
+                    },
+                ),
+            },
+        )
+        "###);
     }
 
     #[test]
     fn multi_addition() {
-        let mut lexer = Lexer::new(Source::new("3 + 4 + 10"));
-        let expression = parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new());
+        let mut lexer = Lexer::with_tokens(vec![
+            Token::integer("3"),
+            Token::plus(),
+            Token::integer("4"),
+            Token::plus(),
+            Token::integer("10"),
+        ]);
+        let expression =
+            parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new()).unwrap();
 
-        assert!(matches!(expression, Ok(ast::Expression::Infix(_))));
-        if let Ok(ast::Expression::Infix(ast::Infix {
-            left,
-            operation: ast::InfixOperation::Plus(_),
-            right,
-            ..
-        })) = expression
-        {
-            assert!(matches!(*left, ast::Expression::Infix(_)));
-            if let ast::Expression::Infix(ast::Infix {
-                left,
-                operation: ast::InfixOperation::Plus(_),
-                right,
-                ..
-            }) = *left
-            {
-                assert!(matches!(
-                    *left,
-                    ast::Expression::Integer(ast::Integer { value: 3, .. })
-                ));
-                assert!(matches!(
-                    *right,
-                    ast::Expression::Integer(ast::Integer { value: 4, .. })
-                ));
-            }
-
-            assert!(matches!(
-                *right,
-                ast::Expression::Integer(ast::Integer { value: 10, .. })
-            ));
-        }
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                span: 1:0 -> 1:0,
+                left: Infix(
+                    Infix {
+                        span: 1:0 -> 1:0,
+                        left: Integer(
+                            Integer {
+                                span: 1:0 -> 1:0,
+                                value: 3,
+                            },
+                        ),
+                        operation: Plus(
+                            1:0 -> 1:0,
+                        ),
+                        right: Integer(
+                            Integer {
+                                span: 1:0 -> 1:0,
+                                value: 4,
+                            },
+                        ),
+                    },
+                ),
+                operation: Plus(
+                    1:0 -> 1:0,
+                ),
+                right: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 10,
+                    },
+                ),
+            },
+        )
+        "###);
     }
 }

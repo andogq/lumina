@@ -9,24 +9,19 @@ use crate::util::source::Source;
 
 use self::token::*;
 
-pub struct TokenIter {
-    source: Source,
+pub enum TokenIter {
+    Source(Source),
+    Vec(std::vec::IntoIter<Token>),
 }
 
 impl TokenIter {
     /// Create a new lexer with the provided source.
     pub fn new(source: Source) -> Self {
-        let mut lexer = Self { source };
-
-        // Consume all whitespace at the start of the file
-        lexer.consume_whitespace();
-
-        lexer
+        Self::Source(source)
     }
 
-    /// Consume the underlying source whilst whitespace is detected.
-    fn consume_whitespace(&mut self) {
-        self.source.consume_while(|c| c.is_whitespace());
+    pub fn new_vec(vec: Vec<Token>) -> Self {
+        Self::Vec(vec.into_iter())
     }
 }
 
@@ -34,68 +29,74 @@ impl Iterator for TokenIter {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Fetch the next character
-        let (c, location) = self.source.next()?;
+        match self {
+            TokenIter::Source(source) => {
+                // Consume whitespace
+                source.consume_while(|c| c.is_whitespace());
 
-        // Pre-emptively create a span for this character
-        let span = location.clone().span();
+                // Fetch the next character
+                let (c, location) = source.next()?;
 
-        let token = match c {
-            '+' => Token::Plus(PlusToken { span }),
-            '=' => Token::Equals(EqualsToken { span }),
+                // Pre-emptively create a span for this character
+                let span = location.clone().span();
 
-            '(' => Token::LeftParen(LeftParenToken { span }),
-            ')' => Token::RightParen(RightParenToken { span }),
-            '{' => Token::LeftBrace(LeftBraceToken { span }),
-            '}' => Token::RightBrace(RightBraceToken { span }),
+                let token = match c {
+                    '+' => Token::Plus(PlusToken { span }),
+                    '=' => Token::Equals(EqualsToken { span }),
 
-            '-' if matches!(self.source.peek(), Some('>')) => {
-                let (_, end_location) = self.source.next().expect("arrow close");
+                    '(' => Token::LeftParen(LeftParenToken { span }),
+                    ')' => Token::RightParen(RightParenToken { span }),
+                    '{' => Token::LeftBrace(LeftBraceToken { span }),
+                    '}' => Token::RightBrace(RightBraceToken { span }),
 
-                Token::ThinArrow(ThinArrowToken {
-                    span: (location, end_location).into(),
-                })
+                    '-' if matches!(source.peek(), Some('>')) => {
+                        let (_, end_location) = source.next().expect("arrow close");
+
+                        Token::ThinArrow(ThinArrowToken {
+                            span: (location, end_location).into(),
+                        })
+                    }
+
+                    ';' => Token::Semicolon(SemicolonToken { span }),
+
+                    c if c.is_ascii_digit() => {
+                        let (mut literal, str_span) = source.consume_while(|c| c.is_ascii_digit());
+
+                        // Add the first digit of the number
+                        literal.insert(0, c);
+
+                        // Expand the span to include the first digit
+                        let span = span.to(&str_span);
+
+                        Token::Integer(IntegerToken { span, literal })
+                    }
+
+                    c if c.is_alphabetic() => {
+                        let (mut literal, str_span) = source.consume_while(|c| c.is_alphabetic());
+
+                        literal.insert(0, c);
+
+                        let span = span.to(&str_span);
+
+                        match literal.as_str() {
+                            "true" => Token::True(TrueToken { span }),
+                            "false" => Token::False(FalseToken { span }),
+                            "fn" => Token::Fn(FnToken { span }),
+                            "return" => Token::Return(ReturnToken { span }),
+                            "let" => Token::Let(LetToken { span }),
+                            "if" => Token::If(IfToken { span }),
+                            "else" => Token::Else(ElseToken { span }),
+                            _ => Token::Ident(IdentToken { span, literal }),
+                        }
+                    }
+
+                    c => Token::Illegal(token::IllegalToken { span, c }),
+                };
+
+                Some(token)
             }
-
-            ';' => Token::Semicolon(SemicolonToken { span }),
-
-            c if c.is_ascii_digit() => {
-                let (mut literal, str_span) = self.source.consume_while(|c| c.is_ascii_digit());
-
-                // Add the first digit of the number
-                literal.insert(0, c);
-
-                // Expand the span to include the first digit
-                let span = span.to(&str_span);
-
-                Token::Integer(IntegerToken { span, literal })
-            }
-
-            c if c.is_alphabetic() => {
-                let (mut literal, str_span) = self.source.consume_while(|c| c.is_alphabetic());
-
-                literal.insert(0, c);
-
-                let span = span.to(&str_span);
-
-                match literal.as_str() {
-                    "true" => Token::True(TrueToken { span }),
-                    "false" => Token::False(FalseToken { span }),
-                    "fn" => Token::Fn(FnToken { span }),
-                    "return" => Token::Return(ReturnToken { span }),
-                    "let" => Token::Let(LetToken { span }),
-                    "if" => Token::If(IfToken { span }),
-                    "else" => Token::Else(ElseToken { span }),
-                    _ => Token::Ident(IdentToken { span, literal }),
-                }
-            }
-
-            c => Token::Illegal(token::IllegalToken { span, c }),
-        };
-
-        self.consume_whitespace();
-
-        Some(token)
+            TokenIter::Vec(vec) => vec.next(),
+        }
     }
 }
 
@@ -104,6 +105,10 @@ pub struct Lexer(Peekable<TokenIter>);
 impl Lexer {
     pub fn new(source: Source) -> Self {
         Self(TokenIter::new(source).peekable())
+    }
+
+    pub fn with_tokens(tokens: Vec<Token>) -> Self {
+        Self(TokenIter::new_vec(tokens).peekable())
     }
 
     /// Retrieve the next token, or [`Token::EOF`] if no more tokens follow.

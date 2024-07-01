@@ -13,3 +13,11 @@ thiserror = "1.0.58"
 
 [dev-dependencies]
 rstest = "0.21.0"
+insta = "1.39.0"
+
+
+[profile.dev.package.insta]
+opt-level = 3
+
+[profile.dev.package.similar]
+opt-level = 3
