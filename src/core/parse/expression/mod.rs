@@ -31,24 +31,13 @@ impl Precedence {
 }
 
 fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expression, ParseError> {
-    // TODO: Remove once parsing is cut up
-    let mut advance = true;
-
-    let prefix = match lexer.peek_token() {
-        Token::Integer(_) => {
-            advance = false;
-            Ok(ast::Expression::Integer(parse_integer(lexer)?))
-        }
+    match lexer.peek_token() {
+        Token::Integer(_) => Ok(ast::Expression::Integer(parse_integer(lexer)?)),
         Token::Ident(_) => Ok(ast::Expression::Ident(parse_ident(lexer, symbols)?)),
         Token::True(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
         Token::False(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
-        Token::LeftBrace(_) => {
-            advance = false;
-
-            Ok(ast::Expression::Block(parse_block(lexer, symbols)?))
-        }
+        Token::LeftBrace(_) => Ok(ast::Expression::Block(parse_block(lexer, symbols)?)),
         Token::If(token) => {
-            advance = false;
             lexer.next_token();
 
             let mut span = token.span;
@@ -77,13 +66,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
             }))
         }
         token => Err(ParseError::UnexpectedToken(token)),
-    };
-
-    if advance {
-        lexer.next_token();
     }
-
-    prefix
 }
 
 pub fn parse_expression(
