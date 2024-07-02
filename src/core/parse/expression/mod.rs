@@ -9,10 +9,13 @@ use crate::{
 
 use super::{block::parse_block, ParseError};
 
-use self::{e_boolean::parse_boolean, e_ident::parse_ident, e_integer::parse_integer};
+use self::{
+    e_boolean::parse_boolean, e_ident::parse_ident, e_if::parse_if, e_integer::parse_integer,
+};
 
 mod e_boolean;
 mod e_ident;
+mod e_if;
 mod e_integer;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -37,34 +40,7 @@ fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expre
         Token::True(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
         Token::False(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
         Token::LeftBrace(_) => Ok(ast::Expression::Block(parse_block(lexer, symbols)?)),
-        Token::If(token) => {
-            lexer.next_token();
-
-            let mut span = token.span;
-
-            let condition = parse_expression(lexer, Precedence::Lowest, symbols)?;
-
-            let success = parse_block(lexer, symbols)?;
-            span = span.to(&success);
-
-            let otherwise = if matches!(lexer.peek_token(), Token::Else(_)) {
-                lexer.next_token();
-
-                let otherwise = parse_block(lexer, symbols)?;
-                span = span.to(&otherwise);
-
-                Some(otherwise)
-            } else {
-                None
-            };
-
-            Ok(ast::Expression::If(ast::If {
-                condition: Box::new(condition),
-                success,
-                otherwise,
-                span,
-            }))
-        }
+        Token::If(_) => Ok(ast::Expression::If(parse_if(lexer, symbols)?)),
         token => Err(ParseError::UnexpectedToken(token)),
     }
 }

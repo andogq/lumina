@@ -11,7 +11,7 @@ use self::function::parse_function;
 
 use super::{
     ast::{Boolean, Program},
-    lexer::token::{FalseToken, IdentToken, IntegerToken, TrueToken},
+    lexer::token::{FalseToken, IdentToken, IfToken, IntegerToken, TrueToken},
     symbol::SymbolMap,
 };
 
@@ -96,6 +96,17 @@ impl Lexer {
             token => Err(ParseError::ExpectedToken {
                 // BUG: This should be a true or false token
                 expected: Box::new(Token::t_true()),
+                found: Box::new(token),
+                reason: reason.to_string(),
+            }),
+        }
+    }
+
+    fn t_if(&mut self, reason: impl ToString) -> Result<IfToken, ParseError> {
+        match self.next_token() {
+            Token::If(token) => Ok(token),
+            token => Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::t_if()),
                 found: Box::new(token),
                 reason: reason.to_string(),
             }),
