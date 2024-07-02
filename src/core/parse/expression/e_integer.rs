@@ -16,7 +16,7 @@ pub fn parse_integer(lexer: &mut Lexer) -> Result<Integer, ParseError> {
 
 #[cfg(test)]
 mod test {
-    use super::{parse_integer, *};
+    use super::*;
     use crate::core::lexer::token::Token;
 
     use rstest::rstest;

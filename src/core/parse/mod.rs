@@ -10,8 +10,8 @@ use crate::core::lexer::{token::Token, Lexer};
 use self::function::parse_function;
 
 use super::{
-    ast::Program,
-    lexer::token::{IdentToken, IntegerToken},
+    ast::{Boolean, Program},
+    lexer::token::{FalseToken, IdentToken, IntegerToken, TrueToken},
     symbol::SymbolMap,
 };
 
@@ -61,6 +61,11 @@ pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
     })
 }
 
+enum BooleanToken {
+    True(TrueToken),
+    False(FalseToken),
+}
+
 impl Lexer {
     fn integer(&mut self, reason: impl ToString) -> Result<IntegerToken, ParseError> {
         match self.next_token() {
@@ -78,6 +83,19 @@ impl Lexer {
             Token::Ident(token) => Ok(token),
             token => Err(ParseError::ExpectedToken {
                 expected: Box::new(Token::Ident(Default::default())),
+                found: Box::new(token),
+                reason: reason.to_string(),
+            }),
+        }
+    }
+
+    fn boolean(&mut self, reason: impl ToString) -> Result<BooleanToken, ParseError> {
+        match self.next_token() {
+            Token::True(token) => Ok(BooleanToken::True(token)),
+            Token::False(token) => Ok(BooleanToken::False(token)),
+            token => Err(ParseError::ExpectedToken {
+                // BUG: This should be a true or false token
+                expected: Box::new(Token::t_true()),
                 found: Box::new(token),
                 reason: reason.to_string(),
             }),
