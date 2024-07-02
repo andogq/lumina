@@ -78,17 +78,23 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
+    use self::ast::Expression;
+
     use super::*;
+
+    fn run(tokens: Vec<Token>) -> Result<Expression, ParseError> {
+        let mut lexer = Lexer::with_tokens(tokens);
+        parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new())
+    }
 
     #[test]
     fn simple_addition() {
-        let mut lexer = Lexer::with_tokens(vec![
+        let expression = run(vec![
             Token::integer("3"),
             Token::plus(),
             Token::integer("4"),
-        ]);
-        let expression =
-            parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new()).unwrap();
+        ])
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
@@ -116,15 +122,14 @@ mod test {
 
     #[test]
     fn multi_addition() {
-        let mut lexer = Lexer::with_tokens(vec![
+        let expression = run(vec![
             Token::integer("3"),
             Token::plus(),
             Token::integer("4"),
             Token::plus(),
             Token::integer("10"),
-        ]);
-        let expression =
-            parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new()).unwrap();
+        ])
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
@@ -158,6 +163,80 @@ mod test {
                         span: 1:0 -> 1:0,
                         value: 10,
                     },
+                ),
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn if_statement() {
+        let expression = run(vec![
+            Token::t_if(),
+            Token::integer("1"),
+            Token::left_brace(),
+            Token::ident("someident"),
+            Token::right_brace(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        If(
+            If {
+                span: 1:0 -> 1:0,
+                condition: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 1,
+                    },
+                ),
+                success: Block {
+                    span: 1:0 -> 1:0,
+                    statements: [
+                        Expression(
+                            ExpressionStatement {
+                                span: 1:0 -> 1:0,
+                                expression: Ident(
+                                    Ident {
+                                        span: 1:0 -> 1:0,
+                                        name: Symbol(
+                                            0,
+                                        ),
+                                    },
+                                ),
+                                implicit_return: true,
+                            },
+                        ),
+                    ],
+                },
+                otherwise: None,
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn integer() {
+        let expression = run(vec![Token::integer("1")]).unwrap();
+        insta::assert_debug_snapshot!(expression, @r###"
+        Integer(
+            Integer {
+                span: 1:0 -> 1:0,
+                value: 1,
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn ident() {
+        let expression = run(vec![Token::ident("someident")]).unwrap();
+        insta::assert_debug_snapshot!(expression, @r###"
+        Ident(
+            Ident {
+                span: 1:0 -> 1:0,
+                name: Symbol(
+                    0,
                 ),
             },
         )
