@@ -91,45 +91,55 @@ impl Builder {
                 otherwise,
                 ..
             }) => {
-                todo!()
-                // let condition = self.lower_expression(*condition);
-                //
-                // // Save the current basic block
-                // let here = self
-                //     .basic_block
-                //     .expect("must currently be in a basic block");
-                //
-                // // Pre-emptively create a basic block to merge back in to
-                // let merge_bb = self.new_basic_block();
-                //
-                // // Lower success block into newly created basic block
-                // let success_bb = self.new_basic_block();
-                // self.lower_block(success);
-                //
-                // // Lower the otherwise block, if it exists
-                // let otherwise_bb = otherwise.map(|otherwise| {
-                //     let otherwise_bb = self.new_basic_block();
-                //     self.lower_block(otherwise);
-                //     otherwise_bb
-                // });
-                //
-                // // Continue appending to original block
-                // self.basic_block = Some(here);
-                //
-                // // Success jump
-                // self.add_triple(Triple::CondJump(condition, success_bb));
-                // // TODO: Capture value from success bb
-                //
-                // // Optional otherwise jump
+                let condition = self.lower_expression(*condition);
+
+                // Save the current basic block
+                let here = self
+                    .basic_block
+                    .expect("must currently be in a basic block");
+
+                // Pre-emptively create a basic block to merge back in to
+                let merge_bb = self.new_basic_block();
+
+                // Lower success block into newly created basic block
+                let success_bb = self.new_basic_block();
+                let success_value = self.lower_block(success).expect("branch to have value");
+                self.add_triple(Triple::Jump(merge_bb));
+
+                // Lower the otherwise block, if it exists
+                let (otherwise_bb, otherwise_value) = otherwise
+                    .map(|otherwise| {
+                        let otherwise_bb = self.new_basic_block();
+                        let otherwise_value = self
+                            .lower_block(otherwise)
+                            .expect("else branch to have value");
+                        self.add_triple(Triple::Jump(merge_bb));
+
+                        (otherwise_bb, otherwise_value)
+                    })
+                    .expect("else branch to have value");
+
+                // Continue appending to original block
+                self.basic_block = Some(here);
+
+                // Success jump
+                self.add_triple(Triple::CondJump(condition, success_bb, otherwise_bb));
+
+                // Optional otherwise jump
+                // self.add_triple(Triple::Jump(otherwise_bb));
                 // if let Some(otherwise_bb) = otherwise_bb {
-                //     self.add_triple(Triple::Jump(otherwise_bb));
-                //     // TODO: Capture value from otherwise bb
                 // } else {
                 //     // No otherwise, immediately jump to merge
                 //     self.add_triple(Triple::Jump(merge_bb));
                 // }
-                //
-                // self.basic_block = Some(merge_bb);
+
+                // Complete merge block
+                self.basic_block = Some(merge_bb);
+
+                Value::Triple(self.add_triple(Triple::CreatePhi(vec![
+                    (success_value, success_bb),
+                    (otherwise_value, otherwise_bb),
+                ])))
             }
         }
     }

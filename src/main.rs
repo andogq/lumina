@@ -8,15 +8,13 @@ fn main() {
     let source = Source::new(
         r#"
 fn main() -> int {
-    let a = 1;
-    let b = 5;
-    let c = {
-        let myvalue = 10;
-
-        a + b + myvalue
+    let result = if 2 {
+        10
+    } else {
+        20
     };
 
-    return c;
+    return result;
 }"#,
     );
 

@@ -8,7 +8,7 @@ mod ops;
 
 /// Each possible operation of the IR. The results of these operations (if applicable) can be
 /// referenced using the ID of the triple.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Triple {
     /// Standard binary operation.
     BinaryOp {
@@ -23,13 +23,15 @@ pub enum Triple {
     /// Jump to the corresponding basic block.
     Jump(usize),
     /// Jump to the corresponding basic block if the value is not zero.
-    CondJump(Value, usize),
+    CondJump(Value, usize, usize),
     /// Call the corresponding function.
     Call(Symbol),
     /// Return with the provided value.
     Return(Value),
     /// Assign some symbol to some value.
     Assign(Symbol, Value),
+    /// Create a new phi block
+    CreatePhi(Vec<(Value, usize)>),
 }
 
 /// A reference to a specific triple.

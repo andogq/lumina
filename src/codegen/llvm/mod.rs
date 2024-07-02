@@ -6,8 +6,9 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{FunctionValue, IntValue, PointerValue},
-    OptimizationLevel,
+    types::PointerType,
+    values::{BasicValue, FunctionValue, IntValue, PointerValue},
+    AddressSpace, OptimizationLevel,
 };
 
 use crate::{
@@ -21,6 +22,7 @@ pub struct Pass<'ctx> {
     module: Module<'ctx>,
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
+    basic_blocks: HashMap<usize, inkwell::basic_block::BasicBlock<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
@@ -30,6 +32,7 @@ impl<'ctx> Pass<'ctx> {
             ir_ctx,
             module: llvm_ctx.create_module("module"),
             symbols: HashMap::new(),
+            basic_blocks: HashMap::new(),
         }
     }
 
@@ -42,7 +45,15 @@ impl<'ctx> Pass<'ctx> {
         let fn_value = self.module.add_function("some function", fn_type, None);
 
         // Create the entry basic block
-        let entry = self.llvm_ctx.append_basic_block(fn_value, "entry");
+        // let entry = self.llvm_ctx.append_basic_block(fn_value, "entry");
+        // builder.position_at_end(entry);
+
+        // self.compile_basic_block(&fn_value, function_id);
+
+        let entry = *self
+            .basic_blocks
+            .entry(0)
+            .or_insert_with(|| self.llvm_ctx.append_basic_block(fn_value, "bb_0"));
         builder.position_at_end(entry);
 
         // Create locals for all symbols
@@ -56,14 +67,21 @@ impl<'ctx> Pass<'ctx> {
                 )
             }));
 
-        self.compile_basic_block(entry, function_id);
+        for bb in 0..self.ir_ctx.basic_blocks.len() {
+            self.compile_basic_block(&fn_value, bb);
+        }
 
         fn_value
     }
 
-    fn compile_basic_block(&self, target: inkwell::basic_block::BasicBlock, basic_block_id: usize) {
+    fn compile_basic_block(&mut self, function: &FunctionValue<'ctx>, basic_block_id: usize) {
+        let bb = *self.basic_blocks.entry(basic_block_id).or_insert_with(|| {
+            self.llvm_ctx
+                .append_basic_block(*function, format!("bb_{basic_block_id}").as_str())
+        });
+
         let builder = self.llvm_ctx.create_builder();
-        builder.position_at_end(target);
+        builder.position_at_end(bb);
 
         let basic_block = self
             .ir_ctx
@@ -93,8 +111,32 @@ impl<'ctx> Pass<'ctx> {
                     })
                 }
                 Triple::Copy(value) => Some(self.retrive_value(&builder, &results, value)),
-                Triple::Jump(_) => todo!(),
-                Triple::CondJump(_, _) => todo!(),
+                Triple::Jump(bb) => {
+                    let bb = *self.basic_blocks.entry(*bb).or_insert_with(|| {
+                        self.llvm_ctx
+                            .append_basic_block(*function, format!("bb_{bb}").as_str())
+                    });
+                    builder.build_unconditional_branch(bb).unwrap();
+
+                    None
+                }
+                Triple::CondJump(condition, then_block, else_block) => {
+                    let condition = self.retrive_value(&builder, &results, condition);
+                    let then_block = *self.basic_blocks.entry(*then_block).or_insert_with(|| {
+                        self.llvm_ctx
+                            .append_basic_block(*function, format!("bb_{then_block}").as_str())
+                    });
+                    let else_block = *self.basic_blocks.entry(*else_block).or_insert_with(|| {
+                        self.llvm_ctx
+                            .append_basic_block(*function, format!("bb_{else_block}").as_str())
+                    });
+
+                    builder
+                        .build_conditional_branch(condition, then_block, else_block)
+                        .unwrap();
+
+                    None
+                }
                 Triple::Call(_) => todo!(),
                 Triple::Return(value) => {
                     let value = self.retrive_value(&builder, &results, value);
@@ -110,6 +152,36 @@ impl<'ctx> Pass<'ctx> {
                     builder.build_store(*ptr, value).unwrap();
 
                     None
+                }
+                Triple::CreatePhi(incoming) => {
+                    let phi = builder.build_phi(self.llvm_ctx.i64_type(), "phi").unwrap();
+
+                    // WARN: This is horrific
+                    let incoming_owned = incoming
+                        .iter()
+                        .map(|(value, bb_id)| {
+                            let value = self.retrive_value(&builder, &results, value);
+                            let bb = self.basic_blocks.get(bb_id).expect("basic block to exist");
+
+                            (value, *bb)
+                        })
+                        .collect::<Vec<_>>();
+                    let incoming = incoming_owned
+                        .iter()
+                        .map(|(value, bb)| (value as &dyn BasicValue, *bb))
+                        .collect::<Vec<_>>();
+
+                    phi.add_incoming(incoming.as_slice());
+
+                    let value = phi.as_basic_value().into_int_value();
+                    // let value = builder
+                    //     .build_load(self.llvm_ctx.i64_type(), ptr, "load phi")
+                    //     .unwrap()
+                    //     .into_int_value();
+
+                    // TODO: This is pushing the pointer value, not the value at the
+                    // pointer (requires a load);
+                    Some(value)
                 }
             };
 
