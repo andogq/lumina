@@ -1,18 +1,14 @@
 use crate::core::{
     ast::Function,
-    lexer::{
-        token::{FnToken, IdentToken, LeftParenToken, RightParenToken, ThinArrowToken, Token},
-        Lexer,
-    },
-    symbol::SymbolMap,
+    lexer::token::{FnToken, IdentToken, LeftParenToken, RightParenToken, ThinArrowToken, Token},
     ty::Ty,
 };
 
-use super::{block::parse_block, ParseError};
+use super::{block::parse_block, ParseCtx, ParseError};
 
-pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Function, ParseError> {
+pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     // `fn` keyword
-    let fn_token = match lexer.next_token() {
+    let fn_token = match ctx.lexer.next_token() {
         Token::Fn(fn_token) => fn_token,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -24,7 +20,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     };
 
     // function name
-    let fn_name = match lexer.next_token() {
+    let fn_name = match ctx.lexer.next_token() {
         Token::Ident(fn_name) => fn_name,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -36,7 +32,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     };
 
     // opening paren for argument list
-    match lexer.next_token() {
+    match ctx.lexer.next_token() {
         Token::LeftParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -51,7 +47,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     let parameters = Vec::new();
 
     // closing paren for argument list
-    match lexer.next_token() {
+    match ctx.lexer.next_token() {
         Token::RightParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -63,7 +59,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     }
 
     // arrow for return type
-    match lexer.next_token() {
+    match ctx.lexer.next_token() {
         Token::ThinArrow(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -75,7 +71,7 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
     }
 
     // return type (can currently only be `int`)
-    let return_ty = match lexer.next_token() {
+    let return_ty = match ctx.lexer.next_token() {
         Token::Ident(ident) => match ident.literal.as_str() {
             "int" => Ty::Int,
             _ => {
@@ -91,11 +87,11 @@ pub fn parse_function(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Func
         }
     };
 
-    let body = parse_block(lexer, symbols)?;
+    let body = parse_block(ctx)?;
 
     Ok(Function {
         span: fn_token.span.to(&body),
-        name: symbols.get(fn_name.literal),
+        name: ctx.symbols.get(fn_name.literal),
         parameters,
         return_ty,
         body,

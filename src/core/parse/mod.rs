@@ -10,7 +10,7 @@ use crate::core::lexer::{token::Token, Lexer};
 use self::function::parse_function;
 
 use super::{
-    ast::{Boolean, Program},
+    ast::Program,
     lexer::token::{FalseToken, IdentToken, IfToken, IntegerToken, TrueToken},
     symbol::SymbolMap,
 };
@@ -37,14 +37,28 @@ pub enum ParseError {
     MissingReturn,
 }
 
-pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
-    let mut symbol_map = SymbolMap::new();
-    let main = symbol_map.get("main");
+struct ParseCtx {
+    lexer: Lexer,
+    symbols: SymbolMap,
+}
+
+impl ParseCtx {
+    pub fn new(lexer: Lexer) -> Self {
+        Self {
+            lexer,
+            symbols: SymbolMap::new(),
+        }
+    }
+}
+
+pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
+    let mut ctx = ParseCtx::new(lexer);
+    let main = ctx.symbols.get("main");
 
     // Parse each expression which should be followed by a semi colon
     let mut functions = std::iter::from_fn(|| {
-        lexer.peek().is_some().then(|| {
-            let function = parse_function(&mut lexer, &mut symbol_map)?;
+        ctx.lexer.peek().is_some().then(|| {
+            let function = parse_function(&mut ctx)?;
             Ok((function.name, function))
         })
     })
@@ -57,7 +71,7 @@ pub fn parse(mut lexer: Lexer) -> Result<Program, ParseError> {
     Ok(Program {
         functions: functions.into_values().collect(),
         main,
-        symbol_map,
+        symbol_map: ctx.symbols,
     })
 }
 

@@ -1,13 +1,9 @@
 use crate::{
-    core::{
-        ast,
-        lexer::{token::Token, Lexer},
-        symbol::SymbolMap,
-    },
+    core::{ast, lexer::token::Token},
     util::source::Spanned,
 };
 
-use super::{block::parse_block, ParseError};
+use super::{block::parse_block, ParseCtx, ParseError};
 
 use self::{
     e_boolean::parse_boolean, e_ident::parse_ident, e_if::parse_if, e_integer::parse_integer,
@@ -33,33 +29,32 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<ast::Expression, ParseError> {
-    match lexer.peek_token() {
-        Token::Integer(_) => Ok(ast::Expression::Integer(parse_integer(lexer)?)),
-        Token::Ident(_) => Ok(ast::Expression::Ident(parse_ident(lexer, symbols)?)),
-        Token::True(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
-        Token::False(_) => Ok(ast::Expression::Boolean(parse_boolean(lexer)?)),
-        Token::LeftBrace(_) => Ok(ast::Expression::Block(parse_block(lexer, symbols)?)),
-        Token::If(_) => Ok(ast::Expression::If(parse_if(lexer, symbols)?)),
+fn parse_prefix(ctx: &mut ParseCtx) -> Result<ast::Expression, ParseError> {
+    match ctx.lexer.peek_token() {
+        Token::Integer(_) => Ok(ast::Expression::Integer(parse_integer(ctx)?)),
+        Token::Ident(_) => Ok(ast::Expression::Ident(parse_ident(ctx)?)),
+        Token::True(_) => Ok(ast::Expression::Boolean(parse_boolean(ctx)?)),
+        Token::False(_) => Ok(ast::Expression::Boolean(parse_boolean(ctx)?)),
+        Token::LeftBrace(_) => Ok(ast::Expression::Block(parse_block(ctx)?)),
+        Token::If(_) => Ok(ast::Expression::If(parse_if(ctx)?)),
         token => Err(ParseError::UnexpectedToken(token)),
     }
 }
 
 pub fn parse_expression(
-    lexer: &mut Lexer,
+    ctx: &mut ParseCtx,
     precedence: Precedence,
-    symbols: &mut SymbolMap,
 ) -> Result<ast::Expression, ParseError> {
-    let mut left = parse_prefix(lexer, symbols)?;
+    let mut left = parse_prefix(ctx)?;
 
-    while !matches!(lexer.peek_token(), Token::EOF(_))
-        && precedence < Precedence::of(&lexer.peek_token())
+    while !matches!(ctx.lexer.peek_token(), Token::EOF(_))
+        && precedence < Precedence::of(&ctx.lexer.peek_token())
     {
-        if let Ok(operation) = ast::InfixOperation::try_from(lexer.peek_token()) {
-            let token = lexer.next_token();
+        if let Ok(operation) = ast::InfixOperation::try_from(ctx.lexer.peek_token()) {
+            let token = ctx.lexer.next_token();
             let precedence = Precedence::of(&token);
 
-            let right = parse_expression(lexer, precedence, symbols)?;
+            let right = parse_expression(ctx, precedence)?;
 
             left = ast::Expression::Infix(ast::Infix {
                 span: token.span().to(&right),
@@ -78,13 +73,15 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
+    use crate::core::lexer::Lexer;
+
     use self::ast::Expression;
 
     use super::*;
 
     fn run(tokens: Vec<Token>) -> Result<Expression, ParseError> {
-        let mut lexer = Lexer::with_tokens(tokens);
-        parse_expression(&mut lexer, Precedence::Lowest, &mut SymbolMap::new())
+        let lexer = Lexer::with_tokens(tokens);
+        parse_expression(&mut ParseCtx::new(lexer), Precedence::Lowest)
     }
 
     #[test]

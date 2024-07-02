@@ -1,7 +1,10 @@
-use crate::core::{ast::*, lexer::Lexer, parse::ParseError};
+use crate::core::{
+    ast::*,
+    parse::{ParseCtx, ParseError},
+};
 
-pub fn parse_integer(lexer: &mut Lexer) -> Result<Integer, ParseError> {
-    let token = lexer.integer("integer peeked")?;
+pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
+    let token = ctx.lexer.integer("integer peeked")?;
 
     Ok(Integer {
         span: token.span,
@@ -17,34 +20,36 @@ pub fn parse_integer(lexer: &mut Lexer) -> Result<Integer, ParseError> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::core::lexer::token::Token;
+    use crate::core::lexer::{token::Token, Lexer};
 
     use rstest::rstest;
+
+    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer, ParseError>) {
+        let lexer = Lexer::with_tokens(tokens);
+        let mut ctx = ParseCtx::new(lexer);
+        let integer = parse_integer(&mut ctx);
+        (ctx, integer)
+    }
 
     #[rstest]
     #[case::single_digit(1)]
     #[case::multi_digit(123)]
     fn success(#[case] value: i64) {
-        let mut lexer = Lexer::with_tokens(vec![Token::integer(&value.to_string())]);
-
-        let integer = parse_integer(&mut lexer).unwrap();
-        assert_eq!(integer.value, value);
+        let (_, integer) = run(vec![Token::integer(&value.to_string())]);
+        assert_eq!(integer.unwrap().value, value);
     }
 
     #[test]
     fn fail() {
-        let mut lexer = Lexer::with_tokens(vec![Token::ident("someident")]);
-
-        assert!(parse_integer(&mut lexer).is_err());
+        let (_, integer) = run(vec![Token::ident("someident")]);
+        assert!(integer.is_err());
     }
 
     #[rstest]
     #[case::success(Token::integer("1"))]
     #[case::fail(Token::ident("someident"))]
     fn single_token(#[case] token: Token) {
-        let mut lexer = Lexer::with_tokens(vec![token, Token::semicolon()]);
-        let _ = parse_integer(&mut lexer);
-
-        assert_eq!(lexer.into_iter().count(), 1);
+        let (ctx, _) = run(vec![token, Token::semicolon()]);
+        assert_eq!(ctx.lexer.into_iter().count(), 1);
     }
 }

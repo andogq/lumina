@@ -1,21 +1,21 @@
 use super::*;
-use crate::core::{ast::*, lexer::Lexer, parse::ParseError, symbol::SymbolMap};
+use crate::core::{ast::*, parse::ParseError};
 
-pub fn parse_if(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<If, ParseError> {
+pub fn parse_if(ctx: &mut ParseCtx) -> Result<If, ParseError> {
     // Parse out the if keyword
-    let token = lexer.t_if("if peeked")?;
+    let token = ctx.lexer.t_if("if peeked")?;
 
     let mut span = token.span;
 
-    let condition = parse_expression(lexer, Precedence::Lowest, symbols)?;
+    let condition = parse_expression(ctx, Precedence::Lowest)?;
 
-    let success = parse_block(lexer, symbols)?;
+    let success = parse_block(ctx)?;
     span = span.to(&success);
 
-    let otherwise = if matches!(lexer.peek_token(), Token::Else(_)) {
-        lexer.next_token();
+    let otherwise = if matches!(ctx.lexer.peek_token(), Token::Else(_)) {
+        ctx.lexer.next_token();
 
-        let otherwise = parse_block(lexer, symbols)?;
+        let otherwise = parse_block(ctx)?;
         span = span.to(&otherwise);
 
         Some(otherwise)
@@ -36,13 +36,13 @@ mod test {
     use rstest::rstest;
 
     use super::*;
-    use crate::core::lexer::token::Token;
+    use crate::core::lexer::{token::Token, Lexer};
 
     fn build_if(
         condition: Token,
         body: Token,
         otherwise: Option<Token>,
-    ) -> (Lexer, SymbolMap, Result<If, ParseError>) {
+    ) -> (ParseCtx, Result<If, ParseError>) {
         // Build up the if statement
         let mut tokens = vec![
             Token::t_if(),
@@ -62,16 +62,16 @@ mod test {
             ]);
         }
 
-        let mut lexer = Lexer::with_tokens(tokens);
-        let mut symbols = SymbolMap::new();
-        let e_if = parse_if(&mut lexer, &mut symbols);
+        let lexer = Lexer::with_tokens(tokens);
+        let mut ctx = ParseCtx::new(lexer);
+        let e_if = parse_if(&mut ctx);
 
-        (lexer, symbols, e_if)
+        (ctx, e_if)
     }
 
     #[test]
     fn integer_condition() {
-        let (_lexer, _symbols, e_if) = build_if(Token::integer("123"), Token::integer("1"), None);
+        let (_, e_if) = build_if(Token::integer("123"), Token::integer("1"), None);
         let e_if = e_if.unwrap();
 
         assert!(matches!(
@@ -82,8 +82,7 @@ mod test {
 
     #[test]
     fn ident_condition() {
-        let (_lexer, _symbols, e_if) =
-            build_if(Token::ident("someident"), Token::integer("1"), None);
+        let (_, e_if) = build_if(Token::ident("someident"), Token::integer("1"), None);
         let e_if = e_if.unwrap();
 
         assert!(matches!(*e_if.condition, Expression::Ident(_)));
@@ -91,7 +90,7 @@ mod test {
 
     #[test]
     fn otherwise_branch() {
-        let (_lexer, _symbols, e_if) = build_if(
+        let (_, e_if) = build_if(
             Token::ident("someident"),
             Token::integer("1"),
             Some(Token::integer("2")),
@@ -120,8 +119,8 @@ mod test {
         Token::right_brace(),
     ])]
     fn fail(#[case] tokens: Vec<Token>) {
-        let mut lexer = Lexer::with_tokens(tokens);
-        let result = parse_if(&mut lexer, &mut SymbolMap::new());
+        let lexer = Lexer::with_tokens(tokens);
+        let result = parse_if(&mut ParseCtx::new(lexer));
 
         assert!(result.is_err());
     }

@@ -1,19 +1,15 @@
 use crate::{
     core::{
         ast::Block,
-        lexer::{
-            token::{LeftBraceToken, RightBraceToken, Token},
-            Lexer,
-        },
-        symbol::SymbolMap,
+        lexer::token::{LeftBraceToken, RightBraceToken, Token},
     },
     util::source::Spanned,
 };
 
-use super::{statement::parse_statement, ParseError};
+use super::{statement::parse_statement, ParseCtx, ParseError};
 
-pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, ParseError> {
-    let open_brace = match lexer.next_token() {
+pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
+    let open_brace = match ctx.lexer.next_token() {
         Token::LeftBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -25,8 +21,8 @@ pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, 
     };
 
     let statements = std::iter::from_fn(|| {
-        if !matches!(lexer.peek_token(), Token::RightBrace(_)) {
-            Some(parse_statement(lexer, symbols))
+        if !matches!(ctx.lexer.peek_token(), Token::RightBrace(_)) {
+            Some(parse_statement(ctx))
         } else {
             None
         }
@@ -34,7 +30,7 @@ pub fn parse_block(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Block, 
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let close_brace = match lexer.next_token() {
+    let close_brace = match ctx.lexer.next_token() {
         Token::RightBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {

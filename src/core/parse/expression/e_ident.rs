@@ -1,46 +1,46 @@
-use crate::core::{ast::*, lexer::Lexer, parse::ParseError, symbol::SymbolMap};
+use crate::core::{
+    ast::*,
+    parse::{ParseCtx, ParseError},
+};
 
-pub fn parse_ident(lexer: &mut Lexer, symbols: &mut SymbolMap) -> Result<Ident, ParseError> {
-    let token = lexer.ident("ident peeked")?;
+pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident, ParseError> {
+    let token = ctx.lexer.ident("ident peeked")?;
 
     Ok(Ident {
         span: token.span,
-        name: symbols.get(token.literal),
+        name: ctx.symbols.get(token.literal),
     })
 }
 
 #[cfg(test)]
 mod test {
     use super::{parse_ident, *};
-    use crate::core::lexer::token::Token;
+    use crate::core::lexer::{token::Token, Lexer};
 
     use rstest::rstest;
 
     #[test]
     fn success() {
-        let mut lexer = Lexer::with_tokens(vec![Token::ident("someident")]);
-        let mut symbols = SymbolMap::new();
+        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![Token::ident("someident")]));
 
-        let ident = parse_ident(&mut lexer, &mut symbols).unwrap();
-        assert_eq!(symbols.name(ident.name).unwrap(), "someident");
+        let ident = parse_ident(&mut ctx).unwrap();
+        assert_eq!(ctx.symbols.name(ident.name).unwrap(), "someident");
     }
 
     #[test]
     fn fail() {
-        let mut lexer = Lexer::with_tokens(vec![Token::integer("1")]);
-        let mut symbols = SymbolMap::new();
+        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![Token::integer("1")]));
 
-        assert!(parse_ident(&mut lexer, &mut symbols).is_err());
+        assert!(parse_ident(&mut ctx).is_err());
     }
 
     #[rstest]
     #[case::success(Token::ident("someident"))]
     #[case::fail(Token::integer("1"))]
     fn single_token(#[case] token: Token) {
-        let mut lexer = Lexer::with_tokens(vec![token, Token::semicolon()]);
-        let mut symbols = SymbolMap::new();
-        let _ = parse_ident(&mut lexer, &mut symbols);
+        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![token, Token::semicolon()]));
+        let _ = parse_ident(&mut ctx);
 
-        assert_eq!(lexer.into_iter().count(), 1);
+        assert_eq!(ctx.lexer.into_iter().count(), 1);
     }
 }

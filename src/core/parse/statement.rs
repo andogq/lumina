@@ -1,39 +1,35 @@
 use crate::{
     core::{
         ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
-        lexer::{token::Token, Lexer},
-        symbol::SymbolMap,
+        lexer::token::Token,
     },
     util::source::Spanned,
 };
 
 use super::{
     expression::{parse_expression, Precedence},
-    ParseError,
+    ParseCtx, ParseError,
 };
 
-pub fn parse_statement(
-    lexer: &mut Lexer,
-    symbols: &mut SymbolMap,
-) -> Result<Statement, ParseError> {
+pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
-    let statement = match lexer.peek_token() {
+    let statement = match ctx.lexer.peek_token() {
         Token::Return(return_token) => {
             // Parse as return statement
-            lexer.next_token();
+            ctx.lexer.next_token();
 
             Statement::Return(ReturnStatement {
-                value: parse_expression(lexer, Precedence::Lowest, symbols)?,
+                value: parse_expression(ctx, Precedence::Lowest)?,
                 span: return_token.span,
             })
         }
         Token::Let(let_token) => {
             // let token
-            lexer.next_token();
+            ctx.lexer.next_token();
 
             // variable binding
-            let name = match lexer.next_token() {
+            let name = match ctx.lexer.next_token() {
                 Token::Ident(name) => name,
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -45,7 +41,7 @@ pub fn parse_statement(
             };
 
             // equals sign
-            match lexer.next_token() {
+            match ctx.lexer.next_token() {
                 Token::Equals(_) => (),
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -57,21 +53,21 @@ pub fn parse_statement(
             };
 
             // value
-            let value = parse_expression(lexer, Precedence::Lowest, symbols)?;
+            let value = parse_expression(ctx, Precedence::Lowest)?;
 
             Statement::Let(LetStatement {
                 span: let_token.span().to(&value),
-                name: symbols.get(name.literal),
+                name: ctx.symbols.get(name.literal),
                 value,
             })
         }
         _ => {
             // Parse expression
-            let expression = parse_expression(lexer, Precedence::Lowest, symbols)?;
+            let expression = parse_expression(ctx, Precedence::Lowest)?;
             Statement::Expression(ExpressionStatement {
                 span: expression.span().clone(),
                 expression,
-                implicit_return: if matches!(lexer.peek_token(), Token::Semicolon(_)) {
+                implicit_return: if matches!(ctx.lexer.peek_token(), Token::Semicolon(_)) {
                     false
                 } else {
                     expecting_semicolon = false;
@@ -83,7 +79,7 @@ pub fn parse_statement(
     };
 
     if expecting_semicolon {
-        match lexer.next_token() {
+        match ctx.lexer.next_token() {
             Token::Semicolon(_) => (),
             token => {
                 return Err(ParseError::ExpectedToken {
