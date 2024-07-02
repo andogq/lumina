@@ -71,7 +71,7 @@ pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
     Ok(Program {
         functions: functions.into_values().collect(),
         main,
-        symbol_map: ctx.symbols,
+        symbols: ctx.symbols,
     })
 }
 

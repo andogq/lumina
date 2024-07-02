@@ -31,7 +31,7 @@ impl<'ctx> Compiler {
             context: &self.context,
             module: self.context.create_module("module"),
             builder: self.context.create_builder(),
-            symbol_map: program.symbol_map,
+            symbols: program.symbols,
         };
 
         // Compile each of the individual functions
@@ -63,7 +63,7 @@ pub struct CompilePass<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
-    symbol_map: SymbolMap,
+    symbols: SymbolMap,
 }
 
 pub struct CompiledModule<'ctx> {

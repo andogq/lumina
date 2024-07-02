@@ -12,7 +12,7 @@ impl Function {
         let fn_type = pass.context.i64_type().fn_type(&[], false);
         let fn_value =
             pass.module
-                .add_function(&pass.symbol_map.name(self.name).unwrap(), fn_type, None);
+                .add_function(&pass.symbols.name(self.name).unwrap(), fn_type, None);
 
         // Create the entry point and position the builder
         let entry = pass.context.append_basic_block(fn_value, "entry");
