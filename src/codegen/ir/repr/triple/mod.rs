@@ -32,6 +32,11 @@ pub enum Triple {
     Assign(Symbol, Value),
     /// Create a new phi block
     CreatePhi(Vec<(Value, usize)>),
+    Switch {
+        value: Value,
+        default: (usize, Value),
+        branches: Vec<(Value, usize, Value)>,
+    },
 }
 
 /// A reference to a specific triple.

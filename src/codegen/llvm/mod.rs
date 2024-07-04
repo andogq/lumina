@@ -6,9 +6,8 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    types::PointerType,
     values::{BasicValue, FunctionValue, IntValue, PointerValue},
-    AddressSpace, OptimizationLevel,
+    OptimizationLevel,
 };
 
 use crate::{
@@ -44,16 +43,10 @@ impl<'ctx> Pass<'ctx> {
         let fn_type = self.llvm_ctx.i64_type().fn_type(&[], false);
         let fn_value = self.module.add_function("some function", fn_type, None);
 
-        // Create the entry basic block
-        // let entry = self.llvm_ctx.append_basic_block(fn_value, "entry");
-        // builder.position_at_end(entry);
-
-        // self.compile_basic_block(&fn_value, function_id);
-
-        let entry = *self
-            .basic_blocks
-            .entry(0)
-            .or_insert_with(|| self.llvm_ctx.append_basic_block(fn_value, "bb_0"));
+        let entry = *self.basic_blocks.entry(function_id).or_insert_with(|| {
+            self.llvm_ctx
+                .append_basic_block(fn_value, &format!("bb_{function_id}"))
+        });
         builder.position_at_end(entry);
 
         // Create locals for all symbols
@@ -67,9 +60,7 @@ impl<'ctx> Pass<'ctx> {
                 )
             }));
 
-        for bb in 0..self.ir_ctx.basic_blocks.len() {
-            self.compile_basic_block(&fn_value, bb);
-        }
+        self.compile_basic_block(&fn_value, function_id);
 
         fn_value
     }
@@ -87,7 +78,8 @@ impl<'ctx> Pass<'ctx> {
             .ir_ctx
             .basic_blocks
             .get(basic_block_id)
-            .expect("requested basic block must exist");
+            .expect("requested basic block must exist")
+            .clone();
 
         let mut results = Vec::with_capacity(basic_block.triples.len());
 
@@ -174,14 +166,77 @@ impl<'ctx> Pass<'ctx> {
                     phi.add_incoming(incoming.as_slice());
 
                     let value = phi.as_basic_value().into_int_value();
-                    // let value = builder
-                    //     .build_load(self.llvm_ctx.i64_type(), ptr, "load phi")
-                    //     .unwrap()
-                    //     .into_int_value();
 
-                    // TODO: This is pushing the pointer value, not the value at the
-                    // pointer (requires a load);
                     Some(value)
+                }
+                Triple::Switch {
+                    value,
+                    default,
+                    branches,
+                } => {
+                    // Ensure each of the required basic blocks are compiled
+                    for bb in branches.iter().map(|(_, bb, _)| *bb).chain([default.0]) {
+                        if !self.basic_blocks.contains_key(&bb) {
+                            self.compile_basic_block(function, bb);
+                        }
+                    }
+
+                    // Emit the switch instruction
+                    builder
+                        .build_switch(
+                            self.retrive_value(&builder, &results, value),
+                            *self.basic_blocks.get(&default.0).unwrap(),
+                            branches
+                                .iter()
+                                .map(|(case, bb, _)| {
+                                    (
+                                        self.retrive_value(&builder, &results, case),
+                                        *self.basic_blocks.get(bb).unwrap(),
+                                    )
+                                })
+                                .collect::<Vec<_>>()
+                                .as_slice(),
+                        )
+                        .unwrap();
+
+                    // Create the block to merge
+                    let merge = self.llvm_ctx.append_basic_block(*function, "switch merge");
+
+                    // Write phi node into merge block
+                    builder.position_at_end(merge);
+
+                    // Build a phi node to receive the result of the switch
+                    let phi = builder
+                        .build_phi(self.llvm_ctx.i64_type(), "switch phi")
+                        .unwrap();
+
+                    for (bb, final_value) in branches
+                        .iter()
+                        .map(|(_, bb, final_value)| (*bb, *final_value))
+                        .chain([*default])
+                    {
+                        // Pull the block out
+                        let basic_block = *self.basic_blocks.get(&bb).unwrap();
+
+                        // Ensure the block doesn't have a terminator
+                        if basic_block.get_terminator().is_some() {
+                            panic!("basic block already has terminator, but one needs to be inserted for switch.");
+                        }
+
+                        // Add the terminator
+                        builder.position_at_end(basic_block);
+                        builder.build_unconditional_branch(merge).unwrap();
+
+                        phi.add_incoming(&[(
+                            &self.retrive_value(&builder, &results, &final_value),
+                            basic_block,
+                        )]);
+                    }
+
+                    // Continue writing to end of merge block
+                    builder.position_at_end(merge);
+
+                    Some(phi.as_basic_value().into_int_value())
                 }
             };
 
