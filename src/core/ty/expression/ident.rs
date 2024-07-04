@@ -20,6 +20,8 @@ impl InferTy for Ident {
 
 #[cfg(test)]
 mod test_ident {
+    use string_interner::Symbol;
+
     use crate::util::source::Span;
 
     use super::*;
@@ -29,9 +31,12 @@ mod test_ident {
         assert_eq!(
             Ident {
                 span: Span::default(),
-                name: Symbol::default(),
+                name: Symbol::try_from_usize(0).unwrap(),
             }
-            .infer(&mut HashMap::from_iter([(Symbol::default(), Ty::Int)]))
+            .infer(&mut HashMap::from_iter([(
+                Symbol::try_from_usize(0).unwrap(),
+                Ty::Int
+            )]))
             .unwrap(),
             Ty::Int,
         );
@@ -42,9 +47,12 @@ mod test_ident {
         assert_eq!(
             Ident {
                 span: Span::default(),
-                name: Symbol::default(),
+                name: Symbol::try_from_usize(0).unwrap(),
             }
-            .return_ty(&mut HashMap::from_iter([(Symbol::default(), Ty::Int)]))
+            .return_ty(&mut HashMap::from_iter([(
+                Symbol::try_from_usize(0).unwrap(),
+                Ty::Int
+            )]))
             .unwrap(),
             None,
         );
@@ -54,7 +62,7 @@ mod test_ident {
     fn ident_infer_missing() {
         assert!(Ident {
             span: Span::default(),
-            name: Symbol::default(),
+            name: Symbol::try_from_usize(0).unwrap(),
         }
         .infer(&mut HashMap::new())
         .is_err(),);
@@ -65,9 +73,12 @@ mod test_ident {
         assert_eq!(
             Ident {
                 span: Span::default(),
-                name: Symbol::default(),
+                name: Symbol::try_from_usize(0).unwrap(),
             }
-            .return_ty(&mut HashMap::from_iter([(Symbol::default(), Ty::Int)]))
+            .return_ty(&mut HashMap::from_iter([(
+                Symbol::try_from_usize(0).unwrap(),
+                Ty::Int
+            )]))
             .unwrap(),
             None,
         );

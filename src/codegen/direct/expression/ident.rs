@@ -17,7 +17,7 @@ impl Ident {
             .build_load(
                 pass.context.i64_type(),
                 *scope.get(&self.name).unwrap(),
-                &pass.symbols.name(self.name).unwrap(),
+                &pass.symbols.resolve(self.name).unwrap(),
             )
             .unwrap()
             .into_int_value()

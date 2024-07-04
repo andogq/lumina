@@ -53,7 +53,8 @@ impl ParseCtx {
 
 pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
     let mut ctx = ParseCtx::new(lexer);
-    let main = ctx.symbols.get("main");
+    // WARN: wacky af
+    let main = ctx.symbols.get_or_intern_static("main");
 
     // Parse each expression which should be followed by a semi colon
     let mut functions = std::iter::from_fn(|| {

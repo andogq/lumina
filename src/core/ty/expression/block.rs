@@ -44,6 +44,8 @@ impl InferTy for Block {
 
 #[cfg(test)]
 mod test {
+    use string_interner::Symbol;
+
     use crate::core::ast::{Expression, Statement};
 
     use super::*;
@@ -56,7 +58,7 @@ mod test {
         //     return 1;
         // }
         let b = Block::new(&[
-            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::_let(Symbol::try_from_usize(0).unwrap(), Expression::integer(1)),
             Statement::expression(Expression::integer(1), false),
             Statement::_return(Expression::integer(1)),
         ]);
@@ -71,7 +73,7 @@ mod test {
         //     return 1;
         // }
         let b = Block::new(&[
-            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::_let(Symbol::try_from_usize(0).unwrap(), Expression::integer(1)),
             Statement::expression(Expression::integer(1), false),
             Statement::_return(Expression::integer(1)),
         ]);
@@ -88,7 +90,7 @@ mod test {
         //     return true;
         // }
         let b = Block::new(&[
-            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::_let(Symbol::try_from_usize(0).unwrap(), Expression::integer(1)),
             Statement::expression(Expression::integer(1), false),
             Statement::_return(Expression::integer(1)),
             Statement::_return(Expression::boolean(true)),
@@ -104,7 +106,7 @@ mod test {
         //     1;
         // }
         let b = Block::new(&[
-            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::_let(Symbol::try_from_usize(0).unwrap(), Expression::integer(1)),
             Statement::expression(Expression::integer(1), false),
         ]);
 
@@ -118,7 +120,7 @@ mod test {
         //     1;
         // }
         let b = Block::new(&[
-            Statement::_let(Symbol::default(), Expression::integer(1)),
+            Statement::_let(Symbol::try_from_usize(0).unwrap(), Expression::integer(1)),
             Statement::expression(Expression::integer(1), false),
         ]);
 

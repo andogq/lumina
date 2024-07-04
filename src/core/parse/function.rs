@@ -91,7 +91,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
 
     Ok(Function {
         span: fn_token.span.to(&body),
-        name: ctx.symbols.get(fn_name.literal),
+        name: ctx.symbols.get_or_intern(fn_name.literal),
         parameters,
         return_ty,
         body,

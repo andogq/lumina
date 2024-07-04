@@ -66,7 +66,13 @@ impl<'ctx> Pass<'ctx> {
             (
                 symbol.to_owned(),
                 builder
-                    .build_alloca(self.llvm_ctx.i64_type(), &symbol.to_string())
+                    .build_alloca(
+                        self.llvm_ctx.i64_type(),
+                        self.ir_ctx
+                            .symbol_map
+                            .resolve(*symbol)
+                            .expect("symbol to exist in map"),
+                    )
                     .unwrap(),
             )
         }));
@@ -244,7 +250,7 @@ impl<'ctx> Pass<'ctx> {
             Value::Name(symbol) => {
                 let ptr = self.symbols.get(symbol).expect("symbol must be defined");
                 builder
-                    .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol}"))
+                    .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol:?}"))
                     .unwrap()
                     .into_int_value()
             }

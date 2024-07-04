@@ -57,7 +57,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
 
             Statement::Let(LetStatement {
                 span: let_token.span().to(&value),
-                name: ctx.symbols.get(name.literal),
+                name: ctx.symbols.get_or_intern(name.literal),
                 value,
             })
         }

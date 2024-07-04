@@ -8,7 +8,7 @@ pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident, ParseError> {
 
     Ok(Ident {
         span: token.span,
-        name: ctx.symbols.get(token.literal),
+        name: ctx.symbols.get_or_intern(token.literal),
     })
 }
 
@@ -24,7 +24,7 @@ mod test {
         let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![Token::ident("someident")]));
 
         let ident = parse_ident(&mut ctx).unwrap();
-        assert_eq!(ctx.symbols.name(ident.name).unwrap(), "someident");
+        assert_eq!(ctx.symbols.resolve(ident.name).unwrap(), "someident");
     }
 
     #[test]

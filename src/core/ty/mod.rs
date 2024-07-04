@@ -25,7 +25,7 @@ pub enum TyError {
         found: Option<Ty>,
     },
 
-    #[error("symbol not found: {0}")]
+    #[error("symbol not found: {0:?}")]
     SymbolNotFound(Symbol),
 }
 

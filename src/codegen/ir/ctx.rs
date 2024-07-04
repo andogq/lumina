@@ -21,8 +21,8 @@ impl IRCtx {
         }
     }
 
-    pub fn function_for_name(&mut self, name: impl ToString) -> Option<FunctionIdx> {
-        let symbol = self.symbol_map.get(name);
+    pub fn function_for_name(&mut self, name: impl AsRef<str>) -> Option<FunctionIdx> {
+        let symbol = self.symbol_map.get(name)?;
 
         self.functions
             .iter_enumerated()
