@@ -22,16 +22,12 @@ pub enum Triple {
     Copy(Value),
     /// Jump to the corresponding basic block.
     Jump(usize),
-    /// Jump to the corresponding basic block if the value is not zero.
-    CondJump(Value, usize, usize),
     /// Call the corresponding function.
     Call(Symbol),
     /// Return with the provided value.
     Return(Value),
     /// Assign some symbol to some value.
     Assign(Symbol, Value),
-    /// Create a new phi block
-    CreatePhi(Vec<(Value, usize)>),
     Switch {
         value: Value,
         default: (usize, Value),

@@ -6,7 +6,7 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{BasicValue, FunctionValue, IntValue, PointerValue},
+    values::{FunctionValue, IntValue, PointerValue},
     OptimizationLevel,
 };
 
@@ -112,23 +112,6 @@ impl<'ctx> Pass<'ctx> {
 
                     None
                 }
-                Triple::CondJump(condition, then_block, else_block) => {
-                    let condition = self.retrive_value(&builder, &results, condition);
-                    let then_block = *self.basic_blocks.entry(*then_block).or_insert_with(|| {
-                        self.llvm_ctx
-                            .append_basic_block(*function, format!("bb_{then_block}").as_str())
-                    });
-                    let else_block = *self.basic_blocks.entry(*else_block).or_insert_with(|| {
-                        self.llvm_ctx
-                            .append_basic_block(*function, format!("bb_{else_block}").as_str())
-                    });
-
-                    builder
-                        .build_conditional_branch(condition, then_block, else_block)
-                        .unwrap();
-
-                    None
-                }
                 Triple::Call(_) => todo!(),
                 Triple::Return(value) => {
                     let value = self.retrive_value(&builder, &results, value);
@@ -144,30 +127,6 @@ impl<'ctx> Pass<'ctx> {
                     builder.build_store(*ptr, value).unwrap();
 
                     None
-                }
-                Triple::CreatePhi(incoming) => {
-                    let phi = builder.build_phi(self.llvm_ctx.i64_type(), "phi").unwrap();
-
-                    // WARN: This is horrific
-                    let incoming_owned = incoming
-                        .iter()
-                        .map(|(value, bb_id)| {
-                            let value = self.retrive_value(&builder, &results, value);
-                            let bb = self.basic_blocks.get(bb_id).expect("basic block to exist");
-
-                            (value, *bb)
-                        })
-                        .collect::<Vec<_>>();
-                    let incoming = incoming_owned
-                        .iter()
-                        .map(|(value, bb)| (value as &dyn BasicValue, *bb))
-                        .collect::<Vec<_>>();
-
-                    phi.add_incoming(incoming.as_slice());
-
-                    let value = phi.as_basic_value().into_int_value();
-
-                    Some(value)
                 }
                 Triple::Switch {
                     value,
