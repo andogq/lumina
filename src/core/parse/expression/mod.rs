@@ -196,9 +196,9 @@ mod test {
                                 expression: Ident(
                                     Ident {
                                         span: 1:0 -> 1:0,
-                                        name: Symbol(
-                                            0,
-                                        ),
+                                        name: SymbolU32 {
+                                            value: 1,
+                                        },
                                     },
                                 ),
                                 implicit_return: true,
@@ -232,9 +232,9 @@ mod test {
         Ident(
             Ident {
                 span: 1:0 -> 1:0,
-                name: Symbol(
-                    0,
-                ),
+                name: SymbolU32 {
+                    value: 1,
+                },
             },
         )
         "###);
