@@ -118,8 +118,8 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression)
 
             Value::Triple(ctx.add_triple(Triple::BinaryOp { lhs, rhs, op }))
         }
-        ast::Expression::Integer(integer) => Value::Constant(integer.value),
-        ast::Expression::Boolean(_) => todo!(),
+        ast::Expression::Integer(integer) => Value::integer(integer.value),
+        ast::Expression::Boolean(boolean) => Value::boolean(boolean.value),
         ast::Expression::Ident(ast::Ident { name, .. }) => Value::Name(*name),
         ast::Expression::Block(block) => lower_block(ctx, block).expect("block must yield value"),
         ast::Expression::If(ast::If {
@@ -155,7 +155,7 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression)
             Value::Triple(ctx.add_triple(Triple::Switch {
                 value: condition,
                 default: (success_bb, success_value),
-                branches: vec![(Value::Constant(0), otherwise_bb, otherwise_value)],
+                branches: vec![(Value::integer(0), otherwise_bb, otherwise_value)],
             }))
         }
     }

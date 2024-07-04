@@ -16,7 +16,7 @@ use crate::{
     core::symbol::Symbol,
 };
 
-use super::ir::{BasicBlockIdx, FunctionIdx, TripleIdx};
+use super::ir::{BasicBlockIdx, ConstantValue, FunctionIdx, TripleIdx};
 
 pub struct Pass<'ctx> {
     llvm_ctx: &'ctx LLVMContext,
@@ -254,7 +254,20 @@ impl<'ctx> Pass<'ctx> {
                     .unwrap()
                     .into_int_value()
             }
-            Value::Constant(value) => self.llvm_ctx.i64_type().const_int(*value as u64, false),
+            Value::Constant(value) => match value {
+                ConstantValue::Integer(value) => {
+                    self.llvm_ctx.i64_type().const_int(*value as u64, false)
+                }
+                ConstantValue::Boolean(value) => {
+                    let ty = self.llvm_ctx.bool_type();
+
+                    if *value {
+                        ty.const_all_ones()
+                    } else {
+                        ty.const_zero()
+                    }
+                }
+            },
             Value::Triple(triple) => results
                 .get(triple.triple)
                 .expect("triple must exist")

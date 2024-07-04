@@ -8,7 +8,7 @@ fn main() {
     let source = Source::new(
         r#"
 fn main() -> int {
-    let result = if 0 {
+    let result = if true {
         10
     } else {
         20
