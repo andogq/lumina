@@ -1,6 +1,6 @@
 use crate::core::symbol::Symbol;
 
-use super::Value;
+use super::{BasicBlockIdx, Value};
 
 pub use self::ops::*;
 
@@ -21,7 +21,7 @@ pub enum Triple {
     /// Copy the provided value.
     Copy(Value),
     /// Jump to the corresponding basic block.
-    Jump(usize),
+    Jump(BasicBlockIdx),
     /// Call the corresponding function.
     Call(Symbol),
     /// Return with the provided value.
@@ -30,20 +30,20 @@ pub enum Triple {
     Assign(Symbol, Value),
     Switch {
         value: Value,
-        default: (usize, Value),
-        branches: Vec<(Value, usize, Value)>,
+        default: (BasicBlockIdx, Value),
+        branches: Vec<(Value, BasicBlockIdx, Value)>,
     },
 }
 
 /// A reference to a specific triple.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TripleRef {
-    pub basic_block: usize,
+    pub basic_block: BasicBlockIdx,
     pub triple: usize,
 }
 
 impl TripleRef {
-    pub fn new(basic_block: usize, triple: usize) -> Self {
+    pub fn new(basic_block: BasicBlockIdx, triple: usize) -> Self {
         Self {
             basic_block,
             triple,

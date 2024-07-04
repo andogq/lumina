@@ -11,21 +11,23 @@ use inkwell::{
 };
 
 use crate::{
-    codegen::ir::{BinaryOp, IRContext, Triple, UnaryOp, Value},
+    codegen::ir::{BinaryOp, IRCtx, Triple, UnaryOp, Value},
     core::symbol::Symbol,
 };
 
+use super::ir::{BasicBlockIdx, FunctionIdx};
+
 pub struct Pass<'ctx> {
     llvm_ctx: &'ctx LLVMContext,
-    ir_ctx: IRContext,
+    ir_ctx: IRCtx,
     module: Module<'ctx>,
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
-    basic_blocks: HashMap<usize, inkwell::basic_block::BasicBlock<'ctx>>,
+    basic_blocks: HashMap<(FunctionIdx, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
-    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: IRContext) -> Self {
+    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: IRCtx) -> Self {
         Self {
             llvm_ctx,
             ir_ctx,
@@ -36,39 +38,51 @@ impl<'ctx> Pass<'ctx> {
     }
 
     /// Compile the provided function, returning the LLVM handle to it.
-    pub fn compile(&mut self, function_id: usize) -> FunctionValue<'ctx> {
+    pub fn compile(&mut self, function_id: FunctionIdx) -> FunctionValue<'ctx> {
+        let function = self
+            .ir_ctx
+            .functions
+            .get(function_id)
+            .expect("function to exist");
+
         let builder = self.llvm_ctx.create_builder();
 
         // TODO: Currently only accepts functions that return an integer
         let fn_type = self.llvm_ctx.i64_type().fn_type(&[], false);
         let fn_value = self.module.add_function("some function", fn_type, None);
 
-        let entry = *self.basic_blocks.entry(function_id).or_insert_with(|| {
+        // BUG: This won't work with multiple functions
+        let entry_bb = (function_id, BasicBlockIdx::new(0));
+        let entry = *self.basic_blocks.entry(entry_bb).or_insert_with(|| {
             self.llvm_ctx
-                .append_basic_block(fn_value, &format!("bb_{function_id}"))
+                .append_basic_block(fn_value, &format!("bb_{:?}_{:?}", entry_bb.0, entry_bb.1))
         });
         builder.position_at_end(entry);
 
         // Create locals for all symbols
-        self.symbols
-            .extend(self.ir_ctx.symbols.iter().map(|symbol| {
-                (
-                    symbol.to_owned(),
-                    builder
-                        .build_alloca(self.llvm_ctx.i64_type(), &symbol.to_string())
-                        .unwrap(),
-                )
-            }));
+        // TODO: Symbols should be scoped to each function
+        self.symbols.extend(function.scope.iter().map(|symbol| {
+            (
+                symbol.to_owned(),
+                builder
+                    .build_alloca(self.llvm_ctx.i64_type(), &symbol.to_string())
+                    .unwrap(),
+            )
+        }));
 
-        self.compile_basic_block(&fn_value, function_id);
+        self.compile_basic_block(&fn_value, entry_bb);
 
         fn_value
     }
 
-    fn compile_basic_block(&mut self, function: &FunctionValue<'ctx>, basic_block_id: usize) {
+    fn compile_basic_block(
+        &mut self,
+        function: &FunctionValue<'ctx>,
+        basic_block_id: (FunctionIdx, BasicBlockIdx),
+    ) {
         let bb = *self.basic_blocks.entry(basic_block_id).or_insert_with(|| {
             self.llvm_ctx
-                .append_basic_block(*function, format!("bb_{basic_block_id}").as_str())
+                .append_basic_block(*function, format!("bb_{basic_block_id:?}").as_str())
         });
 
         let builder = self.llvm_ctx.create_builder();
@@ -76,8 +90,11 @@ impl<'ctx> Pass<'ctx> {
 
         let basic_block = self
             .ir_ctx
+            .functions
+            .get(basic_block_id.0)
+            .expect("function to exist")
             .basic_blocks
-            .get(basic_block_id)
+            .get(basic_block_id.1)
             .expect("requested basic block must exist")
             .clone();
 
@@ -104,10 +121,16 @@ impl<'ctx> Pass<'ctx> {
                 }
                 Triple::Copy(value) => Some(self.retrive_value(&builder, &results, value)),
                 Triple::Jump(bb) => {
-                    let bb = *self.basic_blocks.entry(*bb).or_insert_with(|| {
-                        self.llvm_ctx
-                            .append_basic_block(*function, format!("bb_{bb}").as_str())
-                    });
+                    // TODO: Better mapping between IR basic block and LLVM basic block
+                    let bb = *self
+                        .basic_blocks
+                        .entry((basic_block_id.0, *bb))
+                        .or_insert_with(|| {
+                            self.llvm_ctx.append_basic_block(
+                                *function,
+                                format!("bb_{}", bb.index()).as_str(),
+                            )
+                        });
                     builder.build_unconditional_branch(bb).unwrap();
 
                     None
@@ -135,8 +158,9 @@ impl<'ctx> Pass<'ctx> {
                 } => {
                     // Ensure each of the required basic blocks are compiled
                     for bb in branches.iter().map(|(_, bb, _)| *bb).chain([default.0]) {
-                        if !self.basic_blocks.contains_key(&bb) {
-                            self.compile_basic_block(function, bb);
+                        // TODO: Mapping bb
+                        if !self.basic_blocks.contains_key(&(basic_block_id.0, bb)) {
+                            self.compile_basic_block(function, (basic_block_id.0, bb));
                         }
                     }
 
@@ -144,13 +168,18 @@ impl<'ctx> Pass<'ctx> {
                     builder
                         .build_switch(
                             self.retrive_value(&builder, &results, value),
-                            *self.basic_blocks.get(&default.0).unwrap(),
+                            // TODO: Mapping bb
+                            *self
+                                .basic_blocks
+                                .get(&(basic_block_id.0, default.0))
+                                .unwrap(),
                             branches
                                 .iter()
                                 .map(|(case, bb, _)| {
                                     (
                                         self.retrive_value(&builder, &results, case),
-                                        *self.basic_blocks.get(bb).unwrap(),
+                                        // TODO: Mapping bb
+                                        *self.basic_blocks.get(&(basic_block_id.0, *bb)).unwrap(),
                                     )
                                 })
                                 .collect::<Vec<_>>()
@@ -175,7 +204,8 @@ impl<'ctx> Pass<'ctx> {
                         .chain([*default])
                     {
                         // Pull the block out
-                        let basic_block = *self.basic_blocks.get(&bb).unwrap();
+                        // TODO: Mapping bb
+                        let basic_block = *self.basic_blocks.get(&(basic_block_id.0, bb)).unwrap();
 
                         // Ensure the block doesn't have a terminator
                         if basic_block.get_terminator().is_some() {

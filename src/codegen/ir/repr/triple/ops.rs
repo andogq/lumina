@@ -6,11 +6,17 @@ pub enum BinaryOp {
     Sub,
 }
 
-impl From<ast::InfixOperation> for BinaryOp {
-    fn from(value: ast::InfixOperation) -> Self {
+impl From<&ast::InfixOperation> for BinaryOp {
+    fn from(value: &ast::InfixOperation) -> Self {
         match value {
             ast::InfixOperation::Plus(_) => Self::Add,
         }
+    }
+}
+
+impl From<ast::InfixOperation> for BinaryOp {
+    fn from(value: ast::InfixOperation) -> Self {
+        Self::from(&value)
     }
 }
 
