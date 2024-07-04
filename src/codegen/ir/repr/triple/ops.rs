@@ -4,12 +4,16 @@ use crate::core::ast;
 pub enum BinaryOp {
     Add,
     Sub,
+    Eq,
+    NotEq,
 }
 
 impl From<&ast::InfixOperation> for BinaryOp {
     fn from(value: &ast::InfixOperation) -> Self {
         match value {
             ast::InfixOperation::Plus(_) => Self::Add,
+            ast::InfixOperation::Eq(_) => Self::Eq,
+            ast::InfixOperation::NotEq(_) => Self::NotEq,
         }
     }
 }

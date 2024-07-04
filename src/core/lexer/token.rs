@@ -137,6 +137,9 @@ token!(IntegerToken { literal: String }, "integer");
 token!(IdentToken { literal: String }, "ident");
 
 token!(PlusToken, "+");
+token!(EqToken, "==");
+token!(NotEqToken, "!=");
+
 token!(EqualsToken, "=");
 
 token!(SemicolonToken, ";");
@@ -164,6 +167,9 @@ token_enum! {
     Ident: IdentToken,
 
     Plus: PlusToken,
+    Eq: EqToken,
+    NotEq: NotEqToken,
+
     Equals: EqualsToken,
 
     Semicolon: SemicolonToken,
@@ -201,6 +207,13 @@ impl Token {
     pub fn plus() -> Self {
         Self::Plus(Default::default())
     }
+    pub fn eq() -> Self {
+        Self::Eq(Default::default())
+    }
+    pub fn not_eq() -> Self {
+        Self::NotEq(Default::default())
+    }
+
     pub fn equals() -> Self {
         Self::Equals(Default::default())
     }

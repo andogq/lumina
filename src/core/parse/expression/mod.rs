@@ -17,6 +17,7 @@ mod e_integer;
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     Lowest,
+    Equality,
     Sum,
 }
 
@@ -24,6 +25,7 @@ impl Precedence {
     pub fn of(token: &Token) -> Self {
         match token {
             Token::Plus(_) => Precedence::Sum,
+            Token::Eq(_) | Token::NotEq(_) => Precedence::Equality,
             _ => Precedence::Lowest,
         }
     }
@@ -235,6 +237,83 @@ mod test {
                 name: SymbolU32 {
                     value: 1,
                 },
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn equality() {
+        let expression = run(vec![Token::integer("1"), Token::eq(), Token::integer("1")]).unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                span: 1:0 -> 1:0,
+                left: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 1,
+                    },
+                ),
+                operation: Eq(
+                    1:0 -> 1:0,
+                ),
+                right: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 1,
+                    },
+                ),
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn complex_equality() {
+        let expression = run(vec![
+            Token::integer("1"),
+            Token::eq(),
+            Token::integer("1"),
+            Token::plus(),
+            Token::integer("2"),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                span: 1:0 -> 1:0,
+                left: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        value: 1,
+                    },
+                ),
+                operation: Eq(
+                    1:0 -> 1:0,
+                ),
+                right: Infix(
+                    Infix {
+                        span: 1:0 -> 1:0,
+                        left: Integer(
+                            Integer {
+                                span: 1:0 -> 1:0,
+                                value: 1,
+                            },
+                        ),
+                        operation: Plus(
+                            1:0 -> 1:0,
+                        ),
+                        right: Integer(
+                            Integer {
+                                span: 1:0 -> 1:0,
+                                value: 2,
+                            },
+                        ),
+                    },
+                ),
             },
         )
         "###);

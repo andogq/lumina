@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::Infix,
+    ast::{Infix, InfixOperation},
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
@@ -10,10 +10,21 @@ impl InferTy for Infix {
         let left_ty = self.left.infer(symbols)?;
         let right_ty = self.right.infer(symbols)?;
 
-        if left_ty == right_ty {
-            Ok(left_ty)
-        } else {
-            Err(TyError::Mismatch(left_ty, right_ty))
+        match self.operation {
+            InfixOperation::Plus(_) => {
+                if left_ty == right_ty {
+                    Ok(left_ty)
+                } else {
+                    Err(TyError::Mismatch(left_ty, right_ty))
+                }
+            }
+            InfixOperation::Eq(_) | InfixOperation::NotEq(_) => {
+                if left_ty == right_ty {
+                    Ok(Ty::Boolean)
+                } else {
+                    Err(TyError::Mismatch(left_ty, right_ty))
+                }
+            }
         }
     }
 

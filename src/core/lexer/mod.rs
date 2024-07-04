@@ -42,6 +42,21 @@ impl Iterator for TokenIter {
 
                 let token = match c {
                     '+' => Token::Plus(PlusToken { span }),
+                    '=' if matches!(source.peek(), Some('=')) => {
+                        let (_, end_location) = source.next().expect("eq second =");
+
+                        Token::Eq(EqToken {
+                            span: (location, end_location).into(),
+                        })
+                    }
+                    '!' if matches!(source.peek(), Some('=')) => {
+                        let (_, end_location) = source.next().expect("not eq second =");
+
+                        Token::NotEq(NotEqToken {
+                            span: (location, end_location).into(),
+                        })
+                    }
+
                     '=' => Token::Equals(EqualsToken { span }),
 
                     '(' => Token::LeftParen(LeftParenToken { span }),
@@ -164,6 +179,8 @@ mod test {
     #[case::multi_char_ident("asdf", &[Token::ident("asdf")])]
     #[case::multi_ident("asdf some ident", &[Token::ident("asdf"), Token::ident("some"), Token::ident("ident")])]
     #[case::plus("+", &[Token::plus()])]
+    #[case::eq("==", &[Token::eq()])]
+    #[case::not_eq("!=", &[Token::not_eq()])]
     #[case::equals("=", &[Token::equals()])]
     #[case::semicolon(";", &[Token::semicolon()])]
     #[case::thin_arrow("->", &[Token::thin_arrow()])]
@@ -192,11 +209,13 @@ mod test {
         Token::semicolon(),
     ])]
     #[case::all_tokens(
-        "123 ident + = ; -> ( ) { } true false fn return let if else",
+        "123 ident + == != = ; -> ( ) { } true false fn return let if else",
         &[
             Token::integer("123"),
             Token::ident("ident"),
             Token::plus(),
+            Token::eq(),
+            Token::not_eq(),
             Token::equals(),
             Token::semicolon(),
             Token::thin_arrow(),

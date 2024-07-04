@@ -21,6 +21,8 @@ impl Infix {
 
         match self.operation {
             InfixOperation::Plus(_) => pass.builder.build_int_add(left, right, "temp_add").unwrap(),
+            InfixOperation::Eq(_) => unimplemented!(),
+            InfixOperation::NotEq(_) => unimplemented!(),
         }
     }
 }

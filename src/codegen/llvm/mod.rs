@@ -8,7 +8,7 @@ use inkwell::{
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
     values::{FunctionValue, IntValue, PointerValue},
-    OptimizationLevel,
+    IntPredicate, OptimizationLevel,
 };
 
 use crate::{
@@ -116,6 +116,12 @@ impl<'ctx> Pass<'ctx> {
                     Some(match op {
                         BinaryOp::Add => builder.build_int_add(lhs, rhs, "add").unwrap(),
                         BinaryOp::Sub => builder.build_int_sub(lhs, rhs, "sub").unwrap(),
+                        BinaryOp::Eq => builder
+                            .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq")
+                            .unwrap(),
+                        BinaryOp::NotEq => builder
+                            .build_int_compare(IntPredicate::NE, lhs, rhs, "not eq")
+                            .unwrap(),
                     })
                 }
                 Triple::UnaryOp { rhs, op } => {
