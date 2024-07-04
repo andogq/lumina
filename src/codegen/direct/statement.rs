@@ -48,7 +48,7 @@ impl Statement {
                     .build_alloca(
                         // TODO: This allocation should depend on the type of the variable
                         pass.context.i64_type(),
-                        &pass.symbols.resolve(s.name).unwrap(),
+                        pass.symbols.resolve(s.name).unwrap(),
                     )
                     .unwrap();
 
