@@ -6,7 +6,9 @@ use crate::core::symbol::Symbol;
 
 use super::BasicBlock;
 
-index_vec::define_index_type!(pub struct BasicBlockIdx = usize;);
+index_vec::define_index_type! {
+    pub struct BasicBlockIdx = usize;
+}
 
 #[derive(Debug, Clone)]
 pub struct Function {

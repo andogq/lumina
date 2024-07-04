@@ -1,15 +1,8 @@
-use super::Triple;
+use index_vec::IndexVec;
+
+use super::{Triple, TripleIdx};
 
 #[derive(Default, Clone, Debug)]
 pub struct BasicBlock {
-    pub triples: Vec<Triple>,
-}
-
-impl BasicBlock {
-    pub fn add_triple(&mut self, triple: Triple) -> usize {
-        let id = self.triples.len();
-        self.triples.push(triple);
-
-        id
-    }
+    pub triples: IndexVec<TripleIdx, Triple>,
 }

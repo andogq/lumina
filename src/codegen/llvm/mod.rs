@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use index_vec::{IndexSlice, IndexVec};
 use inkwell::{
     builder::Builder,
     context::Context as LLVMContext,
@@ -15,7 +16,7 @@ use crate::{
     core::symbol::Symbol,
 };
 
-use super::ir::{BasicBlockIdx, FunctionIdx};
+use super::ir::{BasicBlockIdx, FunctionIdx, TripleIdx};
 
 pub struct Pass<'ctx> {
     llvm_ctx: &'ctx LLVMContext,
@@ -98,7 +99,7 @@ impl<'ctx> Pass<'ctx> {
             .expect("requested basic block must exist")
             .clone();
 
-        let mut results = Vec::with_capacity(basic_block.triples.len());
+        let mut results = IndexVec::with_capacity(basic_block.triples.len());
 
         for triple in &basic_block.triples {
             let result = match triple {
@@ -236,7 +237,7 @@ impl<'ctx> Pass<'ctx> {
     fn retrive_value(
         &self,
         builder: &Builder<'ctx>,
-        results: &[Option<IntValue<'ctx>>],
+        results: &IndexSlice<TripleIdx, [Option<IntValue<'ctx>>]>,
         value: &Value,
     ) -> IntValue<'ctx> {
         match value {

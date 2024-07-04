@@ -1,3 +1,5 @@
+use index_vec::define_index_type;
+
 use crate::core::symbol::Symbol;
 
 use super::{BasicBlockIdx, Value};
@@ -35,15 +37,20 @@ pub enum Triple {
     },
 }
 
+define_index_type! {
+    /// Identifier for a triple within some basic block.
+    pub struct TripleIdx = usize;
+}
+
 /// A reference to a specific triple.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TripleRef {
     pub basic_block: BasicBlockIdx,
-    pub triple: usize,
+    pub triple: TripleIdx,
 }
 
 impl TripleRef {
-    pub fn new(basic_block: BasicBlockIdx, triple: usize) -> Self {
+    pub fn new(basic_block: BasicBlockIdx, triple: TripleIdx) -> Self {
         Self {
             basic_block,
             triple,

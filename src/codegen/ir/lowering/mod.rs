@@ -26,7 +26,8 @@ impl FunctionLoweringCtx {
                 .basic_blocks
                 .get_mut(self.current_bb)
                 .expect("current basic block must exist")
-                .add_triple(triple),
+                .triples
+                .push(triple),
         }
     }
 }
