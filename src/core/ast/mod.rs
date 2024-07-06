@@ -26,14 +26,6 @@ macro_rules! ast_node {
                     $($name,)*
                 }
             }
-
-            pub fn dummy($($name: $ty,)*) -> Self {
-                Self {
-                    span: Default::default(),
-                    ty_info: Default::default(),
-                    $($name),*
-                }
-            }
         }
 
         impl<$ty_info> crate::util::source::Spanned for $struct_name<$ty_info> {
