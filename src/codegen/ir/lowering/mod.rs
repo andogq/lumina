@@ -58,7 +58,7 @@ fn lower_function(ir_ctx: &mut IRCtx, function: Function) -> FunctionIdx {
 }
 
 /// Lower an AST block into the current function context.
-fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Option<Value> {
+fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Value {
     assert!(
         !block.statements.is_empty(),
         "block must have statements within it"
@@ -94,14 +94,14 @@ fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Option<Value> {
                 // Implicit return
                 // TODO: Check for semi-colon
                 if end {
-                    return Some(result);
+                    return result;
                 }
             }
         }
     }
 
     // TODO: Should be unit value
-    None
+    Value::Unit
 }
 
 fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> Value {
@@ -121,7 +121,7 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> V
         Expression::Integer(integer) => Value::integer(integer.value),
         Expression::Boolean(boolean) => Value::boolean(boolean.value),
         Expression::Ident(Ident { name, .. }) => Value::Name(*name),
-        Expression::Block(block) => lower_block(ctx, block).expect("block must yield value"),
+        Expression::Block(block) => lower_block(ctx, block),
         Expression::If(If {
             condition,
             success,
@@ -135,15 +135,15 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> V
             // Lower success block into newly created basic block
             let success_bb = ctx.function.basic_blocks.push(BasicBlock::default());
             ctx.current_bb = success_bb;
-            let success_value = lower_block(ctx, success).expect("branch to have value");
+            let success_value = lower_block(ctx, success);
 
             // Lower the otherwise block, if it exists
             let (otherwise_bb, otherwise_value) = otherwise
                 .as_ref()
                 .map(|otherwise| {
                     let otherwise_bb = ctx.function.basic_blocks.push(BasicBlock::default());
-                    let otherwise_value =
-                        lower_block(ctx, otherwise).expect("else branch to have value");
+                    ctx.current_bb = otherwise_bb;
+                    let otherwise_value = lower_block(ctx, otherwise);
 
                     (otherwise_bb, otherwise_value)
                 })

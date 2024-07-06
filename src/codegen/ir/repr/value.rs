@@ -18,6 +18,7 @@ pub enum Value {
     Constant(ConstantValue),
     /// Temporary value representing the result of some triple.
     Triple(TripleRef),
+    Unit,
 }
 
 impl Value {

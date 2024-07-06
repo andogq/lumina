@@ -7,7 +7,7 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{FunctionValue, IntValue, PointerValue},
+    values::{BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate, OptimizationLevel,
 };
 
@@ -110,8 +110,12 @@ impl<'ctx> Pass<'ctx> {
         for triple in &basic_block.triples {
             let result = match triple {
                 Triple::BinaryOp { lhs, rhs, op } => {
-                    let lhs = self.retrive_value(&builder, &results, lhs);
-                    let rhs = self.retrive_value(&builder, &results, rhs);
+                    let lhs = self
+                        .retrive_value(&builder, &results, lhs)
+                        .expect("lhs of binary op cannot be unit");
+                    let rhs = self
+                        .retrive_value(&builder, &results, rhs)
+                        .expect("rhs of binary cannot be unit");
 
                     Some(match op {
                         BinaryOp::Add => builder.build_int_add(lhs, rhs, "add").unwrap(),
@@ -125,14 +129,19 @@ impl<'ctx> Pass<'ctx> {
                     })
                 }
                 Triple::UnaryOp { rhs, op } => {
-                    let rhs = self.retrive_value(&builder, &results, rhs);
+                    let rhs = self
+                        .retrive_value(&builder, &results, rhs)
+                        .expect("rhs of unary cannot be unit");
 
                     Some(match op {
                         UnaryOp::Minus => builder.build_int_neg(rhs, "neg").unwrap(),
                         UnaryOp::Not => builder.build_not(rhs, "not").unwrap(),
                     })
                 }
-                Triple::Copy(value) => Some(self.retrive_value(&builder, &results, value)),
+                Triple::Copy(value) => Some(
+                    self.retrive_value(&builder, &results, value)
+                        .expect("cannot copy unit value"),
+                ),
                 Triple::Jump(bb) => {
                     // TODO: Better mapping between IR basic block and LLVM basic block
                     let bb = *self
@@ -152,12 +161,16 @@ impl<'ctx> Pass<'ctx> {
                 Triple::Return(value) => {
                     let value = self.retrive_value(&builder, &results, value);
 
-                    builder.build_return(Some(&value)).unwrap();
+                    builder
+                        .build_return(value.as_ref().map(|value| value as &dyn BasicValue))
+                        .unwrap();
 
                     None
                 }
                 Triple::Assign(symbol, value) => {
-                    let value = self.retrive_value(&builder, &results, value);
+                    let value = self
+                        .retrive_value(&builder, &results, value)
+                        .expect("unit value cannot be assigned");
                     let ptr = self.symbols.get(symbol).expect("symbol must be defined");
 
                     builder.build_store(*ptr, value).unwrap();
@@ -180,7 +193,8 @@ impl<'ctx> Pass<'ctx> {
                     // Emit the switch instruction
                     builder
                         .build_switch(
-                            self.retrive_value(&builder, &results, value),
+                            self.retrive_value(&builder, &results, value)
+                                .expect("cannot switch on unit value"),
                             // TODO: Mapping bb
                             *self
                                 .basic_blocks
@@ -190,7 +204,8 @@ impl<'ctx> Pass<'ctx> {
                                 .iter()
                                 .map(|(case, bb, _)| {
                                     (
-                                        self.retrive_value(&builder, &results, case),
+                                        self.retrive_value(&builder, &results, case)
+                                            .expect("cannot use unit value as switch case"),
                                         // TODO: Mapping bb
                                         *self.basic_blocks.get(&(basic_block_id.0, *bb)).unwrap(),
                                     )
@@ -200,45 +215,65 @@ impl<'ctx> Pass<'ctx> {
                         )
                         .unwrap();
 
-                    // Create the block to merge
-                    let merge = self.llvm_ctx.append_basic_block(*function, "switch merge");
+                    // Only create the phi node if the branches aren't unit value
+                    let make_phi = branches
+                        .first()
+                        // TODO: This check should probably be less-specific
+                        .map(|(_, _, value)| !matches!(value, Value::Unit))
+                        .unwrap_or(false);
+                    assert!(
+                        branches
+                            .iter()
+                            .all(|(_, _, value)| !matches!(value, Value::Unit) == make_phi),
+                        "all or none of the branches must be unit, not a mix"
+                    );
 
-                    // Write phi node into merge block
-                    builder.position_at_end(merge);
+                    if make_phi {
+                        // Create the block to merge
+                        let merge = self.llvm_ctx.append_basic_block(*function, "switch merge");
 
-                    // Build a phi node to receive the result of the switch
-                    let phi = builder
-                        .build_phi(self.llvm_ctx.i64_type(), "switch phi")
-                        .unwrap();
+                        // Position at merge block to create phi node
+                        builder.position_at_end(merge);
+                        let phi = builder
+                            .build_phi(self.llvm_ctx.i64_type(), "switch phi")
+                            .unwrap();
 
-                    for (bb, final_value) in branches
-                        .iter()
-                        .map(|(_, bb, final_value)| (*bb, *final_value))
-                        .chain([*default])
-                    {
-                        // Pull the block out
-                        // TODO: Mapping bb
-                        let basic_block = *self.basic_blocks.get(&(basic_block_id.0, bb)).unwrap();
+                        // Build merge nodes
+                        for (bb, final_value) in branches
+                            .iter()
+                            .map(|(_, bb, final_value)| (*bb, *final_value))
+                            .chain([*default])
+                        {
+                            // Pull the block out
+                            // TODO: Mapping bb
+                            let basic_block =
+                                *self.basic_blocks.get(&(basic_block_id.0, bb)).unwrap();
 
-                        // Ensure the block doesn't have a terminator
-                        if basic_block.get_terminator().is_some() {
-                            panic!("basic block already has terminator, but one needs to be inserted for switch.");
+                            // Ensure the block doesn't have a terminator
+                            if basic_block.get_terminator().is_some() {
+                                panic!("basic block already has terminator, but one needs to be inserted for switch.");
+                            }
+
+                            // Add the terminator
+                            builder.position_at_end(basic_block);
+                            builder.build_unconditional_branch(merge).unwrap();
+
+                            // Update the phi node
+                            phi.add_incoming(&[(
+                                &self
+                                    .retrive_value(&builder, &results, &final_value)
+                                    .expect("value to be not unit"),
+                                *self.basic_blocks.get(&(basic_block_id.0, bb)).unwrap(),
+                            )]);
                         }
 
-                        // Add the terminator
-                        builder.position_at_end(basic_block);
-                        builder.build_unconditional_branch(merge).unwrap();
+                        // Continue appending to end of merge block
+                        builder.position_at_end(merge);
 
-                        phi.add_incoming(&[(
-                            &self.retrive_value(&builder, &results, &final_value),
-                            basic_block,
-                        )]);
+                        Some(phi.as_basic_value().into_int_value())
+                    } else {
+                        None
                     }
-
-                    // Continue writing to end of merge block
-                    builder.position_at_end(merge);
-
-                    Some(phi.as_basic_value().into_int_value())
                 }
             };
 
@@ -251,16 +286,18 @@ impl<'ctx> Pass<'ctx> {
         builder: &Builder<'ctx>,
         results: &IndexSlice<TripleIdx, [Option<IntValue<'ctx>>]>,
         value: &Value,
-    ) -> IntValue<'ctx> {
+    ) -> Option<IntValue<'ctx>> {
         match value {
             Value::Name(symbol) => {
                 let ptr = self.symbols.get(symbol).expect("symbol must be defined");
-                builder
-                    .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol:?}"))
-                    .unwrap()
-                    .into_int_value()
+                Some(
+                    builder
+                        .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol:?}"))
+                        .unwrap()
+                        .into_int_value(),
+                )
             }
-            Value::Constant(value) => match value {
+            Value::Constant(value) => Some(match value {
                 ConstantValue::Integer(value) => {
                     self.llvm_ctx.i64_type().const_int(*value as u64, false)
                 }
@@ -273,11 +310,14 @@ impl<'ctx> Pass<'ctx> {
                         ty.const_zero()
                     }
                 }
-            },
-            Value::Triple(triple) => results
-                .get(triple.triple)
-                .expect("triple must exist")
-                .expect("triple must produce value"),
+            }),
+            Value::Triple(triple) => Some(
+                results
+                    .get(triple.triple)
+                    .expect("triple must exist")
+                    .expect("triple must produce value"),
+            ),
+            Value::Unit => None,
         }
     }
 
