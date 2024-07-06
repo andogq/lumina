@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::Boolean,
+    ast::parse_ast::*,
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
-impl InferTy for Boolean<()> {
+impl InferTy for Boolean {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         Ok(Ty::Boolean)
     }

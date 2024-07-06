@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::core::ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement};
+use crate::core::ast::parse_ast::*;
 
 use super::{InferTy, Symbol, Ty, TyError};
 
-impl InferTy for Statement<()> {
+impl InferTy for Statement {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         match self {
             Statement::Expression(s) => s.infer(symbols),
@@ -22,7 +22,7 @@ impl InferTy for Statement<()> {
     }
 }
 
-impl InferTy for LetStatement<()> {
+impl InferTy for LetStatement {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let ty = self.value.infer(symbols)?;
         symbols.insert(self.name, ty);
@@ -36,7 +36,7 @@ impl InferTy for LetStatement<()> {
     }
 }
 
-impl InferTy for ReturnStatement<()> {
+impl InferTy for ReturnStatement {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         // The return statement itself doesn't resolve to a type
         Ok(Ty::Unit)
@@ -47,7 +47,7 @@ impl InferTy for ReturnStatement<()> {
     }
 }
 
-impl InferTy for ExpressionStatement<()> {
+impl InferTy for ExpressionStatement {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let ty = self.expression.infer(symbols);
 

@@ -1,9 +1,9 @@
 use crate::core::{
-    ast::*,
+    ast::parse_ast::*,
     parse::{ParseCtx, ParseError},
 };
 
-pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident<()>, ParseError> {
+pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident, ParseError> {
     let token = ctx.lexer.ident("ident peeked")?;
 
     Ok(Ident::new(

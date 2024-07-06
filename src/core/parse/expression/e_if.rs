@@ -1,7 +1,7 @@
 use super::*;
-use crate::core::{ast::*, parse::ParseError};
+use crate::core::parse::ParseError;
 
-pub fn parse_if(ctx: &mut ParseCtx) -> Result<If<()>, ParseError> {
+pub fn parse_if(ctx: &mut ParseCtx) -> Result<If, ParseError> {
     // Parse out the if keyword
     let token = ctx.lexer.t_if("if peeked")?;
 
@@ -37,7 +37,7 @@ mod test {
         condition: Token,
         body: Token,
         otherwise: Option<Token>,
-    ) -> (ParseCtx, Result<If<()>, ParseError>) {
+    ) -> (ParseCtx, Result<If, ParseError>) {
         // Build up the if statement
         let mut tokens = vec![
             Token::t_if(),

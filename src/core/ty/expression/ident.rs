@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::Ident,
+    ast::parse_ast::*,
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
-impl InferTy for Ident<()> {
+impl InferTy for Ident {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         symbols
             .get(&self.name)

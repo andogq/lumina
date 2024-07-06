@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        ast::Block,
+        ast::parse_ast::*,
         lexer::token::{LeftBraceToken, RightBraceToken, Token},
     },
     util::source::Spanned,
@@ -8,7 +8,7 @@ use crate::{
 
 use super::{statement::parse_statement, ParseCtx, ParseError};
 
-pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block<()>, ParseError> {
+pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
     let open_brace = match ctx.lexer.next_token() {
         Token::LeftBrace(ident) => ident,
         token => {

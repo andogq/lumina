@@ -1,8 +1,8 @@
-use crate::core::ast::Program;
+use crate::core::ast::parse_ast::*;
 
 use super::{Ty, TyError};
 
-impl Program<()> {
+impl Program {
     pub fn type_check(&self) -> Result<(), TyError> {
         // Main function must return int
         if self.main.return_ty != Ty::Int {

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::Integer,
+    ast::parse_ast::*,
     symbol::Symbol,
     ty::{InferTy, Ty, TyError},
 };
 
-impl InferTy for Integer<()> {
+impl InferTy for Integer {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         Ok(Ty::Int)
     }

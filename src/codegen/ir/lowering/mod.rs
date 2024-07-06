@@ -1,10 +1,10 @@
 use repr::BinaryOp;
 
-use crate::core::ast::{self, Block};
+use crate::core::ast::parse_ast::*;
 
 use super::{repr, BasicBlock, BasicBlockIdx, FunctionIdx, IRCtx, Triple, TripleRef, Value};
 
-pub fn lower(program: ast::Program<()>) -> IRCtx {
+pub fn lower(program: Program) -> IRCtx {
     let mut ir = IRCtx::new(program.symbols);
 
     lower_function(&mut ir, program.main);
@@ -32,7 +32,7 @@ impl FunctionLoweringCtx {
     }
 }
 
-fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function<()>) -> FunctionIdx {
+fn lower_function(ir_ctx: &mut IRCtx, function: Function) -> FunctionIdx {
     let mut repr_function = repr::Function::new(function.name);
 
     // Insert entry basic block
@@ -58,7 +58,7 @@ fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function<()>) -> FunctionId
 }
 
 /// Lower an AST block into the current function context.
-fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block<()>) -> Option<Value> {
+fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Option<Value> {
     assert!(
         !block.statements.is_empty(),
         "block must have statements within it"
@@ -74,11 +74,11 @@ fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block<()>) -> Option<Value
         .map(|(i, statement)| (i == last_statement, statement))
     {
         match statement {
-            ast::Statement::Return(ast::ReturnStatement { value, .. }) => {
+            Statement::Return(ReturnStatement { value, .. }) => {
                 let value = lower_expression(ctx, value);
                 ctx.add_triple(Triple::Return(value));
             }
-            ast::Statement::Let(ast::LetStatement { name, value, .. }) => {
+            Statement::Let(LetStatement { name, value, .. }) => {
                 assert!(
                     // Insert function name into scope
                     ctx.function.scope.insert(*name),
@@ -88,7 +88,7 @@ fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block<()>) -> Option<Value
                 let value = lower_expression(ctx, value);
                 ctx.add_triple(Triple::Assign(*name, value));
             }
-            ast::Statement::Expression(ast::ExpressionStatement { expression, .. }) => {
+            Statement::Expression(ExpressionStatement { expression, .. }) => {
                 let result = lower_expression(ctx, expression);
 
                 // Implicit return
@@ -104,9 +104,9 @@ fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block<()>) -> Option<Value
     None
 }
 
-fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression<()>) -> Value {
+fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> Value {
     match expression {
-        ast::Expression::Infix(ast::Infix {
+        Expression::Infix(Infix {
             left,
             operation,
             right,
@@ -118,11 +118,11 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression<
 
             Value::Triple(ctx.add_triple(Triple::BinaryOp { lhs, rhs, op }))
         }
-        ast::Expression::Integer(integer) => Value::integer(integer.value),
-        ast::Expression::Boolean(boolean) => Value::boolean(boolean.value),
-        ast::Expression::Ident(ast::Ident { name, .. }) => Value::Name(*name),
-        ast::Expression::Block(block) => lower_block(ctx, block).expect("block must yield value"),
-        ast::Expression::If(ast::If {
+        Expression::Integer(integer) => Value::integer(integer.value),
+        Expression::Boolean(boolean) => Value::boolean(boolean.value),
+        Expression::Ident(Ident { name, .. }) => Value::Name(*name),
+        Expression::Block(block) => lower_block(ctx, block).expect("block must yield value"),
+        Expression::If(If {
             condition,
             success,
             otherwise,

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::If,
+    ast::parse_ast::*,
     symbol::Symbol,
     ty::{InferTy, Ty, TyError},
 };
 
-impl InferTy for If<()> {
+impl InferTy for If {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let condition_ty = self.condition.infer(symbols)?;
         if condition_ty != Ty::Boolean {

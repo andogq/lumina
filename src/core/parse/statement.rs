@@ -1,8 +1,5 @@
 use crate::{
-    core::{
-        ast::{ExpressionStatement, LetStatement, ReturnStatement, Statement},
-        lexer::token::Token,
-    },
+    core::{ast::parse_ast::*, lexer::token::Token},
     util::source::Spanned,
 };
 
@@ -11,7 +8,7 @@ use super::{
     ParseCtx, ParseError,
 };
 
-pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement<()>, ParseError> {
+pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
     let statement = match ctx.lexer.peek_token() {

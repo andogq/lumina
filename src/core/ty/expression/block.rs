@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::Block,
+    ast::parse_ast::*,
     symbol::Symbol,
     ty::{InferTy, Ty, TyError},
 };
 
-impl InferTy for Block<()> {
+impl InferTy for Block {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let mut ty = Ty::Unit;
         let mut ctx = symbols.clone();

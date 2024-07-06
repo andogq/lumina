@@ -13,7 +13,7 @@ use crate::{
 use self::function::parse_function;
 
 use super::{
-    ast::Program,
+    ast::parse_ast::*,
     lexer::token::{FalseToken, IdentToken, IfToken, IntegerToken, TrueToken},
     symbol::SymbolMap,
 };
@@ -54,7 +54,7 @@ impl ParseCtx {
     }
 }
 
-pub fn parse(lexer: Lexer) -> Result<Program<()>, ParseError> {
+pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
     let mut ctx = ParseCtx::new(lexer);
     // WARN: wacky af
     let main = ctx.symbols.get_or_intern_static("main");

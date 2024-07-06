@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::core::{
-    ast::{Infix, InfixOperation},
+    ast::parse_ast::*,
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
-impl InferTy for Infix<()> {
+impl InferTy for Infix {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let left_ty = self.left.infer(symbols)?;
         let right_ty = self.right.infer(symbols)?;

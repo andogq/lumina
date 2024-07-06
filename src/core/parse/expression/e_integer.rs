@@ -1,9 +1,9 @@
 use crate::core::{
-    ast::*,
+    ast::parse_ast::*,
     parse::{ParseCtx, ParseError},
 };
 
-pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer<()>, ParseError> {
+pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
     let token = ctx.lexer.integer("integer peeked")?;
 
     Ok(Integer::new(
@@ -24,7 +24,7 @@ mod test {
 
     use rstest::rstest;
 
-    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer<()>, ParseError>) {
+    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer, ParseError>) {
         let lexer = Lexer::with_tokens(tokens);
         let mut ctx = ParseCtx::new(lexer);
         let integer = parse_integer(&mut ctx);
