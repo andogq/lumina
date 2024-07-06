@@ -1,56 +1,49 @@
-use std::collections::HashMap;
-
 use crate::core::{
-    ast::parse_ast::*,
-    symbol::Symbol,
-    ty::{InferTy, Ty, TyError},
+    ast::{parse_ast, ty_ast::*},
+    ty::{Ty, TyCtx, TyError},
 };
 
-impl InferTy for If {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        let condition_ty = self.condition.infer(symbols)?;
-        if condition_ty != Ty::Boolean {
-            return Err(TyError::Mismatch(Ty::Boolean, condition_ty));
+impl parse_ast::If {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<If, TyError> {
+        // Make sure the condition is correctly typed
+        let condition = self.condition.ty_solve(ctx)?;
+        let condition_ty = condition.get_ty_info();
+        if !matches!(condition_ty.ty, Ty::Boolean) {
+            return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty.clone()));
         }
 
-        match (
-            self.success.infer(symbols)?,
-            self.otherwise
-                .as_ref()
-                .map(|otherwise| otherwise.infer(symbols))
-                .transpose()?,
-        ) {
-            (success, Some(otherwise)) if success == otherwise => Ok(success),
-            (Ty::Unit, None) => Ok(Ty::Unit),
+        let success = self.success.ty_solve(ctx)?;
+        let otherwise = self
+            .otherwise
+            .map(|otherwise| otherwise.ty_solve(ctx))
+            .transpose()?;
 
-            (success, Some(otherwise)) => Err(TyError::Mismatch(success, otherwise)),
-            (success, None) => Err(TyError::Mismatch(success, Ty::Unit)),
-        }
-    }
+        let ty_info = TyInfo::try_from((
+            // Branches must have the same type
+            [
+                success.ty_info.ty,
+                otherwise
+                    .as_ref()
+                    .map(|otherwise| otherwise.ty_info.ty)
+                    .unwrap_or(Ty::Unit),
+            ],
+            // Any potential place for a return statement must be accounted for
+            [
+                condition_ty.return_ty,
+                success.ty_info.return_ty,
+                otherwise
+                    .as_ref()
+                    .map(|otherwise| otherwise.ty_info.return_ty)
+                    .flatten(),
+            ],
+        ))?;
 
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        let condition = self.condition.return_ty(symbols)?;
-        let success = self.success.return_ty(symbols)?;
-
-        // TODO: Better reporting of conflicting return types
-        if condition != success {
-            return Err(TyError::Return {
-                expected: condition,
-                found: success,
-            });
-        }
-
-        if let Some(otherwise) = &self.otherwise {
-            let otherwise = otherwise.return_ty(symbols)?;
-
-            if condition != otherwise {
-                return Err(TyError::Return {
-                    expected: condition,
-                    found: otherwise,
-                });
-            }
-        }
-
-        Ok(None)
+        Ok(If {
+            ty_info,
+            condition: Box::new(condition),
+            success,
+            otherwise,
+            span: self.span,
+        })
     }
 }

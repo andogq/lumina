@@ -1,53 +1,52 @@
-use std::collections::HashMap;
-
 use crate::core::{
-    ast::parse_ast::*,
-    ty::{InferTy, Symbol, Ty, TyError},
+    ast::{parse_ast, ty_ast::*},
+    ty::{Ty, TyCtx, TyError},
 };
 
-impl InferTy for Infix {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        let left_ty = self.left.infer(symbols)?;
-        let right_ty = self.right.infer(symbols)?;
+impl InfixOperation {
+    /// Determine the resulting type if this operator is applied to the provided parameters.
+    fn result_ty(&self, left: &Ty, right: &Ty) -> Result<Ty, TyError> {
+        use InfixOperation::*;
 
-        match self.operation {
-            InfixOperation::Plus(_) => {
-                if left_ty == right_ty {
-                    Ok(left_ty)
-                } else {
-                    Err(TyError::Mismatch(left_ty, right_ty))
-                }
-            }
-            InfixOperation::Eq(_) | InfixOperation::NotEq(_) => {
-                if left_ty == right_ty {
-                    Ok(Ty::Boolean)
-                } else {
-                    Err(TyError::Mismatch(left_ty, right_ty))
-                }
-            }
-        }
-    }
-
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        let left_return_ty = self.left.return_ty(symbols)?;
-        let right_return_ty = self.right.return_ty(symbols)?;
-
-        match (left_return_ty, right_return_ty) {
-            (Some(left), Some(right)) if left == right => Ok(Some(left)),
-            (Some(left), Some(right)) => Err(TyError::Mismatch(left, right)),
-            (Some(ty), None) | (None, Some(ty)) => Ok(Some(ty)),
-            (None, None) => Ok(None),
+        match (self, left, right) {
+            (Plus(_), Ty::Int, Ty::Int) => Ok(Ty::Int),
+            (Eq(_) | NotEq(_), left, right) if left == right => Ok(Ty::Boolean),
+            (_, left, right) => Err(TyError::Mismatch(left.clone(), right.clone())),
         }
     }
 }
+
+impl parse_ast::Infix {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Infix, TyError> {
+        let left = self.left.ty_solve(ctx)?;
+        let right = self.right.ty_solve(ctx)?;
+
+        let left_ty_info = left.get_ty_info();
+        let right_ty_info = right.get_ty_info();
+
+        let ty_info = TyInfo::try_from((
+            // Resulting type is whatever the infix operator results in
+            self.operation
+                .result_ty(&left_ty_info.ty, &right_ty_info.ty)?,
+            [left_ty_info.return_ty, right_ty_info.return_ty],
+        ))?;
+
+        Ok(Infix {
+            left: Box::new(left),
+            right: Box::new(right),
+            operation: self.operation,
+            span: self.span,
+            ty_info,
+        })
+    }
+}
+
 #[cfg(test)]
 mod test_infix {
     use crate::{
-        core::ast::{Expression, InfixOperation},
+        core::{ast::parse_ast::*, ty::Ty},
         util::source::Span,
     };
-
-    use super::*;
 
     #[test]
     fn infer_same() {
@@ -59,7 +58,10 @@ mod test_infix {
             Span::default(),
         );
 
-        assert_eq!(infix.infer(&mut HashMap::new()).unwrap(), Ty::Int);
+        assert_eq!(
+            infix.ty_solve(&mut Default::default()).unwrap().ty_info.ty,
+            Ty::Int
+        );
     }
     #[test]
     fn infer_different() {
@@ -71,7 +73,7 @@ mod test_infix {
             Span::default(),
         );
 
-        assert!(infix.infer(&mut HashMap::new()).is_err());
+        assert!(infix.ty_solve(&mut Default::default()).is_err());
     }
 
     #[test]
@@ -84,7 +86,14 @@ mod test_infix {
             Span::default(),
         );
 
-        assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            infix
+                .ty_solve(&mut Default::default())
+                .unwrap()
+                .ty_info
+                .return_ty,
+            None
+        );
     }
     #[test]
     fn return_different() {
@@ -96,6 +105,13 @@ mod test_infix {
             Span::default(),
         );
 
-        assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            infix
+                .ty_solve(&mut Default::default())
+                .unwrap()
+                .ty_info
+                .return_ty,
+            None
+        );
     }
 }

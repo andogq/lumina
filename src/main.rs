@@ -28,10 +28,13 @@ fn main() -> int {
         }
     };
 
-    if let Err(e) = program.type_check() {
-        eprintln!("{e}");
-        return;
-    }
+    let program = match program.ty_solve() {
+        Ok(program) => program,
+        Err(e) => {
+            eprintln!("{e}");
+            return;
+        }
+    };
 
     let mut ir_ctx = ir::lower(program);
     let main = ir_ctx

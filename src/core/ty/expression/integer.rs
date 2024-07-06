@@ -1,33 +1,36 @@
-use std::collections::HashMap;
-
 use crate::core::{
-    ast::parse_ast::*,
-    symbol::Symbol,
-    ty::{InferTy, Ty, TyError},
+    ast::{parse_ast, ty_ast::*},
+    ty::{Ty, TyError},
 };
 
-impl InferTy for Integer {
-    fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        Ok(Ty::Int)
-    }
-
-    fn return_ty(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        Ok(None)
+impl parse_ast::Integer {
+    pub fn ty_solve(self) -> Result<Integer, TyError> {
+        Ok(Integer {
+            value: self.value,
+            span: self.span,
+            ty_info: TyInfo {
+                ty: Ty::Int,
+                return_ty: None,
+            },
+        })
     }
 }
 
 #[cfg(test)]
 mod test_integer {
-    use crate::util::source::Span;
-
-    use super::*;
+    use crate::{
+        core::{ast::parse_ast::*, ty::Ty},
+        util::source::Span,
+    };
 
     #[test]
     fn integer_infer() {
         assert_eq!(
             Integer::new(0, Span::default())
-                .infer(&mut HashMap::new())
-                .unwrap(),
+                .ty_solve()
+                .unwrap()
+                .ty_info
+                .ty,
             Ty::Int
         );
     }
@@ -36,8 +39,10 @@ mod test_integer {
     fn integer_return() {
         assert_eq!(
             Integer::new(0, Span::default())
-                .return_ty(&mut HashMap::new())
-                .unwrap(),
+                .ty_solve()
+                .unwrap()
+                .ty_info
+                .return_ty,
             None,
         );
     }

@@ -1,65 +1,77 @@
-use std::collections::HashMap;
+use crate::core::ast::{parse_ast, ty_ast::*};
 
-use crate::core::ast::parse_ast::*;
+use super::{Ty, TyCtx, TyError};
 
-use super::{InferTy, Symbol, Ty, TyError};
-
-impl InferTy for Statement {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        match self {
-            Statement::Expression(s) => s.infer(symbols),
-            Statement::Let(s) => s.infer(symbols),
-            Statement::Return(s) => s.infer(symbols),
-        }
-    }
-
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        match self {
-            Statement::Expression(s) => s.return_ty(symbols),
-            Statement::Let(s) => s.return_ty(symbols),
-            Statement::Return(s) => s.return_ty(symbols),
-        }
+impl parse_ast::Statement {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Statement, TyError> {
+        Ok(match self {
+            parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(ctx)?),
+            parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(ctx)?),
+            parse_ast::Statement::Expression(s) => Statement::Expression(s.ty_solve(ctx)?),
+        })
     }
 }
 
-impl InferTy for LetStatement {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        let ty = self.value.infer(symbols)?;
-        symbols.insert(self.name, ty);
-        Ok(Ty::Unit)
-    }
+impl parse_ast::LetStatement {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<LetStatement, TyError> {
+        // Work out what the type of the value is
+        let value = self.value.ty_solve(ctx)?;
 
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        self.infer(symbols)?;
-
-        self.value.return_ty(symbols)
-    }
-}
-
-impl InferTy for ReturnStatement {
-    fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        // The return statement itself doesn't resolve to a type
-        Ok(Ty::Unit)
-    }
-
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        Ok(Some(self.value.infer(symbols)?))
-    }
-}
-
-impl InferTy for ExpressionStatement {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        let ty = self.expression.infer(symbols);
-
-        if self.implicit_return {
-            ty
-        } else {
-            Ok(Ty::Unit)
+        // Make sure the value type matches what the statement was annotated with
+        if let Some(ty) = self.ty_info {
+            let value_ty = value.get_ty_info();
+            if ty != value_ty.ty {
+                return Err(TyError::Mismatch(ty, value_ty.ty.clone()));
+            }
         }
-    }
 
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        self.expression.return_ty(symbols)
+        // Record the type
+        ctx.symbols
+            .insert(self.name, value.get_ty_info().ty.clone());
+
+        Ok(LetStatement {
+            ty_info: TyInfo {
+                ty: Ty::Unit,
+                return_ty: value.get_ty_info().return_ty,
+            },
+            name: self.name,
+            value,
+            span: self.span,
+        })
+    }
+}
+
+impl parse_ast::ReturnStatement {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<ReturnStatement, TyError> {
+        let value = self.value.ty_solve(ctx)?;
+
+        Ok(ReturnStatement {
+            ty_info: TyInfo::try_from((
+                Ty::Unit,
+                [Some(value.get_ty_info().ty), value.get_ty_info().return_ty],
+            ))?,
+            value,
+            span: self.span,
+        })
+    }
+}
+
+impl parse_ast::ExpressionStatement {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<ExpressionStatement, TyError> {
+        let expression = self.expression.ty_solve(ctx)?;
+
+        // Expression statement has same type as the underlying expression
+        let mut ty_info = expression.get_ty_info().clone();
+        if !self.implicit_return {
+            ty_info.ty = Ty::Unit;
+        }
+
+        Ok(ExpressionStatement {
+            ty_info,
+            expression,
+            implicit_return: self.implicit_return,
+            span: self.span,
+        })
     }
 }
 
@@ -67,23 +79,39 @@ impl InferTy for ExpressionStatement {
 mod test_statement {
     use string_interner::Symbol;
 
-    use crate::{core::ast::Expression, util::source::Span};
-
-    use super::*;
+    use crate::{
+        core::{
+            ast::parse_ast::*,
+            ty::{Ty, TyCtx},
+        },
+        util::source::Span,
+    };
 
     #[test]
     fn infer_return() {
         // return 0;
         let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
 
-        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .ty,
+            Ty::Unit
+        );
     }
     #[test]
     fn return_return() {
         // return 0;
         let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
 
-        assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), Some(Ty::Int));
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .return_ty,
+            Some(Ty::Int)
+        );
     }
 
     #[test]
@@ -95,10 +123,12 @@ mod test_statement {
             Span::default(),
         );
 
-        let mut symbols = HashMap::new();
-        assert_eq!(s.infer(&mut symbols).unwrap(), Ty::Unit);
+        let mut ctx = TyCtx::default();
+        assert_eq!(s.ty_solve(&mut ctx).unwrap().get_ty_info().ty, Ty::Unit);
         assert_eq!(
-            symbols.get(&Symbol::try_from_usize(0).unwrap()).cloned(),
+            ctx.symbols
+                .get(&Symbol::try_from_usize(0).unwrap())
+                .cloned(),
             Some(Ty::Int)
         );
     }
@@ -111,7 +141,13 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .return_ty,
+            None
+        );
     }
 
     #[test]
@@ -123,7 +159,13 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .ty,
+            Ty::Unit
+        );
     }
     #[test]
     fn return_expression() {
@@ -134,7 +176,13 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .return_ty,
+            None
+        );
     }
 
     #[test]
@@ -146,7 +194,13 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(s.infer(&mut HashMap::new()).unwrap(), Ty::Int);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .ty,
+            Ty::Int
+        );
     }
     #[test]
     fn return_expression_implicit() {
@@ -157,6 +211,12 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(s.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            s.ty_solve(&mut Default::default())
+                .unwrap()
+                .get_ty_info()
+                .return_ty,
+            None
+        );
     }
 }

@@ -1,6 +1,6 @@
 use repr::BinaryOp;
 
-use crate::core::ast::parse_ast::*;
+use crate::core::ast::ty_ast::*;
 
 use super::{repr, BasicBlock, BasicBlockIdx, FunctionIdx, IRCtx, Triple, TripleRef, Value};
 

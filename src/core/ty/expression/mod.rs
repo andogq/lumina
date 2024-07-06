@@ -1,8 +1,6 @@
-use std::collections::HashMap;
+use crate::core::ast::{parse_ast, ty_ast::*};
 
-use crate::core::ast::parse_ast::*;
-
-use super::{InferTy, Symbol, Ty, TyError};
+use super::{TyCtx, TyError};
 
 mod block;
 mod boolean;
@@ -11,26 +9,15 @@ mod if_else;
 mod infix;
 mod integer;
 
-impl InferTy for Expression {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        match self {
-            Expression::Infix(s) => s.infer(symbols),
-            Expression::Integer(s) => s.infer(symbols),
-            Expression::Boolean(s) => s.infer(symbols),
-            Expression::Ident(s) => s.infer(symbols),
-            Expression::Block(s) => s.infer(symbols),
-            Expression::If(s) => s.infer(symbols),
-        }
-    }
-
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        match self {
-            Expression::Infix(s) => s.return_ty(symbols),
-            Expression::Integer(s) => s.return_ty(symbols),
-            Expression::Boolean(s) => s.return_ty(symbols),
-            Expression::Ident(s) => s.return_ty(symbols),
-            Expression::Block(s) => s.return_ty(symbols),
-            Expression::If(s) => s.return_ty(symbols),
-        }
+impl parse_ast::Expression {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Expression, TyError> {
+        Ok(match self {
+            parse_ast::Expression::Infix(e) => Expression::Infix(e.ty_solve(ctx)?),
+            parse_ast::Expression::Integer(e) => Expression::Integer(e.ty_solve()?),
+            parse_ast::Expression::Boolean(e) => Expression::Boolean(e.ty_solve()?),
+            parse_ast::Expression::Ident(e) => Expression::Ident(e.ty_solve(ctx)?),
+            parse_ast::Expression::Block(e) => Expression::Block(e.ty_solve(ctx)?),
+            parse_ast::Expression::If(e) => Expression::If(e.ty_solve(ctx)?),
+        })
     }
 }

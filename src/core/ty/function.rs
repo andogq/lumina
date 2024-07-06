@@ -1,28 +1,36 @@
-use std::collections::HashMap;
+use crate::core::ast::{parse_ast, ty_ast::*};
 
-use crate::core::ast::parse_ast::*;
+use super::{Ty, TyCtx, TyError};
 
-use super::{InferTy, Ty, TyError};
+impl parse_ast::Function {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Function, TyError> {
+        // TODO: Need to insert parameters into scope
 
-impl Function {
-    pub fn check(&self) -> Result<(), TyError> {
-        // Block can implicitly evaluate to a value
-        let inferred_ty = self.body.infer(&mut HashMap::new())?;
+        let body = self.body.ty_solve(ctx)?;
 
-        // Block can have return statements
-        let return_ty = self.body.return_ty(&mut HashMap::new())?;
-
-        // Make sure explicit returns are correct
-        if let Some(return_ty) = return_ty {
-            if return_ty != self.return_ty {
+        // If the body contains any return statements, they must match the annotated return statement
+        if let Some(return_ty) = body.ty_info.return_ty {
+            if self.return_ty != return_ty {
                 return Err(TyError::Mismatch(self.return_ty, return_ty));
             }
         }
 
-        if !matches!(inferred_ty, Ty::Unit) && inferred_ty != self.return_ty {
-            return Err(TyError::Mismatch(self.return_ty, inferred_ty));
+        // Ensure inferred return types match
+        if body.ty_info.ty != Ty::Unit && self.return_ty != body.ty_info.ty {
+            return Err(TyError::Mismatch(self.return_ty, body.ty_info.ty));
         }
 
-        Ok(())
+        Ok(Function {
+            name: self.name,
+            parameters: self.parameters,
+            return_ty: self.return_ty,
+            body,
+            span: self.span,
+            // WARN: Function should not have a type
+            ty_info: TyInfo {
+                ty: Ty::Unit,
+                return_ty: None,
+            },
+        })
     }
 }

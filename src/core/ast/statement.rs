@@ -1,17 +1,14 @@
-use crate::{
-    ast_node,
-    core::symbol::Symbol,
-    util::source::{Span, Spanned},
-};
+use crate::{ast_node, core::symbol::Symbol, util::source::Span};
 
 use super::Expression;
 
-#[derive(Debug, Clone)]
-pub enum Statement<TyInfo> {
-    Return(ReturnStatement<TyInfo>),
-    Let(LetStatement<TyInfo>),
-    Expression(ExpressionStatement<TyInfo>),
-}
+ast_node!(
+    enum Statement<TyInfo> {
+        Return(ReturnStatement<TyInfo>),
+        Let(LetStatement<TyInfo>),
+        Expression(ExpressionStatement<TyInfo>),
+    }
+);
 
 impl<TyInfo: Default> Statement<TyInfo> {
     pub fn _return(expression: Expression<TyInfo>, span: Span) -> Self {
@@ -24,16 +21,6 @@ impl<TyInfo: Default> Statement<TyInfo> {
 
     pub fn expression(expression: Expression<TyInfo>, implicit_return: bool, span: Span) -> Self {
         Self::Expression(ExpressionStatement::new(expression, implicit_return, span))
-    }
-}
-
-impl<TyInfo> Spanned for Statement<TyInfo> {
-    fn span(&self) -> &Span {
-        match self {
-            Statement::Return(s) => s.span(),
-            Statement::Let(s) => s.span(),
-            Statement::Expression(s) => s.span(),
-        }
     }
 }
 

@@ -7,11 +7,16 @@ use std::collections::HashMap;
 
 use super::symbol::Symbol;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Ty {
     Int,
     Boolean,
     Unit,
+}
+
+#[derive(Default)]
+pub struct TyCtx {
+    symbols: HashMap<Symbol, Ty>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -27,9 +32,4 @@ pub enum TyError {
 
     #[error("symbol not found: {0:?}")]
     SymbolNotFound(Symbol),
-}
-
-trait InferTy {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError>;
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError>;
 }

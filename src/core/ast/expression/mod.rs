@@ -13,21 +13,23 @@ pub use infix::*;
 pub use integer::*;
 
 use crate::{
+    ast_node,
     core::symbol::Symbol,
     util::source::{Span, Spanned},
 };
 
 use super::Statement;
 
-#[derive(Debug, Clone)]
-pub enum Expression<TyInfo> {
-    Infix(Infix<TyInfo>),
-    Integer(Integer<TyInfo>),
-    Boolean(Boolean<TyInfo>),
-    Ident(Ident<TyInfo>),
-    Block(Block<TyInfo>),
-    If(If<TyInfo>),
-}
+ast_node!(
+    enum Expression<TyInfo> {
+        Infix(Infix<TyInfo>),
+        Integer(Integer<TyInfo>),
+        Boolean(Boolean<TyInfo>),
+        Ident(Ident<TyInfo>),
+        Block(Block<TyInfo>),
+        If(If<TyInfo>),
+    }
+);
 
 impl<TyInfo: Default> Expression<TyInfo> {
     pub fn infix(
@@ -72,18 +74,5 @@ impl<TyInfo: Default> Expression<TyInfo> {
             otherwise,
             span,
         ))
-    }
-}
-
-impl<TyInfo> Spanned for Expression<TyInfo> {
-    fn span(&self) -> &Span {
-        match self {
-            Expression::Infix(s) => s.span(),
-            Expression::Integer(s) => s.span(),
-            Expression::Boolean(s) => s.span(),
-            Expression::Ident(s) => s.span(),
-            Expression::Block(s) => s.span(),
-            Expression::If(s) => s.span(),
-        }
     }
 }

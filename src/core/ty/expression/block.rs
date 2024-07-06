@@ -1,44 +1,42 @@
-use std::collections::HashMap;
-
 use crate::core::{
-    ast::parse_ast::*,
-    symbol::Symbol,
-    ty::{InferTy, Ty, TyError},
+    ast::{parse_ast, ty_ast::*},
+    ty::{Ty, TyCtx, TyError},
 };
 
-impl InferTy for Block {
-    fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
-        let mut ty = Ty::Unit;
-        let mut ctx = symbols.clone();
+impl parse_ast::Block {
+    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Block, TyError> {
+        let statements = self
+            .statements
+            .into_iter()
+            .map(|statement| statement.ty_solve(ctx))
+            .collect::<Result<Vec<_>, _>>()?;
 
-        for statement in &self.statements {
-            ty = statement.infer(&mut ctx)?;
-        }
+        let ty_info = TyInfo::try_from((
+            // Type of this block will be the implicit return of the last block
+            statements
+                .last()
+                // The block can only inherit the type of an expression statement
+                .filter(|s| {
+                    matches!(
+                        s,
+                        Statement::Expression(ExpressionStatement {
+                            implicit_return: true,
+                            ..
+                        })
+                    )
+                })
+                .map(|s| s.get_ty_info().ty)
+                .unwrap_or(Ty::Unit),
+            statements
+                .iter()
+                .map(|statement| statement.get_ty_info().return_ty),
+        ))?;
 
-        Ok(ty)
-    }
-
-    fn return_ty(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Option<Ty>, TyError> {
-        let mut ty = None;
-        let mut ctx = symbols.clone();
-
-        for statement in &self.statements {
-            let statement_ty = statement.return_ty(&mut ctx)?;
-
-            match (ty, statement_ty) {
-                (None, _) => {
-                    ty = statement_ty;
-                }
-                (Some(ty), Some(statement_ty)) => {
-                    if ty != statement_ty {
-                        return Err(TyError::Mismatch(ty, statement_ty));
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        Ok(ty)
+        Ok(Block {
+            span: self.span,
+            statements,
+            ty_info,
+        })
     }
 }
 
@@ -47,11 +45,9 @@ mod test {
     use string_interner::Symbol;
 
     use crate::{
-        core::ast::{Expression, Statement},
+        core::{ast::parse_ast::*, ty::Ty},
         util::source::Span,
     };
-
-    use super::*;
 
     #[test]
     fn infer_block() {
@@ -77,8 +73,10 @@ mod test {
             Span::default(),
         );
 
-        assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
+        let b = b.ty_solve(&mut Default::default()).unwrap();
+        assert_eq!(b.ty_info.ty, Ty::Unit);
     }
+
     #[test]
     fn return_block() {
         // {
@@ -103,7 +101,8 @@ mod test {
             Span::default(),
         );
 
-        assert_eq!(b.return_ty(&mut HashMap::new()).unwrap(), Some(Ty::Int));
+        let b = b.ty_solve(&mut Default::default()).unwrap();
+        assert_eq!(b.ty_info.return_ty, Some(Ty::Int));
     }
 
     #[test]
@@ -132,7 +131,7 @@ mod test {
             Span::default(),
         );
 
-        assert!(b.return_ty(&mut HashMap::new()).is_err());
+        assert!(b.ty_solve(&mut Default::default()).is_err());
     }
 
     #[test]
@@ -157,7 +156,13 @@ mod test {
             Span::default(),
         );
 
-        assert_eq!(b.return_ty(&mut HashMap::new()).unwrap(), None);
+        assert_eq!(
+            b.ty_solve(&mut Default::default())
+                .unwrap()
+                .ty_info
+                .return_ty,
+            None
+        );
     }
 
     #[test]
@@ -182,6 +187,9 @@ mod test {
             Span::default(),
         );
 
-        assert_eq!(b.infer(&mut HashMap::new()).unwrap(), Ty::Unit);
+        assert_eq!(
+            b.ty_solve(&mut Default::default()).unwrap().ty_info.ty,
+            Ty::Unit
+        );
     }
 }
