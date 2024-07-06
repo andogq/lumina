@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::{parse_ast, ty_ast::*},
-    ty::{Ty, TyError},
-};
+use super::*;
 
 impl parse_ast::Integer {
     pub fn ty_solve(self) -> Result<Integer, TyError> {
@@ -19,7 +16,7 @@ impl parse_ast::Integer {
 #[cfg(test)]
 mod test_integer {
     use crate::{
-        core::{ast::parse_ast::*, ty::Ty},
+        core::{parse::ast::*, ty::Ty},
         util::source::Span,
     };
 

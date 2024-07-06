@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::parse_ast::*,
-    parse::{ParseCtx, ParseError},
-};
+use super::*;
 
 pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
     let token = ctx.lexer.integer("integer peeked")?;

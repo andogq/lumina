@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::{parse_ast, ty_ast::*},
-    ty::{Ty, TyCtx, TyError},
-};
+use super::*;
 
 impl InfixOperation {
     /// Determine the resulting type if this operator is applied to the provided parameters.
@@ -44,7 +41,7 @@ impl parse_ast::Infix {
 #[cfg(test)]
 mod test_infix {
     use crate::{
-        core::{ast::parse_ast::*, ty::Ty},
+        core::{parse::ast::*, ty::Ty},
         util::source::Span,
     };
 

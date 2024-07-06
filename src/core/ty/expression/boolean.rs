@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::{parse_ast, ty_ast::*},
-    ty::{Ty, TyError},
-};
+use super::*;
 
 impl parse_ast::Boolean {
     pub fn ty_solve(self) -> Result<Boolean, TyError> {
@@ -19,7 +16,7 @@ impl parse_ast::Boolean {
 #[cfg(test)]
 mod test_boolean {
     use crate::{
-        core::{ast::parse_ast::*, ty::Ty},
+        core::{parse::ast::*, ty::Ty},
         util::source::Span,
     };
 

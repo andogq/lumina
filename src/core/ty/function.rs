@@ -1,6 +1,4 @@
-use crate::core::ast::{parse_ast, ty_ast::*};
-
-use super::{Ty, TyCtx, TyError};
+use super::*;
 
 impl parse_ast::Function {
     pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Function, TyError> {

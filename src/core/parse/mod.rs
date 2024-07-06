@@ -6,17 +6,26 @@ mod statement;
 use std::collections::HashMap;
 
 use crate::{
-    core::lexer::{token::Token, Lexer},
-    util::source::Span,
+    core::{
+        lexer::{token::*, Lexer},
+        symbol::SymbolMap,
+        ty::Ty,
+    },
+    util::source::*,
 };
 
-use self::function::parse_function;
+use self::block::*;
+use self::expression::*;
+use self::function::*;
+use self::statement::*;
 
-use super::{
-    ast::parse_ast::*,
-    lexer::token::{FalseToken, IdentToken, IfToken, IntegerToken, TrueToken},
-    symbol::SymbolMap,
-};
+pub mod ast {
+    use crate::{core::ty::Ty, generate_ast};
+
+    generate_ast!(Option<Ty>);
+}
+
+use self::ast::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {

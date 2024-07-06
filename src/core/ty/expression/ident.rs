@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::{parse_ast, ty_ast::*},
-    ty::{TyCtx, TyError},
-};
+use super::*;
 
 impl parse_ast::Ident {
     pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Ident, TyError> {
@@ -28,7 +25,7 @@ mod test_ident {
 
     use crate::{
         core::{
-            ast::parse_ast::*,
+            parse::ast::*,
             ty::{Ty, TyCtx},
         },
         util::source::Span,

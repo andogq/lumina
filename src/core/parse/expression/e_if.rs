@@ -1,5 +1,4 @@
 use super::*;
-use crate::core::parse::ParseError;
 
 pub fn parse_if(ctx: &mut ParseCtx) -> Result<If, ParseError> {
     // Parse out the if keyword

@@ -1,10 +1,4 @@
-use crate::core::{
-    ast::parse_ast::*,
-    lexer::token::{FnToken, IdentToken, LeftParenToken, RightParenToken, ThinArrowToken, Token},
-    ty::Ty,
-};
-
-use super::{block::parse_block, ParseCtx, ParseError};
+use super::*;
 
 pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     // `fn` keyword

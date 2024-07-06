@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::{parse_ast, ty_ast::*},
-    ty::{Ty, TyCtx, TyError},
-};
+use super::*;
 
 impl parse_ast::Block {
     pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Block, TyError> {
@@ -45,7 +42,7 @@ mod test {
     use string_interner::Symbol;
 
     use crate::{
-        core::{ast::parse_ast::*, ty::Ty},
+        core::{parse::ast::*, ty::Ty},
         util::source::Span,
     };
 

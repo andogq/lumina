@@ -1,7 +1,4 @@
-use crate::core::{
-    ast::parse_ast::*,
-    parse::{BooleanToken, ParseCtx, ParseError},
-};
+use super::*;
 
 pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean, ParseError> {
     let token = ctx.lexer.boolean("boolean peeked")?;
