@@ -6,7 +6,7 @@ impl parse_ast::If {
         let condition = self.condition.ty_solve(ctx)?;
         let condition_ty = condition.get_ty_info();
         if !matches!(condition_ty.ty, Ty::Boolean) {
-            return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty.clone()));
+            return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty));
         }
 
         let success = self.success.ty_solve(ctx)?;
@@ -30,8 +30,7 @@ impl parse_ast::If {
                 success.ty_info.return_ty,
                 otherwise
                     .as_ref()
-                    .map(|otherwise| otherwise.ty_info.return_ty)
-                    .flatten(),
+                    .and_then(|otherwise| otherwise.ty_info.return_ty),
             ],
         ))?;
 

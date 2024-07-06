@@ -224,7 +224,7 @@ impl<'ctx> Pass<'ctx> {
                     assert!(
                         branches
                             .iter()
-                            .all(|(_, _, value)| !matches!(value, Value::Unit) == make_phi),
+                            .all(|(_, _, value)| matches!(value, Value::Unit) != make_phi),
                         "all or none of the branches must be unit, not a mix"
                     );
 

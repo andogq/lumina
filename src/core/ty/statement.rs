@@ -19,13 +19,13 @@ impl parse_ast::LetStatement {
         if let Some(ty) = self.ty_info {
             let value_ty = value.get_ty_info();
             if ty != value_ty.ty {
-                return Err(TyError::Mismatch(ty, value_ty.ty.clone()));
+                return Err(TyError::Mismatch(ty, value_ty.ty));
             }
         }
 
         // Record the type
         ctx.symbols
-            .insert(self.name, value.get_ty_info().ty.clone());
+            .insert(self.name, value.get_ty_info().ty);
 
         Ok(LetStatement {
             ty_info: TyInfo {

@@ -44,7 +44,7 @@ pub struct TyInfo {
 impl TyInfo {
     fn collapse(mut iter: impl Iterator<Item = Ty>) -> Result<Option<Ty>, TyError> {
         iter.all_equal_value()
-            .map(|ty| Some(ty))
+            .map(Some)
             .or_else(|e| match e {
                 Some((ty1, ty2)) => Err(TyError::Mismatch(ty1, ty2)),
                 None => Ok(None),

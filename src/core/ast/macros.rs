@@ -3,13 +3,13 @@ macro_rules! ast_node {
     (struct $struct_name:ident<$ty_info:ident> {  $($name:ident: $ty:ty,)* }) => {
         #[derive(Debug, Clone)]
         pub struct $struct_name<$ty_info> {
-            pub span: crate::util::source::Span,
+            pub span: $crate::util::source::Span,
             pub ty_info: $ty_info,
             $(pub $name: $ty,)*
         }
 
         impl<$ty_info: Default> $struct_name<$ty_info> {
-            pub fn new($($name: $ty,)* span: crate::util::source::Span) -> Self {
+            pub fn new($($name: $ty,)* span: $crate::util::source::Span) -> Self {
                 Self {
                     span,
                     ty_info: Default::default(),
@@ -18,8 +18,8 @@ macro_rules! ast_node {
             }
         }
 
-        impl<$ty_info> crate::util::source::Spanned for $struct_name<$ty_info> {
-            fn span(&self) -> &crate::util::source::Span {
+        impl<$ty_info> $crate::util::source::Spanned for $struct_name<$ty_info> {
+            fn span(&self) -> &$crate::util::source::Span {
                 &self.span
             }
         }
@@ -39,10 +39,10 @@ macro_rules! ast_node {
             }
         }
 
-        impl<$ty_info> crate::util::source::Spanned for $enum_name<$ty_info> {
-            fn span(&self) -> &crate::util::source::Span {
+        impl<$ty_info> $crate::util::source::Spanned for $enum_name<$ty_info> {
+            fn span(&self) -> &$crate::util::source::Span {
                 match self {
-                    $(Self::$name(value) => crate::util::source::Spanned::span(value)),*
+                    $(Self::$name(value) => $crate::util::source::Spanned::span(value)),*
                 }
             }
         }
@@ -52,10 +52,10 @@ macro_rules! ast_node {
 #[macro_export]
 macro_rules! generate_ast {
     ($ty_info:ty) => {
-        use crate::core::ast;
+        use $crate::core::ast;
 
         // Re-export non-typed utilities
-        pub use crate::core::ast::InfixOperation;
+        pub use $crate::core::ast::InfixOperation;
 
         pub type Block = ast::Block<$ty_info>;
         pub type Boolean = ast::Boolean<$ty_info>;

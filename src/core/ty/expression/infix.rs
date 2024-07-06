@@ -8,7 +8,7 @@ impl InfixOperation {
         match (self, left, right) {
             (Plus(_), Ty::Int, Ty::Int) => Ok(Ty::Int),
             (Eq(_) | NotEq(_), left, right) if left == right => Ok(Ty::Boolean),
-            (_, left, right) => Err(TyError::Mismatch(left.clone(), right.clone())),
+            (_, left, right) => Err(TyError::Mismatch(*left, *right)),
         }
     }
 }
