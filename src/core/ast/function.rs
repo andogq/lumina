@@ -1,20 +1,15 @@
 use crate::{
+    ast_node,
     core::{symbol::Symbol, ty::Ty},
-    util::source::{Span, Spanned},
 };
 
 use super::Block;
 
-pub struct Function {
-    pub span: Span,
-    pub name: Symbol,
-    pub parameters: Vec<(Symbol, Ty)>,
-    pub return_ty: Ty,
-    pub body: Block,
-}
-
-impl Spanned for Function {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct Function<TyInfo> {
+        name: Symbol,
+        parameters: Vec<(Symbol, Ty)>,
+        return_ty: Ty,
+        body: Block<TyInfo>,
     }
 }

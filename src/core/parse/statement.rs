@@ -11,7 +11,7 @@ use super::{
     ParseCtx, ParseError,
 };
 
-pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
+pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement<()>, ParseError> {
     let mut expecting_semicolon = true;
 
     let statement = match ctx.lexer.peek_token() {
@@ -19,10 +19,10 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
             // Parse as return statement
             ctx.lexer.next_token();
 
-            Statement::Return(ReturnStatement {
-                value: parse_expression(ctx, Precedence::Lowest)?,
-                span: return_token.span,
-            })
+            Statement::Return(ReturnStatement::new(
+                parse_expression(ctx, Precedence::Lowest)?,
+                return_token.span,
+            ))
         }
         Token::Let(let_token) => {
             // let token
@@ -54,27 +54,30 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
 
             // value
             let value = parse_expression(ctx, Precedence::Lowest)?;
+            let span = let_token.span().to(&value);
 
-            Statement::Let(LetStatement {
-                span: let_token.span().to(&value),
-                name: ctx.symbols.get_or_intern(name.literal),
+            Statement::Let(LetStatement::new(
+                ctx.symbols.get_or_intern(name.literal),
                 value,
-            })
+                span,
+            ))
         }
         _ => {
             // Parse expression
             let expression = parse_expression(ctx, Precedence::Lowest)?;
-            Statement::Expression(ExpressionStatement {
-                span: expression.span().clone(),
+            let span = expression.span().clone();
+
+            Statement::Expression(ExpressionStatement::new(
                 expression,
-                implicit_return: if matches!(ctx.lexer.peek_token(), Token::Semicolon(_)) {
+                if matches!(ctx.lexer.peek_token(), Token::Semicolon(_)) {
                     false
                 } else {
                     expecting_semicolon = false;
 
                     true
                 },
-            })
+                span,
+            ))
         }
     };
 

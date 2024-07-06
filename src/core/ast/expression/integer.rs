@@ -1,22 +1,7 @@
-use crate::util::source::{Span, Spanned};
+use crate::ast_node;
 
-#[derive(Debug, Clone)]
-pub struct Integer {
-    pub span: Span,
-    pub value: i64,
-}
-
-impl Integer {
-    pub fn new(value: i64) -> Self {
-        Self {
-            span: Span::default(),
-            value,
-        }
-    }
-}
-
-impl Spanned for Integer {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct Integer<TyInfo> {
+        value: i64,
     }
 }

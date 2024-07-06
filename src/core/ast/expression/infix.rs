@@ -1,7 +1,4 @@
-use crate::{
-    core::lexer::token::Token,
-    util::source::{Span, Spanned},
-};
+use crate::{ast_node, core::lexer::token::Token, util::source::Span};
 
 use super::Expression;
 
@@ -31,27 +28,10 @@ impl TryFrom<Token> for InfixOperation {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Infix {
-    pub span: Span,
-    pub left: Box<Expression>,
-    pub operation: InfixOperation,
-    pub right: Box<Expression>,
-}
-
-impl Infix {
-    pub fn new(left: Expression, operation: InfixOperation, right: Expression) -> Self {
-        Self {
-            span: Span::default(),
-            left: Box::new(left),
-            operation,
-            right: Box::new(right),
-        }
-    }
-}
-
-impl Spanned for Infix {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct Infix<TyInfo> {
+        left: Box<Expression<TyInfo>>,
+        operation: InfixOperation,
+        right: Box<Expression<TyInfo>>,
     }
 }

@@ -1,9 +1,11 @@
-use crate::core::symbol::SymbolMap;
+use crate::{ast_node, core::symbol::SymbolMap};
 
 use super::function::Function;
 
-pub struct Program {
-    pub functions: Vec<Function>,
-    pub main: Function,
-    pub symbols: SymbolMap,
+ast_node! {
+    struct Program<TyInfo> {
+        functions: Vec<Function<TyInfo>>,
+        main: Function<TyInfo>,
+        symbols: SymbolMap,
+    }
 }

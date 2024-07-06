@@ -3,18 +3,18 @@ use crate::core::{
     parse::{ParseCtx, ParseError},
 };
 
-pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
+pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer<()>, ParseError> {
     let token = ctx.lexer.integer("integer peeked")?;
 
-    Ok(Integer {
-        span: token.span,
-        value: token
+    Ok(Integer::new(
+        token
             .literal
             .parse()
             .map_err(|_| ParseError::InvalidLiteral {
                 expected: "integer".to_string(),
             })?,
-    })
+        token.span,
+    ))
 }
 
 #[cfg(test)]
@@ -24,7 +24,7 @@ mod test {
 
     use rstest::rstest;
 
-    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer, ParseError>) {
+    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer<()>, ParseError>) {
         let lexer = Lexer::with_tokens(tokens);
         let mut ctx = ParseCtx::new(lexer);
         let integer = parse_integer(&mut ctx);

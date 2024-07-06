@@ -5,7 +5,10 @@ mod statement;
 
 use std::collections::HashMap;
 
-use crate::core::lexer::{token::Token, Lexer};
+use crate::{
+    core::lexer::{token::Token, Lexer},
+    util::source::Span,
+};
 
 use self::function::parse_function;
 
@@ -51,12 +54,12 @@ impl ParseCtx {
     }
 }
 
-pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
+pub fn parse(lexer: Lexer) -> Result<Program<()>, ParseError> {
     let mut ctx = ParseCtx::new(lexer);
     // WARN: wacky af
     let main = ctx.symbols.get_or_intern_static("main");
 
-    // Parse each expression which should be followed by a semi colon
+    // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {
         ctx.lexer.peek().is_some().then(|| {
             let function = parse_function(&mut ctx)?;
@@ -69,11 +72,13 @@ pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
         return Err(ParseError::MissingMain);
     };
 
-    Ok(Program {
-        functions: functions.into_values().collect(),
+    Ok(Program::new(
+        functions.into_values().collect(),
         main,
-        symbols: ctx.symbols,
-    })
+        ctx.symbols,
+        // WARN: Really should be something better
+        Span::default(),
+    ))
 }
 
 enum BooleanToken {

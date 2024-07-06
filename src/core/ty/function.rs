@@ -4,7 +4,7 @@ use crate::core::ast::Function;
 
 use super::{InferTy, Ty, TyError};
 
-impl Function {
+impl Function<()> {
     pub fn check(&self) -> Result<(), TyError> {
         // Block can implicitly evaluate to a value
         let inferred_ty = self.body.infer(&mut HashMap::new())?;

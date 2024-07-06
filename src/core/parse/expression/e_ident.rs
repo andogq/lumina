@@ -3,13 +3,13 @@ use crate::core::{
     parse::{ParseCtx, ParseError},
 };
 
-pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident, ParseError> {
+pub fn parse_ident(ctx: &mut ParseCtx) -> Result<Ident<()>, ParseError> {
     let token = ctx.lexer.ident("ident peeked")?;
 
-    Ok(Ident {
-        span: token.span,
-        name: ctx.symbols.get_or_intern(token.literal),
-    })
+    Ok(Ident::new(
+        ctx.symbols.get_or_intern(token.literal),
+        token.span,
+    ))
 }
 
 #[cfg(test)]

@@ -31,7 +31,7 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(ctx: &mut ParseCtx) -> Result<ast::Expression, ParseError> {
+fn parse_prefix(ctx: &mut ParseCtx) -> Result<ast::Expression<()>, ParseError> {
     match ctx.lexer.peek_token() {
         Token::Integer(_) => Ok(ast::Expression::Integer(parse_integer(ctx)?)),
         Token::Ident(_) => Ok(ast::Expression::Ident(parse_ident(ctx)?)),
@@ -46,7 +46,7 @@ fn parse_prefix(ctx: &mut ParseCtx) -> Result<ast::Expression, ParseError> {
 pub fn parse_expression(
     ctx: &mut ParseCtx,
     precedence: Precedence,
-) -> Result<ast::Expression, ParseError> {
+) -> Result<ast::Expression<()>, ParseError> {
     let mut left = parse_prefix(ctx)?;
 
     while !matches!(ctx.lexer.peek_token(), Token::EOF(_))
@@ -58,12 +58,13 @@ pub fn parse_expression(
 
             let right = parse_expression(ctx, precedence)?;
 
-            left = ast::Expression::Infix(ast::Infix {
-                span: token.span().to(&right),
-                left: Box::new(left),
+            let span = token.span().to(&right);
+            left = ast::Expression::Infix(ast::Infix::new(
+                Box::new(left),
                 operation,
-                right: Box::new(right),
-            });
+                Box::new(right),
+                span,
+            ));
         } else {
             // Probably aren't in the expression any more
             break;
@@ -81,7 +82,7 @@ mod test {
 
     use super::*;
 
-    fn run(tokens: Vec<Token>) -> Result<Expression, ParseError> {
+    fn run(tokens: Vec<Token>) -> Result<Expression<()>, ParseError> {
         let lexer = Lexer::with_tokens(tokens);
         parse_expression(&mut ParseCtx::new(lexer), Precedence::Lowest)
     }
@@ -99,9 +100,11 @@ mod test {
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 3,
                     },
                 ),
@@ -111,6 +114,7 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 4,
                     },
                 ),
@@ -134,12 +138,15 @@ mod test {
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 left: Infix(
                     Infix {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         left: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
+                                ty_info: (),
                                 value: 3,
                             },
                         ),
@@ -149,6 +156,7 @@ mod test {
                         right: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
+                                ty_info: (),
                                 value: 4,
                             },
                         ),
@@ -160,6 +168,7 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 10,
                     },
                 ),
@@ -183,21 +192,26 @@ mod test {
         If(
             If {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 condition: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 1,
                     },
                 ),
                 success: Block {
                     span: 1:0 -> 1:0,
+                    ty_info: (),
                     statements: [
                         Expression(
                             ExpressionStatement {
                                 span: 1:0 -> 1:0,
+                                ty_info: (),
                                 expression: Ident(
                                     Ident {
                                         span: 1:0 -> 1:0,
+                                        ty_info: (),
                                         name: SymbolU32 {
                                             value: 1,
                                         },
@@ -221,6 +235,7 @@ mod test {
         Integer(
             Integer {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 value: 1,
             },
         )
@@ -234,6 +249,7 @@ mod test {
         Ident(
             Ident {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -250,9 +266,11 @@ mod test {
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 1,
                     },
                 ),
@@ -262,6 +280,7 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 1,
                     },
                 ),
@@ -285,9 +304,11 @@ mod test {
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
+                ty_info: (),
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         value: 1,
                     },
                 ),
@@ -297,9 +318,11 @@ mod test {
                 right: Infix(
                     Infix {
                         span: 1:0 -> 1:0,
+                        ty_info: (),
                         left: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
+                                ty_info: (),
                                 value: 1,
                             },
                         ),
@@ -309,6 +332,7 @@ mod test {
                         right: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
+                                ty_info: (),
                                 value: 2,
                             },
                         ),

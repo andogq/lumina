@@ -11,7 +11,7 @@ mod if_else;
 mod infix;
 mod integer;
 
-impl InferTy for Expression {
+impl InferTy for Expression<()> {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         match self {
             Expression::Infix(s) => s.infer(symbols),

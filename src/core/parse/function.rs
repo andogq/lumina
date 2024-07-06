@@ -6,7 +6,7 @@ use crate::core::{
 
 use super::{block::parse_block, ParseCtx, ParseError};
 
-pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
+pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function<()>, ParseError> {
     // `fn` keyword
     let fn_token = match ctx.lexer.next_token() {
         Token::Fn(fn_token) => fn_token,
@@ -89,11 +89,12 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
 
     let body = parse_block(ctx)?;
 
-    Ok(Function {
-        span: fn_token.span.to(&body),
-        name: ctx.symbols.get_or_intern(fn_name.literal),
+    let span = fn_token.span.to(&body);
+    Ok(Function::new(
+        ctx.symbols.get_or_intern(fn_name.literal),
         parameters,
         return_ty,
         body,
-    })
+        span,
+    ))
 }

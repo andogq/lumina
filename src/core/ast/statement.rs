@@ -1,4 +1,5 @@
 use crate::{
+    ast_node,
     core::symbol::Symbol,
     util::source::{Span, Spanned},
 };
@@ -6,38 +7,27 @@ use crate::{
 use super::Expression;
 
 #[derive(Debug, Clone)]
-pub enum Statement {
-    Return(ReturnStatement),
-    Let(LetStatement),
-    Expression(ExpressionStatement),
+pub enum Statement<TyInfo> {
+    Return(ReturnStatement<TyInfo>),
+    Let(LetStatement<TyInfo>),
+    Expression(ExpressionStatement<TyInfo>),
 }
 
-impl Statement {
-    pub fn _return(expression: Expression) -> Self {
-        Self::Return(ReturnStatement {
-            span: Span::default(),
-            value: expression,
-        })
+impl<TyInfo: Default> Statement<TyInfo> {
+    pub fn _return(expression: Expression<TyInfo>, span: Span) -> Self {
+        Self::Return(ReturnStatement::new(expression, span))
     }
 
-    pub fn _let(name: Symbol, expression: Expression) -> Self {
-        Self::Let(LetStatement {
-            span: Span::default(),
-            name,
-            value: expression,
-        })
+    pub fn _let(name: Symbol, value: Expression<TyInfo>, span: Span) -> Self {
+        Self::Let(LetStatement::new(name, value, span))
     }
 
-    pub fn expression(expression: Expression, implicit_return: bool) -> Self {
-        Self::Expression(ExpressionStatement {
-            span: Span::default(),
-            expression,
-            implicit_return,
-        })
+    pub fn expression(expression: Expression<TyInfo>, implicit_return: bool, span: Span) -> Self {
+        Self::Expression(ExpressionStatement::new(expression, implicit_return, span))
     }
 }
 
-impl Spanned for Statement {
+impl<TyInfo> Spanned for Statement<TyInfo> {
     fn span(&self) -> &Span {
         match self {
             Statement::Return(s) => s.span(),
@@ -47,40 +37,22 @@ impl Spanned for Statement {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ReturnStatement {
-    pub span: Span,
-    pub value: Expression,
-}
-
-impl Spanned for ReturnStatement {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct ReturnStatement<TyInfo> {
+        value: Expression<TyInfo>,
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct LetStatement {
-    pub span: Span,
-    pub name: Symbol,
-    pub value: Expression,
-}
-
-impl Spanned for LetStatement {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct LetStatement<TyInfo> {
+        name: Symbol,
+        value: Expression<TyInfo>,
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExpressionStatement {
-    pub span: Span,
-    pub expression: Expression,
-    pub implicit_return: bool,
-}
-
-impl Spanned for ExpressionStatement {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct ExpressionStatement<TyInfo> {
+        expression: Expression<TyInfo>,
+        implicit_return: bool,
     }
 }

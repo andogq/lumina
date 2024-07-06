@@ -5,7 +5,7 @@ use crate::core::{
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
-impl InferTy for Boolean {
+impl InferTy for Boolean<()> {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         Ok(Ty::Boolean)
     }
@@ -24,12 +24,9 @@ mod test_boolean {
     #[test]
     fn boolean_infer() {
         assert_eq!(
-            Boolean {
-                span: Span::default(),
-                value: false
-            }
-            .infer(&mut HashMap::new())
-            .unwrap(),
+            Boolean::new(false, Span::default())
+                .infer(&mut HashMap::new())
+                .unwrap(),
             Ty::Boolean
         );
     }
@@ -37,12 +34,9 @@ mod test_boolean {
     #[test]
     fn boolean_return() {
         assert_eq!(
-            Boolean {
-                span: Span::default(),
-                value: false
-            }
-            .return_ty(&mut HashMap::new())
-            .unwrap(),
+            Boolean::new(false, Span::default())
+                .return_ty(&mut HashMap::new())
+                .unwrap(),
             None,
         );
     }

@@ -6,7 +6,7 @@ use crate::core::{
     ty::{InferTy, Ty, TyError},
 };
 
-impl InferTy for Integer {
+impl InferTy for Integer<()> {
     fn infer(&self, _symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         Ok(Ty::Int)
     }
@@ -25,12 +25,9 @@ mod test_integer {
     #[test]
     fn integer_infer() {
         assert_eq!(
-            Integer {
-                span: Span::default(),
-                value: 0,
-            }
-            .infer(&mut HashMap::new())
-            .unwrap(),
+            Integer::new(0, Span::default())
+                .infer(&mut HashMap::new())
+                .unwrap(),
             Ty::Int
         );
     }
@@ -38,12 +35,9 @@ mod test_integer {
     #[test]
     fn integer_return() {
         assert_eq!(
-            Integer {
-                span: Span::default(),
-                value: 0
-            }
-            .return_ty(&mut HashMap::new())
-            .unwrap(),
+            Integer::new(0, Span::default())
+                .return_ty(&mut HashMap::new())
+                .unwrap(),
             None,
         );
     }

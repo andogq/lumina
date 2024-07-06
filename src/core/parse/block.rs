@@ -8,7 +8,7 @@ use crate::{
 
 use super::{statement::parse_statement, ParseCtx, ParseError};
 
-pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
+pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block<()>, ParseError> {
     let open_brace = match ctx.lexer.next_token() {
         Token::LeftBrace(ident) => ident,
         token => {
@@ -41,8 +41,5 @@ pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
         }
     };
 
-    Ok(Block {
-        statements,
-        span: open_brace.span().to(&close_brace),
-    })
+    Ok(Block::new(statements, open_brace.span().to(&close_brace)))
 }

@@ -4,7 +4,7 @@ use crate::core::ast::{self, Block};
 
 use super::{repr, BasicBlock, BasicBlockIdx, FunctionIdx, IRCtx, Triple, TripleRef, Value};
 
-pub fn lower(program: ast::Program) -> IRCtx {
+pub fn lower(program: ast::Program<()>) -> IRCtx {
     let mut ir = IRCtx::new(program.symbols);
 
     lower_function(&mut ir, program.main);
@@ -32,7 +32,7 @@ impl FunctionLoweringCtx {
     }
 }
 
-fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> FunctionIdx {
+fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function<()>) -> FunctionIdx {
     let mut repr_function = repr::Function::new(function.name);
 
     // Insert entry basic block
@@ -58,7 +58,7 @@ fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> FunctionIdx {
 }
 
 /// Lower an AST block into the current function context.
-fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Option<Value> {
+fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block<()>) -> Option<Value> {
     assert!(
         !block.statements.is_empty(),
         "block must have statements within it"
@@ -104,7 +104,7 @@ fn lower_block(ctx: &mut FunctionLoweringCtx, block: &Block) -> Option<Value> {
     None
 }
 
-fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression) -> Value {
+fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression<()>) -> Value {
     match expression {
         ast::Expression::Infix(ast::Infix {
             left,

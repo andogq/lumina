@@ -3,7 +3,7 @@ use crate::core::{
     parse::{BooleanToken, ParseCtx, ParseError},
 };
 
-pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean, ParseError> {
+pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean<()>, ParseError> {
     let token = ctx.lexer.boolean("boolean peeked")?;
 
     let (span, value) = match token {
@@ -11,7 +11,7 @@ pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean, ParseError> {
         BooleanToken::False(token) => (token.span, false),
     };
 
-    Ok(Boolean { span, value })
+    Ok(Boolean::new(value, span))
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use crate::core::{
     ty::{InferTy, Symbol, Ty, TyError},
 };
 
-impl InferTy for Infix {
+impl InferTy for Infix<()> {
     fn infer(&self, symbols: &mut HashMap<Symbol, Ty>) -> Result<Ty, TyError> {
         let left_ty = self.left.infer(symbols)?;
         let right_ty = self.right.infer(symbols)?;
@@ -42,7 +42,10 @@ impl InferTy for Infix {
 }
 #[cfg(test)]
 mod test_infix {
-    use crate::core::ast::{Expression, InfixOperation};
+    use crate::{
+        core::ast::{Expression, InfixOperation},
+        util::source::Span,
+    };
 
     use super::*;
 
@@ -50,9 +53,10 @@ mod test_infix {
     fn infer_same() {
         // 0 + 0
         let infix = Infix::new(
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
             InfixOperation::plus(),
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
+            Span::default(),
         );
 
         assert_eq!(infix.infer(&mut HashMap::new()).unwrap(), Ty::Int);
@@ -61,9 +65,10 @@ mod test_infix {
     fn infer_different() {
         // 0 + false
         let infix = Infix::new(
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
             InfixOperation::plus(),
-            Expression::boolean(false),
+            Box::new(Expression::boolean(false, Span::default())),
+            Span::default(),
         );
 
         assert!(infix.infer(&mut HashMap::new()).is_err());
@@ -73,9 +78,10 @@ mod test_infix {
     fn return_same() {
         // 0 + 0
         let infix = Infix::new(
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
             InfixOperation::plus(),
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
+            Span::default(),
         );
 
         assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);
@@ -84,9 +90,10 @@ mod test_infix {
     fn return_different() {
         // 0 + 0
         let infix = Infix::new(
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
             InfixOperation::plus(),
-            Expression::integer(0),
+            Box::new(Expression::integer(0, Span::default())),
+            Span::default(),
         );
 
         assert_eq!(infix.return_ty(&mut HashMap::new()).unwrap(), None);

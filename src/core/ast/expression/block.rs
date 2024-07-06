@@ -1,25 +1,7 @@
-use crate::{
-    core::ast::Statement,
-    util::source::{Span, Spanned},
-};
+use crate::{ast_node, core::ast::Statement};
 
-#[derive(Debug, Clone)]
-pub struct Block {
-    pub span: Span,
-    pub statements: Vec<Statement>,
-}
-
-impl Block {
-    pub fn new(statements: &[Statement]) -> Self {
-        Self {
-            span: Span::default(),
-            statements: statements.to_vec(),
-        }
-    }
-}
-
-impl Spanned for Block {
-    fn span(&self) -> &Span {
-        &self.span
+ast_node! {
+    struct Block<TyInfo> {
+        statements: Vec<Statement<TyInfo>>,
     }
 }

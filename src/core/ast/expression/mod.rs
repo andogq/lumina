@@ -20,42 +20,62 @@ use crate::{
 use super::Statement;
 
 #[derive(Debug, Clone)]
-pub enum Expression {
-    Infix(Infix),
-    Integer(Integer),
-    Boolean(Boolean),
-    Ident(Ident),
-    Block(Block),
-    If(If),
+pub enum Expression<TyInfo> {
+    Infix(Infix<TyInfo>),
+    Integer(Integer<TyInfo>),
+    Boolean(Boolean<TyInfo>),
+    Ident(Ident<TyInfo>),
+    Block(Block<TyInfo>),
+    If(If<TyInfo>),
 }
 
-impl Expression {
-    pub fn infix(left: Expression, operation: InfixOperation, right: Expression) -> Self {
-        Self::Infix(Infix::new(left, operation, right))
+impl<TyInfo: Default> Expression<TyInfo> {
+    pub fn infix(
+        left: Expression<TyInfo>,
+        operation: InfixOperation,
+        right: Expression<TyInfo>,
+    ) -> Self {
+        let span = Spanned::span(&left).to(&right);
+        Self::Infix(Infix::<TyInfo>::new(
+            Box::new(left),
+            operation,
+            Box::new(right),
+            span,
+        ))
     }
 
-    pub fn integer(value: i64) -> Self {
-        Self::Integer(Integer::new(value))
+    pub fn integer(value: i64, span: Span) -> Self {
+        Self::Integer(Integer::<TyInfo>::new(value, span))
     }
 
-    pub fn boolean(value: bool) -> Self {
-        Self::Boolean(Boolean::new(value))
+    pub fn boolean(value: bool, span: Span) -> Self {
+        Self::Boolean(Boolean::<TyInfo>::new(value, span))
     }
 
-    pub fn ident(name: Symbol) -> Self {
-        Self::Ident(Ident::new(name))
+    pub fn ident(name: Symbol, span: Span) -> Self {
+        Self::Ident(Ident::<TyInfo>::new(name, span))
     }
 
-    pub fn block(statements: &[Statement]) -> Self {
-        Self::Block(Block::new(statements))
+    pub fn block(statements: Vec<Statement<TyInfo>>, span: Span) -> Self {
+        Self::Block(Block::<TyInfo>::new(statements, span))
     }
 
-    pub fn _if(condition: Expression, success: Block, otherwise: Option<Block>) -> Self {
-        Self::If(If::new(condition, success, otherwise))
+    pub fn _if(
+        condition: Expression<TyInfo>,
+        success: Block<TyInfo>,
+        otherwise: Option<Block<TyInfo>>,
+        span: Span,
+    ) -> Self {
+        Self::If(If::<TyInfo>::new(
+            Box::new(condition),
+            success,
+            otherwise,
+            span,
+        ))
     }
 }
 
-impl Spanned for Expression {
+impl<TyInfo> Spanned for Expression<TyInfo> {
     fn span(&self) -> &Span {
         match self {
             Expression::Infix(s) => s.span(),
