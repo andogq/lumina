@@ -1,5 +1,6 @@
 mod block;
 mod boolean;
+mod call;
 mod ident;
 mod if_else;
 mod infix;
@@ -7,6 +8,7 @@ mod integer;
 
 pub use block::*;
 pub use boolean::*;
+pub use call::*;
 pub use ident::*;
 pub use if_else::*;
 pub use infix::*;
@@ -28,6 +30,7 @@ ast_node!(
         Ident(Ident<TyInfo>),
         Block(Block<TyInfo>),
         If(If<TyInfo>),
+        Call(Call<TyInfo>),
     }
 );
 
@@ -74,5 +77,9 @@ impl<TyInfo: Default> Expression<TyInfo> {
             otherwise,
             span,
         ))
+    }
+
+    pub fn call(name: Symbol, args: Vec<Expression<TyInfo>>, span: Span) -> Self {
+        Self::Call(Call::new(name, args, span))
     }
 }

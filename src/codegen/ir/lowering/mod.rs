@@ -158,5 +158,6 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> V
                 branches: vec![(Value::integer(0), otherwise_bb, otherwise_value)],
             }))
         }
+        Expression::Call(call) => todo!(),
     }
 }

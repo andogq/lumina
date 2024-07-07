@@ -1,3 +1,7 @@
+use std::iter;
+
+use crate::core::ast::Call;
+
 use super::*;
 
 use self::{
@@ -14,6 +18,7 @@ pub enum Precedence {
     Lowest,
     Equality,
     Sum,
+    Call,
 }
 
 impl Precedence {
@@ -21,6 +26,7 @@ impl Precedence {
         match token {
             Token::Plus(_) => Precedence::Sum,
             Token::Eq(_) | Token::NotEq(_) => Precedence::Equality,
+            Token::LeftParen(_) => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
@@ -47,17 +53,68 @@ pub fn parse_expression(
     while !matches!(ctx.lexer.peek_token(), Token::EOF(_))
         && precedence < Precedence::of(&ctx.lexer.peek_token())
     {
-        if let Ok(operation) = InfixOperation::try_from(ctx.lexer.peek_token()) {
-            let token = ctx.lexer.next_token();
-            let precedence = Precedence::of(&token);
+        match (ctx.lexer.peek_token(), &left) {
+            // Function call
+            (Token::LeftParen(_), Expression::Ident(name)) => {
+                // Consume the args
+                let args = iter::from_fn(|| {
+                    match ctx.lexer.peek_token() {
+                        Token::LeftParen(_) | Token::Comma(_) => {
+                            // Consume the opening paren or comma
+                            ctx.lexer.next_token();
 
-            let right = parse_expression(ctx, precedence)?;
+                            // If the closing parenthesis is encountered, stop parsing arguments
+                            if matches!(ctx.lexer.peek_token(), Token::RightParen(_)) {
+                                return None;
+                            }
 
-            let span = token.span().to(&right);
-            left = Expression::Infix(Infix::new(Box::new(left), operation, Box::new(right), span));
-        } else {
-            // Probably aren't in the expression any more
-            break;
+                            // Parse the next argument
+                            Some(parse_expression(ctx, Precedence::Lowest))
+                        }
+                        token => Some(Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::comma()),
+                            found: Box::new(token),
+                            reason: "function arguments must be separated by a comma".to_string(),
+                        })),
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+                // Consume the closing paren
+                let right_paren = match ctx.lexer.next_token() {
+                    Token::RightParen(token) => token,
+                    token => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::right_paren()),
+                            found: Box::new(token),
+                            reason: "argument list must end with right paren".to_string(),
+                        })
+                    }
+                };
+
+                let span = name.span().to(right_paren.span());
+                left = Expression::Call(Call::new(name.name, args, span));
+            }
+            // Regular infix operation
+            (token, _) => {
+                if let Ok(operation) = InfixOperation::try_from(token) {
+                    let token = ctx.lexer.next_token();
+                    let precedence = Precedence::of(&token);
+
+                    let right = parse_expression(ctx, precedence)?;
+
+                    let span = token.span().to(&right);
+                    left = Expression::Infix(Infix::new(
+                        Box::new(left),
+                        operation,
+                        Box::new(right),
+                        span,
+                    ));
+                } else {
+                    // Probably aren't in the expression any more
+                    break;
+                }
+            }
         }
     }
 
@@ -324,6 +381,305 @@ mod test {
                                 value: 2,
                             },
                         ),
+                    },
+                ),
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_no_param() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_one_param_no_comma() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 1,
+                        },
+                    ),
+                ],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_one_param_trailing_comma() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::comma(),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 1,
+                        },
+                    ),
+                ],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_multi_param_no_comma() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::comma(),
+            Token::integer("2"),
+            Token::comma(),
+            Token::integer("3"),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 1,
+                        },
+                    ),
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 2,
+                        },
+                    ),
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 3,
+                        },
+                    ),
+                ],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_multi_param_trailing_comma() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::comma(),
+            Token::integer("2"),
+            Token::comma(),
+            Token::integer("3"),
+            Token::comma(),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 1,
+                        },
+                    ),
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 2,
+                        },
+                    ),
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 3,
+                        },
+                    ),
+                ],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_with_expression_param() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::plus(),
+            Token::integer("2"),
+            Token::comma(),
+            Token::integer("3"),
+            Token::comma(),
+            Token::right_paren(),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Call(
+            Call {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                name: SymbolU32 {
+                    value: 1,
+                },
+                args: [
+                    Infix(
+                        Infix {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            left: Integer(
+                                Integer {
+                                    span: 1:0 -> 1:0,
+                                    ty_info: None,
+                                    value: 1,
+                                },
+                            ),
+                            operation: Plus(
+                                1:0 -> 1:0,
+                            ),
+                            right: Integer(
+                                Integer {
+                                    span: 1:0 -> 1:0,
+                                    ty_info: None,
+                                    value: 2,
+                                },
+                            ),
+                        },
+                    ),
+                    Integer(
+                        Integer {
+                            span: 1:0 -> 1:0,
+                            ty_info: None,
+                            value: 3,
+                        },
+                    ),
+                ],
+            },
+        )
+        "###);
+    }
+
+    #[test]
+    fn function_call_in_expression() {
+        let expression = run(vec![
+            Token::ident("func"),
+            Token::left_paren(),
+            Token::integer("1"),
+            Token::right_paren(),
+            Token::plus(),
+            Token::integer("2"),
+        ])
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                span: 1:0 -> 1:0,
+                ty_info: None,
+                left: Call(
+                    Call {
+                        span: 1:0 -> 1:0,
+                        ty_info: None,
+                        name: SymbolU32 {
+                            value: 1,
+                        },
+                        args: [
+                            Integer(
+                                Integer {
+                                    span: 1:0 -> 1:0,
+                                    ty_info: None,
+                                    value: 1,
+                                },
+                            ),
+                        ],
+                    },
+                ),
+                operation: Plus(
+                    1:0 -> 1:0,
+                ),
+                right: Integer(
+                    Integer {
+                        span: 1:0 -> 1:0,
+                        ty_info: None,
+                        value: 2,
                     },
                 ),
             },

@@ -73,6 +73,7 @@ impl Iterator for TokenIter {
                     }
 
                     ';' => Token::Semicolon(SemicolonToken { span }),
+                    ',' => Token::Comma(CommaToken { span }),
 
                     c if c.is_ascii_digit() => {
                         let (mut literal, str_span) = source.consume_while(|c| c.is_ascii_digit());
@@ -184,6 +185,7 @@ mod test {
     #[case::equals("=", &[Token::equals()])]
     #[case::semicolon(";", &[Token::semicolon()])]
     #[case::thin_arrow("->", &[Token::thin_arrow()])]
+    #[case::comma(",", &[Token::comma()])]
     #[case::left_paren("(", &[Token::left_paren()])]
     #[case::right_paren(")", &[Token::right_paren()])]
     #[case::left_brace("{", &[Token::left_brace()])]
@@ -209,7 +211,7 @@ mod test {
         Token::semicolon(),
     ])]
     #[case::all_tokens(
-        "123 ident + == != = ; -> ( ) { } true false fn return let if else",
+        "123 ident + == != = ; -> , ( ) { } true false fn return let if else",
         &[
             Token::integer("123"),
             Token::ident("ident"),
@@ -219,6 +221,7 @@ mod test {
             Token::equals(),
             Token::semicolon(),
             Token::thin_arrow(),
+            Token::comma(),
             Token::left_paren(),
             Token::right_paren(),
             Token::left_brace(),

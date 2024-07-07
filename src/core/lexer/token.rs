@@ -144,6 +144,7 @@ token!(EqualsToken, "=");
 
 token!(SemicolonToken, ";");
 token!(ThinArrowToken, "->");
+token!(CommaToken, ",");
 
 token!(LeftParenToken, "(");
 token!(RightParenToken, ")");
@@ -174,6 +175,7 @@ token_enum! {
 
     Semicolon: SemicolonToken,
     ThinArrow: ThinArrowToken,
+    Comma: CommaToken,
 
     LeftParen: LeftParenToken,
     RightParen: RightParenToken,
@@ -223,6 +225,9 @@ impl Token {
     }
     pub fn thin_arrow() -> Self {
         Self::ThinArrow(Default::default())
+    }
+    pub fn comma() -> Self {
+        Self::Comma(Default::default())
     }
 
     pub fn left_paren() -> Self {

@@ -16,6 +16,7 @@ impl parse_ast::Expression {
             parse_ast::Expression::Ident(e) => Expression::Ident(e.ty_solve(ctx)?),
             parse_ast::Expression::Block(e) => Expression::Block(e.ty_solve(ctx)?),
             parse_ast::Expression::If(e) => Expression::If(e.ty_solve(ctx)?),
+            parse_ast::Expression::Call(e) => todo!(),
         })
     }
 }

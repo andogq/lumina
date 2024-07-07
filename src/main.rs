@@ -7,16 +7,12 @@ use lumina::{
 fn main() {
     let source = Source::new(
         r#"
+fn a() -> int {
+    return 7;
+}
+
 fn main() -> int {
-    let answer = 1 + 1 == 2;
-
-    let result = if answer {
-        10
-    } else {
-        20
-    };
-
-    return result;
+    return a();
 }"#,
     );
 
