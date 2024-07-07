@@ -59,6 +59,7 @@ pub fn parse_expression(
                 // Consume the args
                 let args = iter::from_fn(|| {
                     match ctx.lexer.peek_token() {
+                        Token::RightParen(_) => None,
                         Token::LeftParen(_) | Token::Comma(_) => {
                             // Consume the opening paren or comma
                             ctx.lexer.next_token();
