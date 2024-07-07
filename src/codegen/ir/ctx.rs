@@ -1,6 +1,6 @@
 use index_vec::{define_index_type, IndexVec};
 
-use crate::core::symbol::SymbolMap;
+use crate::core::ctx::SymbolMap;
 
 use super::Function;
 

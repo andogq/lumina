@@ -7,8 +7,8 @@ use std::collections::HashMap;
 
 use crate::{
     core::{
+        ctx::Ctx,
         lexer::{token::*, Lexer},
-        symbol::SymbolMap,
         ty::Ty,
     },
     util::source::*,
@@ -51,22 +51,19 @@ pub enum ParseError {
 
 struct ParseCtx {
     lexer: Lexer,
-    symbols: SymbolMap,
+    ctx: Ctx,
 }
 
 impl ParseCtx {
-    pub fn new(lexer: Lexer) -> Self {
-        Self {
-            lexer,
-            symbols: SymbolMap::new(),
-        }
+    pub fn new(ctx: Ctx, lexer: Lexer) -> Self {
+        Self { lexer, ctx }
     }
 }
 
-pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
-    let mut ctx = ParseCtx::new(lexer);
+pub fn parse(ctx: Ctx, lexer: Lexer) -> Result<(Program, Ctx), ParseError> {
+    let mut ctx = ParseCtx::new(ctx, lexer);
     // WARN: wacky af
-    let main = ctx.symbols.get_or_intern_static("main");
+    let main = ctx.ctx.symbols.get_or_intern_static("main");
 
     // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {
@@ -81,13 +78,16 @@ pub fn parse(lexer: Lexer) -> Result<Program, ParseError> {
         return Err(ParseError::MissingMain);
     };
 
-    Ok(Program::new(
+    let program = Program::new(
         functions.into_values().collect(),
         main,
-        ctx.symbols,
+        // TODO: This should just reference the global ctx
+        ctx.ctx.symbols.clone(),
         // WARN: Really should be something better
         Span::default(),
-    ))
+    );
+
+    Ok((program, ctx.ctx))
 }
 
 enum BooleanToken {

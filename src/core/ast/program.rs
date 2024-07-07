@@ -1,4 +1,4 @@
-use crate::{ast_node, core::symbol::SymbolMap};
+use crate::{ast_node, core::ctx::SymbolMap};
 
 use super::function::Function;
 

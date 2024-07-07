@@ -13,7 +13,7 @@ use inkwell::{
 
 use crate::{
     codegen::ir::{BinaryOp, IRCtx, Triple, UnaryOp, Value},
-    core::symbol::Symbol,
+    core::ctx::Symbol,
 };
 
 use super::ir::{BasicBlockIdx, ConstantValue, FunctionIdx, TripleIdx};

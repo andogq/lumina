@@ -1,4 +1,4 @@
-use crate::{ast_node, core::symbol::Symbol};
+use crate::{ast_node, core::ctx::Symbol};
 
 use super::Expression;
 

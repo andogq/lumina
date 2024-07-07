@@ -1,6 +1,6 @@
 use lumina::{
     codegen::{ir, llvm::Pass},
-    core::{lexer::Lexer, parse::parse},
+    core::{ctx::Ctx, lexer::Lexer, parse::parse},
     util::source::Source,
 };
 use rstest::rstest;
@@ -97,13 +97,14 @@ fn main() -> int {
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
     let source = Source::new(source);
 
-    let program = match parse(Lexer::new(source)) {
+    let program = match parse(Ctx::default(), Lexer::new(source)) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");
             return;
         }
-    };
+    }
+    .0;
 
     let program = match program.ty_solve() {
         Ok(program) => program,

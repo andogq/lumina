@@ -57,7 +57,7 @@ mod test {
         }
 
         let lexer = Lexer::with_tokens(tokens);
-        let mut ctx = ParseCtx::new(lexer);
+        let mut ctx = ParseCtx::new(Ctx::default(), lexer);
         let e_if = parse_if(&mut ctx);
 
         (ctx, e_if)
@@ -114,7 +114,7 @@ mod test {
     ])]
     fn fail(#[case] tokens: Vec<Token>) {
         let lexer = Lexer::with_tokens(tokens);
-        let result = parse_if(&mut ParseCtx::new(lexer));
+        let result = parse_if(&mut ParseCtx::new(Ctx::default(), lexer));
 
         assert!(result.is_err());
     }

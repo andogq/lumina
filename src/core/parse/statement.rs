@@ -46,7 +46,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
             let span = let_token.span().to(&value);
 
             Statement::Let(LetStatement::new(
-                ctx.symbols.get_or_intern(name.literal),
+                ctx.ctx.symbols.get_or_intern(name.literal),
                 value,
                 span,
             ))

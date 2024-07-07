@@ -23,7 +23,7 @@ mod test {
 
     fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer, ParseError>) {
         let lexer = Lexer::with_tokens(tokens);
-        let mut ctx = ParseCtx::new(lexer);
+        let mut ctx = ParseCtx::new(Ctx::default(), lexer);
         let integer = parse_integer(&mut ctx);
         (ctx, integer)
     }

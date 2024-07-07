@@ -6,7 +6,7 @@ mod statement;
 use itertools::Itertools;
 use std::collections::HashMap;
 
-use crate::core::{parse::ast as parse_ast, symbol::Symbol};
+use crate::core::{ctx::Symbol, parse::ast as parse_ast};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Ty {

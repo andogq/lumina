@@ -1,6 +1,6 @@
 use lumina::{
     codegen::{ir, llvm::Pass},
-    core::{lexer::Lexer, parse::parse},
+    core::{ctx::Ctx, lexer::Lexer, parse::parse},
     util::source::Source,
 };
 
@@ -16,8 +16,10 @@ fn main() -> int {
 }"#,
     );
 
-    let program = match parse(Lexer::new(source)) {
-        Ok(program) => program,
+    let ctx = Ctx::default();
+
+    let (program, ctx) = match parse(ctx, Lexer::new(source)) {
+        Ok(output) => output,
         Err(e) => {
             eprintln!("{e}");
             return;

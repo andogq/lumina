@@ -1,6 +1,6 @@
 use crate::{
     ast_node,
-    core::{symbol::Symbol, ty::Ty},
+    core::{ctx::Symbol, ty::Ty},
 };
 
 use super::Block;

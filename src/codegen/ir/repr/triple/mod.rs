@@ -1,6 +1,6 @@
 use index_vec::define_index_type;
 
-use crate::core::symbol::Symbol;
+use crate::core::ctx::Symbol;
 
 use super::{BasicBlockIdx, Value};
 

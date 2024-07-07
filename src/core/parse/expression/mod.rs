@@ -129,7 +129,10 @@ mod test {
 
     fn run(tokens: Vec<Token>) -> Result<Expression, ParseError> {
         let lexer = Lexer::with_tokens(tokens);
-        parse_expression(&mut ParseCtx::new(lexer), Precedence::Lowest)
+        parse_expression(
+            &mut ParseCtx::new(Ctx::default(), lexer),
+            Precedence::Lowest,
+        )
     }
 
     #[test]

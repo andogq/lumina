@@ -25,7 +25,7 @@ mod test {
     fn success(#[case] token: Token, #[case] value: bool) {
         use crate::core::lexer::Lexer;
 
-        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![token]));
+        let mut ctx = ParseCtx::new(Ctx::default(), Lexer::with_tokens(vec![token]));
 
         let boolean = parse_boolean(&mut ctx).unwrap();
         assert_eq!(boolean.value, value);
@@ -33,7 +33,10 @@ mod test {
 
     #[test]
     fn fail() {
-        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![Token::ident("someident")]));
+        let mut ctx = ParseCtx::new(
+            Ctx::default(),
+            Lexer::with_tokens(vec![Token::ident("someident")]),
+        );
         assert!(parse_boolean(&mut ctx).is_err());
     }
 
@@ -41,7 +44,10 @@ mod test {
     #[case::success(Token::t_true())]
     #[case::fail(Token::ident("someident"))]
     fn single_token(#[case] token: Token) {
-        let mut ctx = ParseCtx::new(Lexer::with_tokens(vec![token, Token::semicolon()]));
+        let mut ctx = ParseCtx::new(
+            Ctx::default(),
+            Lexer::with_tokens(vec![token, Token::semicolon()]),
+        );
         let _ = parse_boolean(&mut ctx);
 
         assert_eq!(ctx.lexer.into_iter().count(), 1);

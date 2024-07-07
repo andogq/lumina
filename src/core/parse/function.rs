@@ -85,7 +85,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
 
     let span = fn_token.span.to(&body);
     Ok(Function::new(
-        ctx.symbols.get_or_intern(fn_name.literal),
+        ctx.ctx.symbols.get_or_intern(fn_name.literal),
         parameters,
         return_ty,
         body,

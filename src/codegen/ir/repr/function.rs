@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use index_vec::IndexVec;
 
-use crate::core::symbol::Symbol;
+use crate::core::ctx::Symbol;
 
 use super::BasicBlock;
 
