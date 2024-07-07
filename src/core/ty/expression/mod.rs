@@ -2,6 +2,7 @@ use super::*;
 
 mod block;
 mod boolean;
+mod call;
 mod ident;
 mod if_else;
 mod infix;
@@ -16,7 +17,7 @@ impl parse_ast::Expression {
             parse_ast::Expression::Ident(e) => Expression::Ident(e.ty_solve(ctx)?),
             parse_ast::Expression::Block(e) => Expression::Block(e.ty_solve(ctx)?),
             parse_ast::Expression::If(e) => Expression::If(e.ty_solve(ctx)?),
-            parse_ast::Expression::Call(e) => todo!(),
+            parse_ast::Expression::Call(e) => Expression::Call(e.ty_solve(ctx)?),
         })
     }
 }

@@ -2,6 +2,15 @@ use super::*;
 
 impl parse_ast::Function {
     pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Function, TyError> {
+        // Save this function's signature
+        ctx.functions.insert(
+            self.name,
+            (
+                self.parameters.iter().map(|(_, ty)| *ty).collect(),
+                self.return_ty,
+            ),
+        );
+
         // TODO: Need to insert parameters into scope
 
         let body = self.body.ty_solve(ctx)?;

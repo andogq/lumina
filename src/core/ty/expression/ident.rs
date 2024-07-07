@@ -36,7 +36,8 @@ mod test_ident {
         assert_eq!(
             Ident::new(Symbol::try_from_usize(0).unwrap(), Span::default())
                 .ty_solve(&mut TyCtx {
-                    symbols: HashMap::from_iter([(Symbol::try_from_usize(0).unwrap(), Ty::Int)])
+                    symbols: HashMap::from_iter([(Symbol::try_from_usize(0).unwrap(), Ty::Int)]),
+                    ..Default::default()
                 })
                 .unwrap()
                 .ty_info
@@ -50,7 +51,8 @@ mod test_ident {
         assert_eq!(
             Ident::new(Symbol::try_from_usize(0).unwrap(), Span::default())
                 .ty_solve(&mut TyCtx {
-                    symbols: HashMap::from_iter([(Symbol::try_from_usize(0).unwrap(), Ty::Int)])
+                    symbols: HashMap::from_iter([(Symbol::try_from_usize(0).unwrap(), Ty::Int)]),
+                    ..Default::default()
                 })
                 .unwrap()
                 .ty_info

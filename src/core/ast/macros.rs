@@ -59,6 +59,7 @@ macro_rules! generate_ast {
 
         pub type Block = ast::Block<$ty_info>;
         pub type Boolean = ast::Boolean<$ty_info>;
+        pub type Call = ast::Call<$ty_info>;
         pub type Ident = ast::Ident<$ty_info>;
         pub type If = ast::If<$ty_info>;
         pub type Infix = ast::Infix<$ty_info>;

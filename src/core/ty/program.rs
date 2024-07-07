@@ -9,14 +9,14 @@ impl parse_ast::Program {
 
         let mut ctx = TyCtx::default();
 
-        // Make sure the type of the function is correct
-        let main = self.main.ty_solve(&mut ctx)?;
-
         let functions = self
             .functions
             .into_iter()
             .map(|function| function.ty_solve(&mut ctx))
             .collect::<Result<Vec<_>, _>>()?;
+
+        // Make sure the type of the function is correct
+        let main = self.main.ty_solve(&mut ctx)?;
 
         Ok(Program {
             main,
