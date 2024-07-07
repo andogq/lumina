@@ -5,12 +5,6 @@ impl parse_ast::Function {
         // Set up a fn ctx just for this function
         let mut ctx = FnCtx::new(ctx);
 
-        // Save this function's signature
-        ctx.ty_ctx
-            .borrow_mut()
-            .function_signatures
-            .insert(self.name, FunctionSignature::from(&self));
-
         // TODO: Need to insert parameters into scope
 
         let body = self.body.ty_solve(&mut ctx)?;

@@ -7,7 +7,16 @@ impl parse_ast::Program {
             return Err(TyError::Mismatch(Ty::Int, self.main.return_ty));
         }
 
-        let ctx = Rc::new(RefCell::new(TyCtx::new(ctx)));
+        let mut ctx = TyCtx::new(ctx);
+
+        // Pre-register all functions
+        ctx.function_signatures.extend(
+            self.functions
+                .iter()
+                .map(|function| (function.name, FunctionSignature::from(function))),
+        );
+
+        let ctx = Rc::new(RefCell::new(ctx));
 
         // Make sure the type of the function is correct
         let main = self.main.ty_solve(Rc::clone(&ctx))?;
