@@ -9,7 +9,7 @@ mod infix;
 mod integer;
 
 impl parse_ast::Expression {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Expression, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Expression, TyError> {
         Ok(match self {
             parse_ast::Expression::Infix(e) => Expression::Infix(e.ty_solve(ctx)?),
             parse_ast::Expression::Integer(e) => Expression::Integer(e.ty_solve()?),

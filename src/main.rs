@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use lumina::{
     codegen::{ir, llvm::Pass},
     core::{ctx::Ctx, lexer::Lexer, parse::parse},
@@ -26,7 +28,7 @@ fn main() -> int {
         }
     };
 
-    let program = match program.ty_solve() {
+    let program = match program.ty_solve(Rc::new(RefCell::new(ctx))) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");

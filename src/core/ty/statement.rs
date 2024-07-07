@@ -1,7 +1,7 @@
 use super::*;
 
 impl parse_ast::Statement {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Statement, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Statement, TyError> {
         Ok(match self {
             parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(ctx)?),
             parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(ctx)?),
@@ -11,7 +11,7 @@ impl parse_ast::Statement {
 }
 
 impl parse_ast::LetStatement {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<LetStatement, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<LetStatement, TyError> {
         // Work out what the type of the value is
         let value = self.value.ty_solve(ctx)?;
 
@@ -24,8 +24,7 @@ impl parse_ast::LetStatement {
         }
 
         // Record the type
-        ctx.symbols
-            .insert(self.name, value.get_ty_info().ty);
+        ctx.scope.insert(self.name, value.get_ty_info().ty);
 
         Ok(LetStatement {
             ty_info: TyInfo {
@@ -40,7 +39,7 @@ impl parse_ast::LetStatement {
 }
 
 impl parse_ast::ReturnStatement {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<ReturnStatement, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<ReturnStatement, TyError> {
         let value = self.value.ty_solve(ctx)?;
 
         Ok(ReturnStatement {
@@ -55,7 +54,7 @@ impl parse_ast::ReturnStatement {
 }
 
 impl parse_ast::ExpressionStatement {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<ExpressionStatement, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<ExpressionStatement, TyError> {
         let expression = self.expression.ty_solve(ctx)?;
 
         // Expression statement has same type as the underlying expression
@@ -75,45 +74,41 @@ impl parse_ast::ExpressionStatement {
 
 #[cfg(test)]
 mod test_statement {
-    use string_interner::Symbol;
+    use std::collections::HashMap;
+
+    use string_interner::Symbol as _;
 
     use crate::{
         core::{
+            ctx::Symbol,
             parse::ast::*,
-            ty::{Ty, TyCtx},
+            ty::{FnCtx, Ty},
         },
         util::source::Span,
     };
 
-    #[test]
-    fn infer_return() {
-        // return 0;
-        let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
+    use super::{TyError, TyInfo};
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .ty,
-            Ty::Unit
-        );
-    }
-    #[test]
-    fn return_return() {
-        // return 0;
-        let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
+    fn run(s: Statement) -> Result<(TyInfo, HashMap<Symbol, Ty>), TyError> {
+        let mut fn_ctx = FnCtx::mock();
+        let ty = s.ty_solve(&mut fn_ctx)?.get_ty_info().clone();
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .return_ty,
-            Some(Ty::Int)
-        );
+        Ok((ty, fn_ctx.scope.clone()))
     }
 
     #[test]
-    fn infer_let() {
+    fn return_statement() {
+        // return 0;
+        let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
+
+        let (ty_info, _) = run(s).unwrap();
+
+        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.return_ty, Some(Ty::Int));
+    }
+
+    #[test]
+    fn let_statement() {
         // let a = 0;
         let s = Statement::_let(
             Symbol::try_from_usize(0).unwrap(),
@@ -121,30 +116,13 @@ mod test_statement {
             Span::default(),
         );
 
-        let mut ctx = TyCtx::default();
-        assert_eq!(s.ty_solve(&mut ctx).unwrap().get_ty_info().ty, Ty::Unit);
-        assert_eq!(
-            ctx.symbols
-                .get(&Symbol::try_from_usize(0).unwrap())
-                .cloned(),
-            Some(Ty::Int)
-        );
-    }
-    #[test]
-    fn return_let() {
-        // let a = 0;
-        let s = Statement::_let(
-            Symbol::try_from_usize(0).unwrap(),
-            Expression::integer(0, Span::default()),
-            Span::default(),
-        );
+        let (ty_info, symbols) = run(s).unwrap();
 
+        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.return_ty, None);
         assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .return_ty,
-            None
+            symbols.get(&Symbol::try_from_usize(0).unwrap()).cloned(),
+            Some(Ty::Int)
         );
     }
 
@@ -157,30 +135,10 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .ty,
-            Ty::Unit
-        );
-    }
-    #[test]
-    fn return_expression() {
-        // 0;
-        let s = Statement::expression(
-            Expression::integer(0, Span::default()),
-            false,
-            Span::default(),
-        );
+        let (ty_info, _) = run(s).unwrap();
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .return_ty,
-            None
-        );
+        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.return_ty, None);
     }
 
     #[test]
@@ -192,29 +150,9 @@ mod test_statement {
             Span::default(),
         );
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .ty,
-            Ty::Int
-        );
-    }
-    #[test]
-    fn return_expression_implicit() {
-        // 0
-        let s = Statement::expression(
-            Expression::integer(0, Span::default()),
-            true,
-            Span::default(),
-        );
+        let (ty_info, _) = run(s).unwrap();
 
-        assert_eq!(
-            s.ty_solve(&mut Default::default())
-                .unwrap()
-                .get_ty_info()
-                .return_ty,
-            None
-        );
+        assert_eq!(ty_info.ty, Ty::Int);
+        assert_eq!(ty_info.return_ty, None);
     }
 }

@@ -4,7 +4,7 @@ mod program;
 mod statement;
 
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::core::{ctx::Symbol, parse::ast as parse_ast};
 
@@ -15,10 +15,56 @@ pub enum Ty {
     Unit,
 }
 
-#[derive(Default)]
+#[derive(Clone, Debug)]
+pub struct FunctionSignature {
+    arguments: Vec<Ty>,
+    return_ty: Ty,
+}
+
+impl<T> From<&crate::core::ast::Function<T>> for FunctionSignature {
+    fn from(function: &crate::core::ast::Function<T>) -> Self {
+        Self {
+            arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
+            return_ty: function.return_ty,
+        }
+    }
+}
+
 pub struct TyCtx {
-    symbols: HashMap<Symbol, Ty>,
-    functions: HashMap<Symbol, (Vec<Ty>, Ty)>,
+    ctx: Rc<RefCell<Ctx>>,
+    function_signatures: HashMap<Symbol, FunctionSignature>,
+}
+
+impl TyCtx {
+    pub fn new(ctx: Rc<RefCell<Ctx>>) -> Self {
+        Self {
+            ctx,
+            function_signatures: HashMap::new(),
+        }
+    }
+
+    pub fn mock() -> Self {
+        let ctx = Rc::new(RefCell::new(Ctx::default()));
+        Self::new(ctx)
+    }
+}
+
+pub struct FnCtx {
+    ty_ctx: Rc<RefCell<TyCtx>>,
+    scope: HashMap<Symbol, Ty>,
+}
+
+impl FnCtx {
+    pub fn new(ty_ctx: Rc<RefCell<TyCtx>>) -> Self {
+        Self {
+            ty_ctx,
+            scope: HashMap::new(),
+        }
+    }
+
+    pub fn mock() -> Self {
+        Self::new(Rc::new(RefCell::new(TyCtx::mock())))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -101,3 +147,5 @@ pub mod ast {
 }
 
 use ast::*;
+
+use super::ctx::Ctx;

@@ -1,19 +1,19 @@
 use super::*;
 
 impl parse_ast::Function {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Function, TyError> {
+    pub fn ty_solve(self, ctx: Rc<RefCell<TyCtx>>) -> Result<Function, TyError> {
+        // Set up a fn ctx just for this function
+        let mut ctx = FnCtx::new(ctx);
+
         // Save this function's signature
-        ctx.functions.insert(
-            self.name,
-            (
-                self.parameters.iter().map(|(_, ty)| *ty).collect(),
-                self.return_ty,
-            ),
-        );
+        ctx.ty_ctx
+            .borrow_mut()
+            .function_signatures
+            .insert(self.name, FunctionSignature::from(&self));
 
         // TODO: Need to insert parameters into scope
 
-        let body = self.body.ty_solve(ctx)?;
+        let body = self.body.ty_solve(&mut ctx)?;
 
         // If the body contains any return statements, they must match the annotated return statement
         if let Some(return_ty) = body.ty_info.return_ty {

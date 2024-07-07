@@ -1,7 +1,7 @@
 use super::*;
 
 impl parse_ast::Call {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Call, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Call, TyError> {
         // Determine the types of all the arguments
         let args = self
             .args
@@ -9,13 +9,15 @@ impl parse_ast::Call {
             .map(|arg| arg.ty_solve(ctx))
             .collect::<Result<Vec<_>, _>>()?;
 
+        let ty_ctx = ctx.ty_ctx.borrow();
+
         // Compare the arguments to the function types
-        let (function_args, function_return_ty) = ctx
-            .functions
+        let signature = ty_ctx
+            .function_signatures
             .get(&self.name)
             .ok_or(TyError::SymbolNotFound(self.name))?;
 
-        if args.len() != function_args.len() {
+        if args.len() != signature.arguments.len() {
             // TODO: Make new type error for when the function call has too many arguments
             panic!("too many arguments");
         }
@@ -23,7 +25,7 @@ impl parse_ast::Call {
         if !args
             .iter()
             .map(|arg| arg.get_ty_info().ty)
-            .zip(function_args)
+            .zip(&signature.arguments)
             .all(|(call, signature)| call == *signature)
         {
             // TODO: New type error when a parameter is the wrong type
@@ -33,7 +35,7 @@ impl parse_ast::Call {
         Ok(Call {
             ty_info: TyInfo::try_from((
                 // Function call's resulting type will be whatever the function returns
-                *function_return_ty,
+                signature.return_ty,
                 // Ensure all the return types from the arguments are correct
                 args.iter().map(|arg| arg.get_ty_info().return_ty),
             ))?,

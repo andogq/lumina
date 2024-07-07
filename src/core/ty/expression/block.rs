@@ -1,7 +1,7 @@
 use super::*;
 
 impl parse_ast::Block {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<Block, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Block, TyError> {
         let statements = self
             .statements
             .into_iter()
@@ -46,36 +46,14 @@ mod test {
         util::source::Span,
     };
 
-    #[test]
-    fn infer_block() {
-        // {
-        //     let a = 1;
-        //     1;
-        //     return 1;
-        // }
-        let b = Block::new(
-            vec![
-                Statement::_let(
-                    Symbol::try_from_usize(0).unwrap(),
-                    Expression::integer(1, Span::default()),
-                    Span::default(),
-                ),
-                Statement::expression(
-                    Expression::integer(1, Span::default()),
-                    false,
-                    Span::default(),
-                ),
-                Statement::_return(Expression::integer(1, Span::default()), Span::default()),
-            ],
-            Span::default(),
-        );
+    use super::expression::{FnCtx, TyError, TyInfo};
 
-        let b = b.ty_solve(&mut Default::default()).unwrap();
-        assert_eq!(b.ty_info.ty, Ty::Unit);
+    fn run(b: Block) -> Result<TyInfo, TyError> {
+        Ok(b.ty_solve(&mut FnCtx::mock())?.ty_info)
     }
 
     #[test]
-    fn return_block() {
+    fn ty_check_block() {
         // {
         //     let a = 1;
         //     1;
@@ -98,8 +76,10 @@ mod test {
             Span::default(),
         );
 
-        let b = b.ty_solve(&mut Default::default()).unwrap();
-        assert_eq!(b.ty_info.return_ty, Some(Ty::Int));
+        let ty_info = run(b).unwrap();
+
+        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.return_ty, Some(Ty::Int));
     }
 
     #[test]
@@ -128,7 +108,7 @@ mod test {
             Span::default(),
         );
 
-        assert!(b.ty_solve(&mut Default::default()).is_err());
+        assert!(run(b).is_err());
     }
 
     #[test]
@@ -153,40 +133,9 @@ mod test {
             Span::default(),
         );
 
-        assert_eq!(
-            b.ty_solve(&mut Default::default())
-                .unwrap()
-                .ty_info
-                .return_ty,
-            None
-        );
-    }
+        let ty_info = run(b).unwrap();
 
-    #[test]
-    fn infer_block_expression() {
-        // {
-        //     let a = 1;
-        //     1;
-        // }
-        let b = Block::new(
-            vec![
-                Statement::_let(
-                    Symbol::try_from_usize(0).unwrap(),
-                    Expression::integer(1, Span::default()),
-                    Span::default(),
-                ),
-                Statement::expression(
-                    Expression::integer(1, Span::default()),
-                    false,
-                    Span::default(),
-                ),
-            ],
-            Span::default(),
-        );
-
-        assert_eq!(
-            b.ty_solve(&mut Default::default()).unwrap().ty_info.ty,
-            Ty::Unit
-        );
+        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.return_ty, None);
     }
 }

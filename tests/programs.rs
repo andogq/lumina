@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use lumina::{
     codegen::{ir, llvm::Pass},
     core::{ctx::Ctx, lexer::Lexer, parse::parse},
@@ -97,16 +99,15 @@ fn main() -> int {
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
     let source = Source::new(source);
 
-    let program = match parse(Ctx::default(), Lexer::new(source)) {
-        Ok(program) => program,
+    let (program, ctx) = match parse(Ctx::default(), Lexer::new(source)) {
+        Ok(result) => result,
         Err(e) => {
             eprintln!("{e}");
             return;
         }
-    }
-    .0;
+    };
 
-    let program = match program.ty_solve() {
+    let program = match program.ty_solve(Rc::new(RefCell::new(ctx))) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");

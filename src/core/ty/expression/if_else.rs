@@ -1,7 +1,7 @@
 use super::*;
 
 impl parse_ast::If {
-    pub fn ty_solve(self, ctx: &mut TyCtx) -> Result<If, TyError> {
+    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<If, TyError> {
         // Make sure the condition is correctly typed
         let condition = self.condition.ty_solve(ctx)?;
         let condition_ty = condition.get_ty_info();
