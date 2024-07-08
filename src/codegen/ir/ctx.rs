@@ -1,6 +1,6 @@
 use index_vec::{define_index_type, IndexVec};
 
-use crate::core::ctx::SymbolMap;
+use crate::core::ctx::{Symbol, SymbolMap};
 
 use super::Function;
 
@@ -24,6 +24,11 @@ impl IRCtx {
     pub fn function_for_name(&mut self, name: impl AsRef<str>) -> Option<FunctionIdx> {
         let symbol = self.symbol_map.get(name)?;
 
+        self.function_for_symbol(symbol)
+    }
+
+    // WTF
+    pub fn function_for_symbol(&mut self, symbol: Symbol) -> Option<FunctionIdx> {
         self.functions
             .iter_enumerated()
             .find(|(_, f)| f.symbol == symbol)

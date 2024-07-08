@@ -7,17 +7,23 @@ use super::{repr, BasicBlock, BasicBlockIdx, FunctionIdx, IRCtx, Triple, TripleR
 pub fn lower(program: Program) -> IRCtx {
     let mut ir = IRCtx::new(program.symbols);
 
+    // Fill up the functions in the IR
+    for function in program.functions {
+        lower_function(&mut ir, function);
+    }
+
     lower_function(&mut ir, program.main);
 
     ir
 }
 
-struct FunctionLoweringCtx {
+struct FunctionLoweringCtx<'ctx> {
+    ir_ctx: &'ctx mut IRCtx,
     current_bb: BasicBlockIdx,
     function: repr::Function,
 }
 
-impl FunctionLoweringCtx {
+impl FunctionLoweringCtx<'_> {
     fn add_triple(&mut self, triple: Triple) -> TripleRef {
         TripleRef {
             basic_block: self.current_bb,
@@ -33,7 +39,7 @@ impl FunctionLoweringCtx {
 }
 
 fn lower_function(ir_ctx: &mut IRCtx, function: Function) -> FunctionIdx {
-    let mut repr_function = repr::Function::new(function.name);
+    let mut repr_function = repr::Function::new(&function);
 
     // Insert entry basic block
     assert!(
@@ -45,6 +51,7 @@ fn lower_function(ir_ctx: &mut IRCtx, function: Function) -> FunctionIdx {
     // Perform the lowering
     let repr_function = {
         let mut ctx = FunctionLoweringCtx {
+            ir_ctx,
             current_bb: entry,
             function: repr_function,
         };
@@ -158,6 +165,9 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &Expression) -> V
                 branches: vec![(Value::integer(0), otherwise_bb, otherwise_value)],
             }))
         }
-        Expression::Call(call) => todo!(),
+        Expression::Call(call) => {
+            let idx = ctx.ir_ctx.function_for_symbol(call.name).unwrap();
+            Value::Triple(ctx.add_triple(Triple::Call(idx)))
+        }
     }
 }

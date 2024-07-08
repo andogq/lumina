@@ -7,7 +7,7 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{BasicValue, FunctionValue, IntValue, PointerValue},
+    values::{AsValueRef, BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate, OptimizationLevel,
 };
 
@@ -25,14 +25,34 @@ pub struct Pass<'ctx> {
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
     basic_blocks: HashMap<(FunctionIdx, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
+    pub function_values: HashMap<FunctionIdx, FunctionValue<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
     pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: IRCtx) -> Self {
+        let module = llvm_ctx.create_module("module");
+
         Self {
+            function_values: HashMap::from_iter(ir_ctx.functions.iter_enumerated().map(
+                |(idx, function)| {
+                    (idx, {
+                        // Forward-declare all the functions
+                        // TODO: Pick appropriate return type depending on signature
+                        let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
+                        let fn_value = module.add_function(
+                            ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
+                            fn_type,
+                            None,
+                        );
+
+                        fn_value
+                    })
+                },
+            )),
             llvm_ctx,
             ir_ctx,
-            module: llvm_ctx.create_module("module"),
+            module,
+            // TODO: Should be scoped to each function
             symbols: HashMap::new(),
             basic_blocks: HashMap::new(),
         }
@@ -48,9 +68,11 @@ impl<'ctx> Pass<'ctx> {
 
         let builder = self.llvm_ctx.create_builder();
 
-        // TODO: Currently only accepts functions that return an integer
-        let fn_type = self.llvm_ctx.i64_type().fn_type(&[], false);
-        let fn_value = self.module.add_function("some function", fn_type, None);
+        let fn_value = self
+            .function_values
+            .get(&function_id)
+            .expect("function to exist")
+            .to_owned();
 
         // BUG: This won't work with multiple functions
         let entry_bb = (function_id, BasicBlockIdx::new(0));
@@ -157,7 +179,18 @@ impl<'ctx> Pass<'ctx> {
 
                     None
                 }
-                Triple::Call(_) => todo!(),
+                Triple::Call(call) => {
+                    let function = self.function_values.get(call).unwrap();
+
+                    Some(
+                        builder
+                            .build_call(function.to_owned(), &[], "call some function")
+                            .unwrap()
+                            .try_as_basic_value()
+                            .unwrap_left()
+                            .into_int_value(),
+                    )
+                }
                 Triple::Return(value) => {
                     let value = self.retrive_value(&builder, &results, value);
 

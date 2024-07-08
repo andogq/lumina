@@ -43,8 +43,17 @@ fn main() -> int {
 
     let ctx = inkwell::context::Context::create();
 
+    let main = ir_ctx.function_for_name("main").unwrap();
+    let function_ids = ir_ctx
+        .functions
+        .iter_enumerated()
+        .map(|(id, _)| id)
+        .collect::<Vec<_>>();
     let mut llvm_pass = Pass::new(&ctx, ir_ctx);
-    let main = llvm_pass.compile(main);
+    function_ids.into_iter().for_each(|function| {
+        llvm_pass.compile(function);
+    });
+    let main = *llvm_pass.function_values.get(&main).unwrap();
 
     // llvm_pass.run_passes(&[
     //     "instcombine",
