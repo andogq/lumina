@@ -1,8 +1,8 @@
 use super::*;
 
-pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
+pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseError> {
     // `fn` keyword
-    let fn_token = match ctx.lexer.next_token() {
+    let fn_token = match ctx.next_token() {
         Token::Fn(fn_token) => fn_token,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -14,7 +14,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     };
 
     // function name
-    let fn_name = match ctx.lexer.next_token() {
+    let fn_name = match ctx.next_token() {
         Token::Ident(fn_name) => fn_name,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -26,7 +26,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     };
 
     // opening paren for argument list
-    match ctx.lexer.next_token() {
+    match ctx.next_token() {
         Token::LeftParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -41,7 +41,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     let parameters = Vec::new();
 
     // closing paren for argument list
-    match ctx.lexer.next_token() {
+    match ctx.next_token() {
         Token::RightParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -53,7 +53,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     }
 
     // arrow for return type
-    match ctx.lexer.next_token() {
+    match ctx.next_token() {
         Token::ThinArrow(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -65,7 +65,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
     }
 
     // return type (can currently only be `int`)
-    let return_ty = match ctx.lexer.next_token() {
+    let return_ty = match ctx.next_token() {
         Token::Ident(ident) => match ident.literal.as_str() {
             "int" => Ty::Int,
             _ => {
@@ -85,7 +85,7 @@ pub fn parse_function(ctx: &mut ParseCtx) -> Result<Function, ParseError> {
 
     let span = fn_token.span.to(&body);
     Ok(Function::new(
-        ctx.ctx.symbols.get_or_intern(fn_name.literal),
+        ctx.intern(fn_name.literal),
         parameters,
         return_ty,
         body,

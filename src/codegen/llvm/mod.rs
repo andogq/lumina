@@ -7,7 +7,7 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    values::{AsValueRef, BasicValue, FunctionValue, IntValue, PointerValue},
+    values::{BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate, OptimizationLevel,
 };
 

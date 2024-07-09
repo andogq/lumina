@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
-    let token = ctx.lexer.integer("integer peeked")?;
+pub fn parse_integer(ctx: &mut impl ParseCtxTrait) -> Result<Integer, ParseError> {
+    let token = ctx.integer("integer peeked")?;
 
     Ok(Integer::new(
         token
@@ -17,13 +17,12 @@ pub fn parse_integer(ctx: &mut ParseCtx) -> Result<Integer, ParseError> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::core::lexer::{token::Token, Lexer};
+    use crate::core::lexer::token::Token;
 
     use rstest::rstest;
 
-    fn run(tokens: Vec<Token>) -> (ParseCtx, Result<Integer, ParseError>) {
-        let lexer = Lexer::with_tokens(tokens);
-        let mut ctx = ParseCtx::new(Ctx::default(), lexer);
+    fn run(tokens: &[Token]) -> (SimpleParseCtx, Result<Integer, ParseError>) {
+        let mut ctx = SimpleParseCtx::from(tokens);
         let integer = parse_integer(&mut ctx);
         (ctx, integer)
     }
@@ -32,13 +31,13 @@ mod test {
     #[case::single_digit(1)]
     #[case::multi_digit(123)]
     fn success(#[case] value: i64) {
-        let (_, integer) = run(vec![Token::integer(&value.to_string())]);
+        let (_, integer) = run(&[Token::integer(&value.to_string())]);
         assert_eq!(integer.unwrap().value, value);
     }
 
     #[test]
     fn fail() {
-        let (_, integer) = run(vec![Token::ident("someident")]);
+        let (_, integer) = run(&[Token::ident("someident")]);
         assert!(integer.is_err());
     }
 
@@ -46,7 +45,7 @@ mod test {
     #[case::success(Token::integer("1"))]
     #[case::fail(Token::ident("someident"))]
     fn single_token(#[case] token: Token) {
-        let (ctx, _) = run(vec![token, Token::semicolon()]);
-        assert_eq!(ctx.lexer.into_iter().count(), 1);
+        let (ctx, _) = run(&[token, Token::semicolon()]);
+        assert_eq!(ctx.tokens.len(), 1);
     }
 }

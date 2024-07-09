@@ -1,12 +1,12 @@
 use super::*;
 
-pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
+pub fn parse_statement(ctx: &mut impl ParseCtxTrait) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
-    let statement = match ctx.lexer.peek_token() {
+    let statement = match ctx.peek_token() {
         Token::Return(return_token) => {
             // Parse as return statement
-            ctx.lexer.next_token();
+            ctx.next_token();
 
             Statement::Return(ReturnStatement::new(
                 parse_expression(ctx, Precedence::Lowest)?,
@@ -15,10 +15,10 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
         }
         Token::Let(let_token) => {
             // let token
-            ctx.lexer.next_token();
+            ctx.next_token();
 
             // variable binding
-            let name = match ctx.lexer.next_token() {
+            let name = match ctx.next_token() {
                 Token::Ident(name) => name,
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -30,7 +30,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
             };
 
             // equals sign
-            match ctx.lexer.next_token() {
+            match ctx.next_token() {
                 Token::Equals(_) => (),
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -45,11 +45,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
             let value = parse_expression(ctx, Precedence::Lowest)?;
             let span = let_token.span().to(&value);
 
-            Statement::Let(LetStatement::new(
-                ctx.ctx.symbols.get_or_intern(name.literal),
-                value,
-                span,
-            ))
+            Statement::Let(LetStatement::new(ctx.intern(name.literal), value, span))
         }
         _ => {
             // Parse expression
@@ -58,7 +54,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
 
             Statement::Expression(ExpressionStatement::new(
                 expression,
-                if matches!(ctx.lexer.peek_token(), Token::Semicolon(_)) {
+                if matches!(ctx.peek_token(), Token::Semicolon(_)) {
                     false
                 } else {
                     expecting_semicolon = false;
@@ -71,7 +67,7 @@ pub fn parse_statement(ctx: &mut ParseCtx) -> Result<Statement, ParseError> {
     };
 
     if expecting_semicolon {
-        match ctx.lexer.next_token() {
+        match ctx.next_token() {
             Token::Semicolon(_) => (),
             token => {
                 return Err(ParseError::ExpectedToken {

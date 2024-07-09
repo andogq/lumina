@@ -1,8 +1,8 @@
 use super::*;
 
-pub fn parse_if(ctx: &mut ParseCtx) -> Result<If, ParseError> {
+pub fn parse_if(ctx: &mut impl ParseCtxTrait) -> Result<If, ParseError> {
     // Parse out the if keyword
-    let token = ctx.lexer.t_if("if peeked")?;
+    let token = ctx.t_if("if peeked")?;
 
     let mut span = token.span;
 
@@ -11,8 +11,8 @@ pub fn parse_if(ctx: &mut ParseCtx) -> Result<If, ParseError> {
     let success = parse_block(ctx)?;
     span = span.to(&success);
 
-    let otherwise = if matches!(ctx.lexer.peek_token(), Token::Else(_)) {
-        ctx.lexer.next_token();
+    let otherwise = if matches!(ctx.peek_token(), Token::Else(_)) {
+        ctx.next_token();
 
         let otherwise = parse_block(ctx)?;
         span = span.to(&otherwise);
@@ -30,13 +30,13 @@ mod test {
     use rstest::rstest;
 
     use super::*;
-    use crate::core::lexer::{token::Token, Lexer};
+    use crate::core::lexer::token::Token;
 
     fn build_if(
         condition: Token,
         body: Token,
         otherwise: Option<Token>,
-    ) -> (ParseCtx, Result<If, ParseError>) {
+    ) -> (SimpleParseCtx, Result<If, ParseError>) {
         // Build up the if statement
         let mut tokens = vec![
             Token::t_if(),
@@ -56,8 +56,7 @@ mod test {
             ]);
         }
 
-        let lexer = Lexer::with_tokens(tokens);
-        let mut ctx = ParseCtx::new(Ctx::default(), lexer);
+        let mut ctx = SimpleParseCtx::from(tokens.as_slice());
         let e_if = parse_if(&mut ctx);
 
         (ctx, e_if)
@@ -95,12 +94,12 @@ mod test {
     }
 
     #[rstest]
-    #[case::multiple_condition_tokens(vec![
+    #[case::multiple_condition_tokens(&[
         Token::t_if(),
         Token::integer("1"),
         Token::integer("2"),
     ])]
-    #[case::malformed_otherwise_block(vec![
+    #[case::malformed_otherwise_block(&[
         Token::t_if(),
         Token::integer("1"),
         Token::left_brace(),
@@ -112,9 +111,8 @@ mod test {
         Token::integer("3"),
         Token::right_brace(),
     ])]
-    fn fail(#[case] tokens: Vec<Token>) {
-        let lexer = Lexer::with_tokens(tokens);
-        let result = parse_if(&mut ParseCtx::new(Ctx::default(), lexer));
+    fn fail(#[case] tokens: &[Token]) {
+        let result = parse_if(&mut SimpleParseCtx::from(tokens));
 
         assert!(result.is_err());
     }

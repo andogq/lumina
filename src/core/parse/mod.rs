@@ -3,14 +3,10 @@ mod expression;
 mod function;
 mod statement;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Peekable};
 
 use crate::{
-    core::{
-        ctx::Ctx,
-        lexer::{token::*, Lexer},
-        ty::Ty,
-    },
+    core::{lexer::token::*, ty::Ty},
     util::source::*,
 };
 
@@ -26,6 +22,11 @@ pub mod ast {
 }
 
 use self::ast::*;
+
+use super::{
+    ctx::{Symbol, SymbolMap, SymbolMapTrait},
+    lexer::Lexer,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
@@ -49,28 +50,73 @@ pub enum ParseError {
     MissingReturn,
 }
 
-struct ParseCtx {
-    lexer: Lexer,
-    ctx: Ctx,
+pub trait ParseCtxTrait: TokenGenerator + SymbolMapTrait {}
+
+/// Most basic form of a ctx required for parsing
+struct SimpleParseCtx {
+    tokens: Peekable<std::vec::IntoIter<Token>>,
+    symbols: SymbolMap,
 }
 
-impl ParseCtx {
-    pub fn new(ctx: Ctx, lexer: Lexer) -> Self {
-        Self { lexer, ctx }
+impl From<&[Token]> for SimpleParseCtx {
+    fn from(tokens: &[Token]) -> Self {
+        Self {
+            tokens: tokens.to_vec().into_iter().peekable(),
+            symbols: Default::default(),
+        }
     }
 }
 
-pub fn parse(ctx: Ctx, lexer: Lexer) -> Result<(Program, Ctx), ParseError> {
-    let mut ctx = ParseCtx::new(ctx, lexer);
+impl<I, S> From<(I, S)> for SimpleParseCtx
+where
+    I: AsRef<[Token]>,
+    S: AsRef<[&'static str]>,
+{
+    fn from((tokens, symbols): (I, S)) -> Self {
+        Self {
+            tokens: tokens.as_ref().to_vec().into_iter().peekable(),
+            symbols: SymbolMap::from_iter(symbols.as_ref().iter()),
+        }
+    }
+}
+
+impl TokenGenerator for SimpleParseCtx {
+    fn next_token(&mut self) -> Token {
+        self.tokens.next().unwrap_or(Token::EOF(Default::default()))
+    }
+
+    fn peek_token(&mut self) -> Token {
+        self.tokens
+            .peek()
+            .cloned()
+            .unwrap_or(Token::EOF(Default::default()))
+    }
+}
+
+impl SymbolMapTrait for SimpleParseCtx {
+    fn intern(&mut self, s: impl AsRef<str>) -> super::ctx::Symbol {
+        self.symbols.get_or_intern(s)
+    }
+
+    fn get(&self, s: Symbol) -> String {
+        self.symbols.resolve(s).unwrap().to_string()
+    }
+
+    fn dump_symbols(&self) -> SymbolMap {
+        SymbolMapTrait::dump_symbols(&self.symbols)
+    }
+}
+
+impl ParseCtxTrait for SimpleParseCtx {}
+
+pub fn parse(ctx: &mut impl ParseCtxTrait) -> Result<Program, ParseError> {
     // WARN: wacky af
-    let main = ctx.ctx.symbols.get_or_intern_static("main");
+    let main = ctx.intern("main");
 
     // Parse each expression which should be followed by a semicolon
-    let mut functions = std::iter::from_fn(|| {
-        ctx.lexer.peek().is_some().then(|| {
-            let function = parse_function(&mut ctx)?;
-            Ok((function.name, function))
-        })
+    let mut functions = std::iter::from_fn(|| match ctx.peek_token() {
+        Token::EOF(_) => None,
+        _ => Some(parse_function(ctx).map(|function| (function.name, function))),
     })
     .collect::<Result<HashMap<_, _>, _>>()?;
 
@@ -82,12 +128,12 @@ pub fn parse(ctx: Ctx, lexer: Lexer) -> Result<(Program, Ctx), ParseError> {
         functions.into_values().collect(),
         main,
         // TODO: This should just reference the global ctx
-        ctx.ctx.symbols.clone(),
+        ctx.dump_symbols(),
         // WARN: Really should be something better
         Span::default(),
     );
 
-    Ok((program, ctx.ctx))
+    Ok(program)
 }
 
 enum BooleanToken {
@@ -95,7 +141,10 @@ enum BooleanToken {
     False(FalseToken),
 }
 
-impl Lexer {
+pub trait TokenGenerator {
+    fn peek_token(&mut self) -> Token;
+    fn next_token(&mut self) -> Token;
+
     fn integer(&mut self, reason: impl ToString) -> Result<IntegerToken, ParseError> {
         match self.next_token() {
             Token::Integer(token) => Ok(token),
@@ -140,5 +189,15 @@ impl Lexer {
                 reason: reason.to_string(),
             }),
         }
+    }
+}
+
+impl TokenGenerator for Lexer {
+    fn peek_token(&mut self) -> Token {
+        self.peek_token()
+    }
+
+    fn next_token(&mut self) -> Token {
+        self.next_token()
     }
 }

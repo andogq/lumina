@@ -32,8 +32,8 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(ctx: &mut ParseCtx) -> Result<Expression, ParseError> {
-    match ctx.lexer.peek_token() {
+fn parse_prefix(ctx: &mut impl ParseCtxTrait) -> Result<Expression, ParseError> {
+    match ctx.peek_token() {
         Token::Integer(_) => Ok(Expression::Integer(parse_integer(ctx)?)),
         Token::Ident(_) => Ok(Expression::Ident(parse_ident(ctx)?)),
         Token::True(_) => Ok(Expression::Boolean(parse_boolean(ctx)?)),
@@ -45,27 +45,27 @@ fn parse_prefix(ctx: &mut ParseCtx) -> Result<Expression, ParseError> {
 }
 
 pub fn parse_expression(
-    ctx: &mut ParseCtx,
+    ctx: &mut impl ParseCtxTrait,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
     let mut left = parse_prefix(ctx)?;
 
-    while !matches!(ctx.lexer.peek_token(), Token::EOF(_))
-        && precedence < Precedence::of(&ctx.lexer.peek_token())
+    while !matches!(ctx.peek_token(), Token::EOF(_))
+        && precedence < Precedence::of(&ctx.peek_token())
     {
-        match (ctx.lexer.peek_token(), &left) {
+        match (ctx.peek_token(), &left) {
             // Function call
             (Token::LeftParen(_), Expression::Ident(name)) => {
                 // Consume the args
                 let args = iter::from_fn(|| {
-                    match ctx.lexer.peek_token() {
+                    match ctx.peek_token() {
                         Token::RightParen(_) => None,
                         Token::LeftParen(_) | Token::Comma(_) => {
                             // Consume the opening paren or comma
-                            ctx.lexer.next_token();
+                            ctx.next_token();
 
                             // If the closing parenthesis is encountered, stop parsing arguments
-                            if matches!(ctx.lexer.peek_token(), Token::RightParen(_)) {
+                            if matches!(ctx.peek_token(), Token::RightParen(_)) {
                                 return None;
                             }
 
@@ -82,7 +82,7 @@ pub fn parse_expression(
                 .collect::<Result<Vec<_>, _>>()?;
 
                 // Consume the closing paren
-                let right_paren = match ctx.lexer.next_token() {
+                let right_paren = match ctx.next_token() {
                     Token::RightParen(token) => token,
                     token => {
                         return Err(ParseError::ExpectedToken {
@@ -99,7 +99,7 @@ pub fn parse_expression(
             // Regular infix operation
             (token, _) => {
                 if let Ok(operation) = InfixOperation::try_from(token) {
-                    let token = ctx.lexer.next_token();
+                    let token = ctx.next_token();
                     let precedence = Precedence::of(&token);
 
                     let right = parse_expression(ctx, precedence)?;
@@ -124,26 +124,16 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
-    use crate::core::lexer::Lexer;
 
     use super::*;
 
-    fn run(tokens: Vec<Token>) -> Result<Expression, ParseError> {
-        let lexer = Lexer::with_tokens(tokens);
-        parse_expression(
-            &mut ParseCtx::new(Ctx::default(), lexer),
-            Precedence::Lowest,
-        )
+    fn run(tokens: &[Token]) -> Result<Expression, ParseError> {
+        parse_expression(&mut SimpleParseCtx::from(tokens), Precedence::Lowest)
     }
 
     #[test]
     fn simple_addition() {
-        let expression = run(vec![
-            Token::integer("3"),
-            Token::plus(),
-            Token::integer("4"),
-        ])
-        .unwrap();
+        let expression = run(&[Token::integer("3"), Token::plus(), Token::integer("4")]).unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
@@ -174,7 +164,7 @@ mod test {
 
     #[test]
     fn multi_addition() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::integer("3"),
             Token::plus(),
             Token::integer("4"),
@@ -228,7 +218,7 @@ mod test {
 
     #[test]
     fn if_statement() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::t_if(),
             Token::integer("1"),
             Token::left_brace(),
@@ -279,7 +269,7 @@ mod test {
 
     #[test]
     fn integer() {
-        let expression = run(vec![Token::integer("1")]).unwrap();
+        let expression = run(&[Token::integer("1")]).unwrap();
         insta::assert_debug_snapshot!(expression, @r###"
         Integer(
             Integer {
@@ -293,7 +283,7 @@ mod test {
 
     #[test]
     fn ident() {
-        let expression = run(vec![Token::ident("someident")]).unwrap();
+        let expression = run(&[Token::ident("someident")]).unwrap();
         insta::assert_debug_snapshot!(expression, @r###"
         Ident(
             Ident {
@@ -309,7 +299,7 @@ mod test {
 
     #[test]
     fn equality() {
-        let expression = run(vec![Token::integer("1"), Token::eq(), Token::integer("1")]).unwrap();
+        let expression = run(&[Token::integer("1"), Token::eq(), Token::integer("1")]).unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
@@ -340,7 +330,7 @@ mod test {
 
     #[test]
     fn complex_equality() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::integer("1"),
             Token::eq(),
             Token::integer("1"),
@@ -394,7 +384,7 @@ mod test {
 
     #[test]
     fn function_call_no_param() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::right_paren(),
@@ -417,7 +407,7 @@ mod test {
 
     #[test]
     fn function_call_one_param_no_comma() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),
@@ -449,7 +439,7 @@ mod test {
 
     #[test]
     fn function_call_one_param_trailing_comma() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),
@@ -482,7 +472,7 @@ mod test {
 
     #[test]
     fn function_call_multi_param_no_comma() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),
@@ -532,7 +522,7 @@ mod test {
 
     #[test]
     fn function_call_multi_param_trailing_comma() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),
@@ -583,7 +573,7 @@ mod test {
 
     #[test]
     fn function_call_with_expression_param() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),
@@ -643,7 +633,7 @@ mod test {
 
     #[test]
     fn function_call_in_expression() {
-        let expression = run(vec![
+        let expression = run(&[
             Token::ident("func"),
             Token::left_paren(),
             Token::integer("1"),

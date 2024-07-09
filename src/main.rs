@@ -2,8 +2,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use lumina::{
     codegen::{ir, llvm::Pass},
-    core::{ctx::Ctx, lexer::Lexer, parse::parse},
+    core::parse::parse,
     util::source::Source,
+    ParseCtx,
 };
 
 fn main() {
@@ -18,9 +19,9 @@ fn main() -> int {
 }"#,
     );
 
-    let ctx = Ctx::default();
+    let mut ctx = ParseCtx::new(source);
 
-    let (program, ctx) = match parse(ctx, Lexer::new(source)) {
+    let program = match parse(&mut ctx) {
         Ok(output) => output,
         Err(e) => {
             eprintln!("{e}");
@@ -28,7 +29,7 @@ fn main() -> int {
         }
     };
 
-    let program = match program.ty_solve(Rc::new(RefCell::new(ctx))) {
+    let program = match program.ty_solve(Rc::new(RefCell::new(ctx.into()))) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");

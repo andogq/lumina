@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
-    let open_brace = match ctx.lexer.next_token() {
+pub fn parse_block(ctx: &mut impl ParseCtxTrait) -> Result<Block, ParseError> {
+    let open_brace = match ctx.next_token() {
         Token::LeftBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -13,7 +13,7 @@ pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
     };
 
     let statements = std::iter::from_fn(|| {
-        if !matches!(ctx.lexer.peek_token(), Token::RightBrace(_)) {
+        if !matches!(ctx.peek_token(), Token::RightBrace(_)) {
             Some(parse_statement(ctx))
         } else {
             None
@@ -22,7 +22,7 @@ pub fn parse_block(ctx: &mut ParseCtx) -> Result<Block, ParseError> {
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let close_brace = match ctx.lexer.next_token() {
+    let close_brace = match ctx.next_token() {
         Token::RightBrace(ident) => ident,
         token => {
             return Err(ParseError::ExpectedToken {

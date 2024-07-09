@@ -97,9 +97,13 @@ fn main() -> int {
 }"#
 )]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
+    use lumina::ParseCtx;
+
     let source = Source::new(source);
 
-    let (program, ctx) = match parse(Ctx::default(), Lexer::new(source)) {
+    let mut ctx = ParseCtx::new(source);
+
+    let program = match parse(&mut ctx) {
         Ok(result) => result,
         Err(e) => {
             eprintln!("{e}");
@@ -107,7 +111,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let program = match program.ty_solve(Rc::new(RefCell::new(ctx))) {
+    let program = match program.ty_solve(Rc::new(RefCell::new(ctx.into()))) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");

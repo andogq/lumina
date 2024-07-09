@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean, ParseError> {
-    let token = ctx.lexer.boolean("boolean peeked")?;
+pub fn parse_boolean(ctx: &mut impl ParseCtxTrait) -> Result<Boolean, ParseError> {
+    let token = ctx.boolean("boolean peeked")?;
 
     let (span, value) = match token {
         BooleanToken::True(token) => (token.span, true),
@@ -15,7 +15,7 @@ pub fn parse_boolean(ctx: &mut ParseCtx) -> Result<Boolean, ParseError> {
 mod test {
     use rstest::rstest;
 
-    use crate::core::lexer::{token::Token, Lexer};
+    use crate::core::lexer::token::Token;
 
     use super::*;
 
@@ -23,20 +23,14 @@ mod test {
     #[case::t_true(Token::t_true(), true)]
     #[case::t_false(Token::t_false(), false)]
     fn success(#[case] token: Token, #[case] value: bool) {
-        use crate::core::lexer::Lexer;
-
-        let mut ctx = ParseCtx::new(Ctx::default(), Lexer::with_tokens(vec![token]));
-
+        let mut ctx = SimpleParseCtx::from([token].as_slice());
         let boolean = parse_boolean(&mut ctx).unwrap();
         assert_eq!(boolean.value, value);
     }
 
     #[test]
     fn fail() {
-        let mut ctx = ParseCtx::new(
-            Ctx::default(),
-            Lexer::with_tokens(vec![Token::ident("someident")]),
-        );
+        let mut ctx = SimpleParseCtx::from([Token::ident("someident")].as_slice());
         assert!(parse_boolean(&mut ctx).is_err());
     }
 
@@ -44,12 +38,9 @@ mod test {
     #[case::success(Token::t_true())]
     #[case::fail(Token::ident("someident"))]
     fn single_token(#[case] token: Token) {
-        let mut ctx = ParseCtx::new(
-            Ctx::default(),
-            Lexer::with_tokens(vec![token, Token::semicolon()]),
-        );
+        let mut ctx = SimpleParseCtx::from([token, Token::semicolon()].as_slice());
         let _ = parse_boolean(&mut ctx);
 
-        assert_eq!(ctx.lexer.into_iter().count(), 1);
+        assert_eq!(ctx.tokens.len(), 1);
     }
 }
