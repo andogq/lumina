@@ -1,10 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use lumina::{
-    codegen::{ir, llvm::Pass},
-    core::{ctx::Ctx, lexer::Lexer, parse::parse},
-    util::source::Source,
-};
+use lumina::{stage::lower_ir, util::source::Source};
 use rstest::rstest;
 
 #[rstest]
@@ -97,7 +93,10 @@ fn main() -> int {
 }"#
 )]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
-    use lumina::ParseCtx;
+    use lumina::{
+        stage::{codegen::llvm::Pass, parse::parse},
+        ParseCtx,
+    };
 
     let source = Source::new(source);
 
@@ -119,7 +118,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let mut ir_ctx = ir::lower(program);
+    let mut ir_ctx = lower_ir::lower(program);
     let main = ir_ctx
         .function_for_name("main")
         .expect("main function to exist");

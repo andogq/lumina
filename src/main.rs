@@ -1,8 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use lumina::{
-    codegen::{ir, llvm::Pass},
-    core::parse::parse,
+    stage::{codegen::llvm::Pass, lower_ir as ir, parse::parse},
     util::source::Source,
     ParseCtx,
 };

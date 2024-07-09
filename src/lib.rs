@@ -1,13 +1,15 @@
-use core::{
-    ctx::{Ctx, SymbolMap, SymbolMapTrait},
-    lexer::Lexer,
+use core::ctx::{Ctx, SymbolMap, SymbolMapTrait};
+
+use repr::token::Token;
+use stage::{
+    lex::Lexer,
     parse::{ParseCtxTrait, TokenGenerator},
 };
-
 use util::source::Source;
 
-pub mod codegen;
 pub mod core;
+pub mod repr;
+pub mod stage;
 pub mod util;
 
 // TODO: Move this to a better place
@@ -40,11 +42,11 @@ impl SymbolMapTrait for ParseCtx {
 }
 
 impl TokenGenerator for ParseCtx {
-    fn peek_token(&mut self) -> core::lexer::token::Token {
+    fn peek_token(&mut self) -> Token {
         TokenGenerator::peek_token(&mut self.lexer)
     }
 
-    fn next_token(&mut self) -> core::lexer::token::Token {
+    fn next_token(&mut self) -> Token {
         TokenGenerator::next_token(&mut self.lexer)
     }
 }
