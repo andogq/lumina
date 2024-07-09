@@ -1,4 +1,4 @@
-use crate::{ast_node, core::ctx::SymbolMap};
+use crate::{ast_node, util::symbol_map::SymbolMap};
 
 use super::*;
 

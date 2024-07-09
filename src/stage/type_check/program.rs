@@ -1,13 +1,13 @@
 use super::*;
 
 impl parse_ast::Program {
-    pub fn ty_solve(self, ctx: Rc<RefCell<Ctx>>) -> Result<Program, TyError> {
+    pub fn ty_solve(self) -> Result<Program, TyError> {
         // Main function must return int
         if self.main.return_ty != Ty::Int {
             return Err(TyError::Mismatch(Ty::Int, self.main.return_ty));
         }
 
-        let mut ctx = TyCtx::new(ctx);
+        let mut ctx = TyCtx::default();
 
         // Pre-register all functions
         ctx.function_signatures.extend(

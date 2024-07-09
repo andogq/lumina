@@ -6,9 +6,8 @@ mod statement;
 use itertools::Itertools;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::core::ctx::Ctx;
 use crate::repr::ty::Ty;
-use crate::{core::ctx::Symbol, repr::ast::untyped as parse_ast};
+use crate::{ctx::Symbol, repr::ast::untyped as parse_ast};
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
@@ -25,22 +24,14 @@ impl<T> From<&crate::repr::ast::base::Function<T>> for FunctionSignature {
     }
 }
 
+#[derive(Default)]
 pub struct TyCtx {
-    ctx: Rc<RefCell<Ctx>>,
     function_signatures: HashMap<Symbol, FunctionSignature>,
 }
 
 impl TyCtx {
-    pub fn new(ctx: Rc<RefCell<Ctx>>) -> Self {
-        Self {
-            ctx,
-            function_signatures: HashMap::new(),
-        }
-    }
-
     pub fn mock() -> Self {
-        let ctx = Rc::new(RefCell::new(Ctx::default()));
-        Self::new(ctx)
+        Self::default()
     }
 }
 

@@ -30,45 +30,49 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(ctx: &mut impl ParseCtxTrait) -> Result<Expression, ParseError> {
-    match ctx.peek_token() {
-        Token::Integer(_) => Ok(Expression::Integer(parse_integer(ctx)?)),
-        Token::Ident(_) => Ok(Expression::Ident(parse_ident(ctx)?)),
-        Token::True(_) => Ok(Expression::Boolean(parse_boolean(ctx)?)),
-        Token::False(_) => Ok(Expression::Boolean(parse_boolean(ctx)?)),
-        Token::LeftBrace(_) => Ok(Expression::Block(parse_block(ctx)?)),
-        Token::If(_) => Ok(Expression::If(parse_if(ctx)?)),
+fn parse_prefix(
+    ctx: &mut impl SymbolMapTrait,
+    tokens: &mut impl TokenGenerator,
+) -> Result<Expression, ParseError> {
+    match tokens.peek_token() {
+        Token::Integer(_) => Ok(Expression::Integer(parse_integer(ctx, tokens)?)),
+        Token::Ident(_) => Ok(Expression::Ident(parse_ident(ctx, tokens)?)),
+        Token::True(_) => Ok(Expression::Boolean(parse_boolean(ctx, tokens)?)),
+        Token::False(_) => Ok(Expression::Boolean(parse_boolean(ctx, tokens)?)),
+        Token::LeftBrace(_) => Ok(Expression::Block(parse_block(ctx, tokens)?)),
+        Token::If(_) => Ok(Expression::If(parse_if(ctx, tokens)?)),
         token => Err(ParseError::UnexpectedToken(token)),
     }
 }
 
 pub fn parse_expression(
-    ctx: &mut impl ParseCtxTrait,
+    ctx: &mut impl SymbolMapTrait,
+    tokens: &mut impl TokenGenerator,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
-    let mut left = parse_prefix(ctx)?;
+    let mut left = parse_prefix(ctx, tokens)?;
 
-    while !matches!(ctx.peek_token(), Token::EOF(_))
-        && precedence < Precedence::of(&ctx.peek_token())
+    while !matches!(tokens.peek_token(), Token::EOF(_))
+        && precedence < Precedence::of(&tokens.peek_token())
     {
-        match (ctx.peek_token(), &left) {
+        match (tokens.peek_token(), &left) {
             // Function call
             (Token::LeftParen(_), Expression::Ident(name)) => {
                 // Consume the args
                 let args = iter::from_fn(|| {
-                    match ctx.peek_token() {
+                    match tokens.peek_token() {
                         Token::RightParen(_) => None,
                         Token::LeftParen(_) | Token::Comma(_) => {
                             // Consume the opening paren or comma
-                            ctx.next_token();
+                            tokens.next_token();
 
                             // If the closing parenthesis is encountered, stop parsing arguments
-                            if matches!(ctx.peek_token(), Token::RightParen(_)) {
+                            if matches!(tokens.peek_token(), Token::RightParen(_)) {
                                 return None;
                             }
 
                             // Parse the next argument
-                            Some(parse_expression(ctx, Precedence::Lowest))
+                            Some(parse_expression(ctx, tokens, Precedence::Lowest))
                         }
                         token => Some(Err(ParseError::ExpectedToken {
                             expected: Box::new(Token::comma()),
@@ -80,7 +84,7 @@ pub fn parse_expression(
                 .collect::<Result<Vec<_>, _>>()?;
 
                 // Consume the closing paren
-                let right_paren = match ctx.next_token() {
+                let right_paren = match tokens.next_token() {
                     Token::RightParen(token) => token,
                     token => {
                         return Err(ParseError::ExpectedToken {
@@ -97,10 +101,10 @@ pub fn parse_expression(
             // Regular infix operation
             (token, _) => {
                 if let Ok(operation) = InfixOperation::try_from(token) {
-                    let token = ctx.next_token();
+                    let token = tokens.next_token();
                     let precedence = Precedence::of(&token);
 
-                    let right = parse_expression(ctx, precedence)?;
+                    let right = parse_expression(ctx, tokens, precedence)?;
 
                     let span = token.span().to(&right);
                     left = Expression::Infix(Infix::new(
@@ -123,10 +127,16 @@ pub fn parse_expression(
 #[cfg(test)]
 mod test {
 
+    use crate::util::symbol_map::SymbolMap;
+
     use super::*;
 
     fn run(tokens: &[Token]) -> Result<Expression, ParseError> {
-        parse_expression(&mut SimpleParseCtx::from(tokens), Precedence::Lowest)
+        parse_expression(
+            &mut SymbolMap::default(),
+            &mut tokens.iter().cloned().peekable(),
+            Precedence::Lowest,
+        )
     }
 
     #[test]

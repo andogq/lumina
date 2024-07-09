@@ -5,6 +5,8 @@ use std::{
 
 use crate::{repr::token::*, util::source::Source};
 
+use super::parse::TokenGenerator;
+
 pub enum TokenIter {
     Source(Source),
     Vec(std::vec::IntoIter<Token>),
@@ -159,6 +161,16 @@ impl Deref for Lexer {
 impl DerefMut for Lexer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl TokenGenerator for Lexer {
+    fn peek_token(&mut self) -> Token {
+        self.peek_token()
+    }
+
+    fn next_token(&mut self) -> Token {
+        self.next_token()
     }
 }
 

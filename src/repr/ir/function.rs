@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use index_vec::IndexVec;
 
-use crate::{core::ctx::Symbol, repr::ast::typed as ast, stage::type_check::FunctionSignature};
+use crate::{ctx::Symbol, repr::ast::typed as ast, stage::type_check::FunctionSignature};
 
 use super::BasicBlock;
 

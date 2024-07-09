@@ -2,9 +2,12 @@ use crate::repr::ty::Ty;
 
 use super::*;
 
-pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseError> {
+pub fn parse_function(
+    ctx: &mut impl SymbolMapTrait,
+    tokens: &mut impl TokenGenerator,
+) -> Result<Function, ParseError> {
     // `fn` keyword
-    let fn_token = match ctx.next_token() {
+    let fn_token = match tokens.next_token() {
         Token::Fn(fn_token) => fn_token,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -16,7 +19,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
     };
 
     // function name
-    let fn_name = match ctx.next_token() {
+    let fn_name = match tokens.next_token() {
         Token::Ident(fn_name) => fn_name,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -28,7 +31,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
     };
 
     // opening paren for argument list
-    match ctx.next_token() {
+    match tokens.next_token() {
         Token::LeftParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -43,7 +46,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
     let parameters = Vec::new();
 
     // closing paren for argument list
-    match ctx.next_token() {
+    match tokens.next_token() {
         Token::RightParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -55,7 +58,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
     }
 
     // arrow for return type
-    match ctx.next_token() {
+    match tokens.next_token() {
         Token::ThinArrow(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -67,7 +70,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
     }
 
     // return type (can currently only be `int`)
-    let return_ty = match ctx.next_token() {
+    let return_ty = match tokens.next_token() {
         Token::Ident(ident) => match ident.literal.as_str() {
             "int" => Ty::Int,
             _ => {
@@ -83,7 +86,7 @@ pub fn parse_function(ctx: &mut impl ParseCtxTrait) -> Result<Function, ParseErr
         }
     };
 
-    let body = parse_block(ctx)?;
+    let body = parse_block(ctx, tokens)?;
 
     let span = fn_token.span.to(&body);
     Ok(Function::new(

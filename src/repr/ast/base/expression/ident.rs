@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use crate::{ast_node, core::ctx::Symbol};
+use crate::{ast_node, ctx::Symbol};
 
 ast_node! {
     struct Ident<TyInfo> {

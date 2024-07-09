@@ -1,20 +1,23 @@
 use super::*;
 
-pub fn parse_if(ctx: &mut impl ParseCtxTrait) -> Result<If, ParseError> {
+pub fn parse_if(
+    ctx: &mut impl SymbolMapTrait,
+    tokens: &mut impl TokenGenerator,
+) -> Result<If, ParseError> {
     // Parse out the if keyword
-    let token = ctx.t_if("if peeked")?;
+    let token = tokens.t_if("if peeked")?;
 
     let mut span = token.span;
 
-    let condition = parse_expression(ctx, Precedence::Lowest)?;
+    let condition = parse_expression(ctx, tokens, Precedence::Lowest)?;
 
-    let success = parse_block(ctx)?;
+    let success = parse_block(ctx, tokens)?;
     span = span.to(&success);
 
-    let otherwise = if matches!(ctx.peek_token(), Token::Else(_)) {
-        ctx.next_token();
+    let otherwise = if matches!(tokens.peek_token(), Token::Else(_)) {
+        tokens.next_token();
 
-        let otherwise = parse_block(ctx)?;
+        let otherwise = parse_block(ctx, tokens)?;
         span = span.to(&otherwise);
 
         Some(otherwise)
@@ -29,13 +32,15 @@ pub fn parse_if(ctx: &mut impl ParseCtxTrait) -> Result<If, ParseError> {
 mod test {
     use rstest::rstest;
 
+    use crate::util::symbol_map::SymbolMap;
+
     use super::*;
 
     fn build_if(
         condition: Token,
         body: Token,
         otherwise: Option<Token>,
-    ) -> (SimpleParseCtx, Result<If, ParseError>) {
+    ) -> (SymbolMap, Result<If, ParseError>) {
         // Build up the if statement
         let mut tokens = vec![
             Token::t_if(),
@@ -55,8 +60,8 @@ mod test {
             ]);
         }
 
-        let mut ctx = SimpleParseCtx::from(tokens.as_slice());
-        let e_if = parse_if(&mut ctx);
+        let mut ctx = SymbolMap::default();
+        let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable());
 
         (ctx, e_if)
     }
@@ -111,7 +116,10 @@ mod test {
         Token::right_brace(),
     ])]
     fn fail(#[case] tokens: &[Token]) {
-        let result = parse_if(&mut SimpleParseCtx::from(tokens));
+        let result = parse_if(
+            &mut SymbolMap::default(),
+            &mut tokens.iter().cloned().peekable(),
+        );
 
         assert!(result.is_err());
     }

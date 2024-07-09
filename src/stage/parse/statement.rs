@@ -1,24 +1,27 @@
 use super::*;
 
-pub fn parse_statement(ctx: &mut impl ParseCtxTrait) -> Result<Statement, ParseError> {
+pub fn parse_statement(
+    ctx: &mut impl SymbolMapTrait,
+    tokens: &mut impl TokenGenerator,
+) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
-    let statement = match ctx.peek_token() {
+    let statement = match tokens.peek_token() {
         Token::Return(return_token) => {
             // Parse as return statement
-            ctx.next_token();
+            tokens.next_token();
 
             Statement::Return(ReturnStatement::new(
-                parse_expression(ctx, Precedence::Lowest)?,
+                parse_expression(ctx, tokens, Precedence::Lowest)?,
                 return_token.span,
             ))
         }
         Token::Let(let_token) => {
             // let token
-            ctx.next_token();
+            tokens.next_token();
 
             // variable binding
-            let name = match ctx.next_token() {
+            let name = match tokens.next_token() {
                 Token::Ident(name) => name,
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -30,7 +33,7 @@ pub fn parse_statement(ctx: &mut impl ParseCtxTrait) -> Result<Statement, ParseE
             };
 
             // equals sign
-            match ctx.next_token() {
+            match tokens.next_token() {
                 Token::Equals(_) => (),
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -42,19 +45,19 @@ pub fn parse_statement(ctx: &mut impl ParseCtxTrait) -> Result<Statement, ParseE
             };
 
             // value
-            let value = parse_expression(ctx, Precedence::Lowest)?;
+            let value = parse_expression(ctx, tokens, Precedence::Lowest)?;
             let span = let_token.span().to(&value);
 
             Statement::Let(LetStatement::new(ctx.intern(name.literal), value, span))
         }
         _ => {
             // Parse expression
-            let expression = parse_expression(ctx, Precedence::Lowest)?;
+            let expression = parse_expression(ctx, tokens, Precedence::Lowest)?;
             let span = expression.span().clone();
 
             Statement::Expression(ExpressionStatement::new(
                 expression,
-                if matches!(ctx.peek_token(), Token::Semicolon(_)) {
+                if matches!(tokens.peek_token(), Token::Semicolon(_)) {
                     false
                 } else {
                     expecting_semicolon = false;
@@ -67,7 +70,7 @@ pub fn parse_statement(ctx: &mut impl ParseCtxTrait) -> Result<Statement, ParseE
     };
 
     if expecting_semicolon {
-        match ctx.next_token() {
+        match tokens.next_token() {
             Token::Semicolon(_) => (),
             token => {
                 return Err(ParseError::ExpectedToken {

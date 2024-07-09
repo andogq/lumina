@@ -266,3 +266,9 @@ impl Token {
         Self::Else(Default::default())
     }
 }
+
+/// Additional 'helper' token that may be either a true or false token.
+pub enum BooleanToken {
+    True(TrueToken),
+    False(FalseToken),
+}

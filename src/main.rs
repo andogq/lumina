@@ -1,9 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
-
 use lumina::{
-    stage::{codegen::llvm::Pass, lower_ir as ir, parse::parse},
-    util::source::Source,
-    ParseCtx,
+    stage::{codegen::llvm::Pass, lex::Lexer, lower_ir as ir, parse::parse},
+    util::{source::Source, test::ctx::TestCtx},
 };
 
 fn main() {
@@ -18,9 +15,9 @@ fn main() -> int {
 }"#,
     );
 
-    let mut ctx = ParseCtx::new(source);
+    let mut ctx = TestCtx::default();
 
-    let program = match parse(&mut ctx) {
+    let program = match parse(&mut ctx, &mut Lexer::new(source)) {
         Ok(output) => output,
         Err(e) => {
             eprintln!("{e}");
@@ -28,7 +25,7 @@ fn main() -> int {
         }
     };
 
-    let program = match program.ty_solve(Rc::new(RefCell::new(ctx.into()))) {
+    let program = match program.ty_solve() {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");
@@ -37,7 +34,7 @@ fn main() -> int {
     };
 
     let mut ir_ctx = ir::lower(program);
-    let main = ir_ctx
+    let _main = ir_ctx
         .function_for_name("main")
         .expect("main function to exist");
 

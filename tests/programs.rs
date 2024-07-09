@@ -1,6 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
-
-use lumina::{stage::lower_ir, util::source::Source};
+use lumina::{
+    stage::{lex::Lexer, lower_ir},
+    util::{source::Source, test::ctx::TestCtx},
+};
 use rstest::rstest;
 
 #[rstest]
@@ -93,16 +94,13 @@ fn main() -> int {
 }"#
 )]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
-    use lumina::{
-        stage::{codegen::llvm::Pass, parse::parse},
-        ParseCtx,
-    };
+    use lumina::stage::{codegen::llvm::Pass, parse::parse};
 
     let source = Source::new(source);
 
-    let mut ctx = ParseCtx::new(source);
+    let mut ctx = TestCtx::default();
 
-    let program = match parse(&mut ctx) {
+    let program = match parse(&mut ctx, &mut Lexer::new(source)) {
         Ok(result) => result,
         Err(e) => {
             eprintln!("{e}");
@@ -110,7 +108,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let program = match program.ty_solve(Rc::new(RefCell::new(ctx.into()))) {
+    let program = match program.ty_solve() {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");

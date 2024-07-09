@@ -16,7 +16,7 @@ pub use integer::*;
 
 use crate::{
     ast_node,
-    core::ctx::Symbol,
+    ctx::Symbol,
     util::source::{Span, Spanned},
 };
 

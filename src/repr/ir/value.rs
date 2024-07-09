@@ -1,4 +1,4 @@
-use crate::core::ctx::Symbol;
+use crate::ctx::Symbol;
 
 use super::TripleRef;
 

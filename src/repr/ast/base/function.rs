@@ -1,4 +1,4 @@
-use crate::{ast_node, core::ctx::Symbol, repr::ty::Ty};
+use crate::{ast_node, ctx::Symbol, repr::ty::Ty};
 
 use super::*;
 

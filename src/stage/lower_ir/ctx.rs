@@ -1,9 +1,6 @@
 use index_vec::{define_index_type, IndexVec};
 
-use crate::{
-    core::ctx::{Symbol, SymbolMap},
-    repr::ir::Function,
-};
+use crate::{ctx::Symbol, repr::ir::Function, util::symbol_map::SymbolMap};
 
 define_index_type! {pub struct FunctionIdx = usize;}
 

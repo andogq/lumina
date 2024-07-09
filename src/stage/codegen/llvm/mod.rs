@@ -12,7 +12,7 @@ use inkwell::{
 };
 
 use crate::{
-    core::ctx::Symbol,
+    ctx::Symbol,
     repr::ir::{BinaryOp, Triple, UnaryOp, Value},
     stage::lower_ir::{FunctionIdx, IRCtx},
 };
