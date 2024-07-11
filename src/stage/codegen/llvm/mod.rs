@@ -41,7 +41,9 @@ impl<'ctx> Pass<'ctx> {
                         // TODO: Pick appropriate return type depending on signature
                         let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
                         let fn_value = module.add_function(
-                            ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
+                            // TODO: Determine function name from identifier
+                            // ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
+                            "my function",
                             fn_type,
                             None,
                         );

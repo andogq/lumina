@@ -39,6 +39,7 @@ impl parse_ast::Call {
                 // Ensure all the return types from the arguments are correct
                 args.iter().map(|arg| arg.get_ty_info().return_ty),
             ))?,
+            // TODO: Resolve a symbol into a function
             name: self.name,
             args,
             span: self.span,

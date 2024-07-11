@@ -2,6 +2,9 @@ use super::*;
 
 impl parse_ast::Function {
     pub fn ty_solve(self, ctx: Rc<RefCell<TyCtx>>) -> Result<Function, TyError> {
+        // TODO: Register this symbol to get a function identifier for it
+        let identifier = todo!();
+
         // Set up a fn ctx just for this function
         let mut ctx = FnCtx::new(ctx);
 
@@ -22,7 +25,7 @@ impl parse_ast::Function {
         }
 
         Ok(Function {
-            name: self.name,
+            name: identifier,
             parameters: self.parameters,
             return_ty: self.return_ty,
             body,

@@ -23,25 +23,25 @@ use crate::{
 use super::Statement;
 
 ast_node!(
-    enum Expression<TyInfo> {
-        Infix(Infix<TyInfo>),
+    enum Expression<TyInfo, FnIdentifier> {
+        Infix(Infix<TyInfo, FnIdentifier>),
         Integer(Integer<TyInfo>),
         Boolean(Boolean<TyInfo>),
         Ident(Ident<TyInfo>),
-        Block(Block<TyInfo>),
-        If(If<TyInfo>),
-        Call(Call<TyInfo>),
+        Block(Block<TyInfo, FnIdentifier>),
+        If(If<TyInfo, FnIdentifier>),
+        Call(Call<TyInfo, FnIdentifier>),
     }
 );
 
-impl<TyInfo: Default> Expression<TyInfo> {
+impl<TyInfo: Default, FnIdentifier> Expression<TyInfo, FnIdentifier> {
     pub fn infix(
-        left: Expression<TyInfo>,
+        left: Expression<TyInfo, FnIdentifier>,
         operation: InfixOperation,
-        right: Expression<TyInfo>,
+        right: Expression<TyInfo, FnIdentifier>,
     ) -> Self {
         let span = Spanned::span(&left).to(&right);
-        Self::Infix(Infix::<TyInfo>::new(
+        Self::Infix(Infix::<TyInfo, FnIdentifier>::new(
             Box::new(left),
             operation,
             Box::new(right),
@@ -61,17 +61,17 @@ impl<TyInfo: Default> Expression<TyInfo> {
         Self::Ident(Ident::<TyInfo>::new(name, span))
     }
 
-    pub fn block(statements: Vec<Statement<TyInfo>>, span: Span) -> Self {
-        Self::Block(Block::<TyInfo>::new(statements, span))
+    pub fn block(statements: Vec<Statement<TyInfo, FnIdentifier>>, span: Span) -> Self {
+        Self::Block(Block::<TyInfo, FnIdentifier>::new(statements, span))
     }
 
     pub fn _if(
-        condition: Expression<TyInfo>,
-        success: Block<TyInfo>,
-        otherwise: Option<Block<TyInfo>>,
+        condition: Expression<TyInfo, FnIdentifier>,
+        success: Block<TyInfo, FnIdentifier>,
+        otherwise: Option<Block<TyInfo, FnIdentifier>>,
         span: Span,
     ) -> Self {
-        Self::If(If::<TyInfo>::new(
+        Self::If(If::<TyInfo, FnIdentifier>::new(
             Box::new(condition),
             success,
             otherwise,
@@ -79,7 +79,11 @@ impl<TyInfo: Default> Expression<TyInfo> {
         ))
     }
 
-    pub fn call(name: Symbol, args: Vec<Expression<TyInfo>>, span: Span) -> Self {
-        Self::Call(Call::new(name, args, span))
+    pub fn call(
+        identifier: FnIdentifier,
+        args: Vec<Expression<TyInfo, FnIdentifier>>,
+        span: Span,
+    ) -> Self {
+        Self::Call(Call::new(identifier, args, span))
     }
 }

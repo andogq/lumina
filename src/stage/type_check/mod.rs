@@ -7,7 +7,10 @@ use itertools::Itertools;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::repr::ty::Ty;
-use crate::{ctx::Symbol, repr::ast::untyped as parse_ast};
+use crate::{
+    ctx::Symbol,
+    repr::ast::{base as base_ast, untyped as parse_ast},
+};
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
@@ -15,8 +18,8 @@ pub struct FunctionSignature {
     return_ty: Ty,
 }
 
-impl<T> From<&crate::repr::ast::base::Function<T>> for FunctionSignature {
-    fn from(function: &crate::repr::ast::base::Function<T>) -> Self {
+impl<TyInfo, FnIdentifier> From<&base_ast::Function<TyInfo, FnIdentifier>> for FunctionSignature {
+    fn from(function: &base_ast::Function<TyInfo, FnIdentifier>) -> Self {
         Self {
             arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
             return_ty: function.return_ty,

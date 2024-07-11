@@ -164,7 +164,7 @@ fn lower_expression(ctx: &mut FunctionLoweringCtx, expression: &ast::Expression)
             }))
         }
         ast::Expression::Call(call) => {
-            let idx = ctx.ir_ctx.function_for_symbol(call.name).unwrap();
+            let idx = call.name;
             Value::Triple(ctx.add_triple(Triple::Call(idx)))
         }
     }

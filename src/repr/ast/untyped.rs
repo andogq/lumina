@@ -1,3 +1,6 @@
-use crate::{generate_ast, repr::ty::Ty};
+use crate::{ctx::Symbol, generate_ast, repr::ty::Ty};
 
-generate_ast!(Option<Ty>);
+generate_ast! {
+    TyInfo: Option<Ty>,
+    FnIdentifier: Symbol
+}

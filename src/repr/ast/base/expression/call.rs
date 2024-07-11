@@ -1,10 +1,10 @@
-use crate::{ast_node, ctx::Symbol};
+use crate::ast_node;
 
 use super::*;
 
 ast_node! {
-    typed struct Call<TyInfo> {
-        name: Symbol,
-        args: Vec<Expression<TyInfo>>,
+    typed struct Call<TyInfo, FnIdentifier> {
+        name: FnIdentifier,
+        args: Vec<Expression<TyInfo, FnIdentifier>>,
     }
 }
