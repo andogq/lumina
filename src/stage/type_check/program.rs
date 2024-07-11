@@ -34,12 +34,6 @@ impl parse_ast::Program {
 
             // TODO: This should probably be migrated into something
             symbols: self.symbols,
-
-            // WARN: Program should not have type
-            ty_info: TyInfo {
-                ty: Ty::Unit,
-                return_ty: Some(Ty::Unit),
-            },
         })
     }
 }

@@ -25,20 +25,20 @@ impl<TyInfo: Default> Statement<TyInfo> {
 }
 
 ast_node! {
-    struct ReturnStatement<TyInfo> {
+    typed struct ReturnStatement<TyInfo> {
         value: Expression<TyInfo>,
     }
 }
 
 ast_node! {
-    struct LetStatement<TyInfo> {
+    typed struct LetStatement<TyInfo> {
         name: Symbol,
         value: Expression<TyInfo>,
     }
 }
 
 ast_node! {
-    struct ExpressionStatement<TyInfo> {
+    typed struct ExpressionStatement<TyInfo> {
         expression: Expression<TyInfo>,
         implicit_return: bool,
     }

@@ -2,7 +2,7 @@ use super::*;
 use crate::ast_node;
 
 ast_node! {
-    struct Block<TyInfo> {
+    typed struct Block<TyInfo> {
         statements: Vec<Statement<TyInfo>>,
     }
 }

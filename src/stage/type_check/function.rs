@@ -27,11 +27,6 @@ impl parse_ast::Function {
             return_ty: self.return_ty,
             body,
             span: self.span,
-            // WARN: Function should not have a type
-            ty_info: TyInfo {
-                ty: Ty::Unit,
-                return_ty: None,
-            },
         })
     }
 }

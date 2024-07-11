@@ -3,7 +3,7 @@ use std::hash::Hash;
 use crate::{ast_node, ctx::Symbol};
 
 ast_node! {
-    struct Ident<TyInfo> {
+    typed struct Ident<TyInfo> {
         name: Symbol,
     }
 }

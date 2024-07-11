@@ -1,12 +1,26 @@
 #[macro_export]
 macro_rules! ast_node {
-    (struct $struct_name:ident<$ty_info:ident> {  $($name:ident: $ty:ty,)* }) => {
+    // Common components for all variants of an AST node
+    (common struct $struct_name:ident<$ty_info:ident> {  $($name:ident: $ty:ty,)* }) => {
         #[derive(Debug, Clone)]
         pub struct $struct_name<$ty_info> {
             pub span: $crate::util::source::Span,
-            pub ty_info: $ty_info,
             $(pub $name: $ty,)*
         }
+
+        impl<$ty_info> $crate::util::source::Spanned for $struct_name<$ty_info> {
+            fn span(&self) -> &$crate::util::source::Span {
+                &self.span
+            }
+        }
+    };
+
+    // AST node that is typed
+    (typed struct $struct_name:ident<$ty_info:ident> { $($name:ident: $ty:ty,)* }) => {
+        ast_node!(common struct $struct_name<$ty_info> {
+            $($name: $ty,)*
+            ty_info: $ty_info,
+        });
 
         impl<$ty_info: Default> $struct_name<$ty_info> {
             pub fn new($($name: $ty,)* span: $crate::util::source::Span) -> Self {
@@ -17,14 +31,25 @@ macro_rules! ast_node {
                 }
             }
         }
+    };
 
-        impl<$ty_info> $crate::util::source::Spanned for $struct_name<$ty_info> {
-            fn span(&self) -> &$crate::util::source::Span {
-                &self.span
+    // AST node that contains no type information
+    (struct $struct_name:ident<$ty_info:ident> {  $($name:ident: $ty:ty,)* }) => {
+        ast_node!(common struct $struct_name<$ty_info> {
+            $($name: $ty,)*
+        });
+
+        impl<$ty_info> $struct_name<$ty_info> {
+            pub fn new($($name: $ty,)* span: $crate::util::source::Span) -> Self {
+                Self {
+                    span,
+                    $($name,)*
+                }
             }
         }
     };
 
+    // AST node that consists of other AST nodes
     (enum $enum_name:ident<$ty_info:ident> { $($name:ident($ty:ty),)* }) => {
         #[derive(Debug, Clone)]
         pub enum $enum_name<$ty_info> {

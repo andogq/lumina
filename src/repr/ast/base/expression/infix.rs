@@ -29,7 +29,7 @@ impl TryFrom<Token> for InfixOperation {
 }
 
 ast_node! {
-    struct Infix<TyInfo> {
+    typed struct Infix<TyInfo> {
         left: Box<Expression<TyInfo>>,
         operation: InfixOperation,
         right: Box<Expression<TyInfo>>,
