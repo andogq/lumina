@@ -12,14 +12,13 @@ jobs:
       RUSTFLAGS: "-Dwarnings"
     runs-on: "ubuntu-latest"
     steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v4"
+
       - name: "Install LLVM and Clang"
         uses: "KyleMayes/install-llvm-action@v2"
         with:
-          directory: "/llvm"
           version: "17.0"
-
-      - name: "Checkout code"
-        uses: "actions/checkout@v4"
 
       - name: "Cache build artifacts"
         uses: "Swatinem/rust-cache@v2"
