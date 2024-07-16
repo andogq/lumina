@@ -7,7 +7,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  clippy:
+  build-and-test:
     env:
       RUSTFLAGS: "-Dwarnings"
     runs-on: "ubuntu-latest"
@@ -16,6 +16,7 @@ jobs:
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
+          cached: true
 
       - name: "Checkout code"
         uses: "actions/checkout@v4"
@@ -25,7 +26,7 @@ jobs:
 
       - name: "Build and test"
         run: |
-          echo "Using LLVM_PATH: $LLVM_PATH"
+          tree $LLVM_PATH
           cargo clippy
           cargo test
         env:
