@@ -1,6 +1,6 @@
 use crate::{
-    ctx::Symbol,
     repr::{ast::typed as ast, ir::*},
+    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 use super::{FunctionIdx, IRCtx};

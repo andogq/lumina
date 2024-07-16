@@ -78,7 +78,9 @@ mod test_statement {
 
     use string_interner::Symbol as _;
 
-    use crate::{ctx::Symbol, repr::ast::untyped::*, util::source::Span};
+    use crate::{
+        repr::ast::untyped::*, util::source::Span, util::symbol_map::interner_symbol_map::Symbol,
+    };
 
     use super::{FnCtx, Ty, TyError, TyInfo};
 

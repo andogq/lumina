@@ -1,6 +1,6 @@
 use index_vec::define_index_type;
 
-use crate::{ctx::Symbol, stage::lower_ir::FunctionIdx};
+use crate::{stage::lower_ir::FunctionIdx, util::symbol_map::interner_symbol_map::Symbol};
 
 use super::{BasicBlockIdx, Value};
 

@@ -80,7 +80,9 @@ mod test {
 
         ctx.expect_intern()
             .once()
-            .return_const::<crate::ctx::Symbol>(Symbol::try_from_usize(0).unwrap());
+            .return_const::<crate::util::symbol_map::interner_symbol_map::Symbol>(
+                Symbol::try_from_usize(0).unwrap(),
+            );
 
         let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
 
@@ -99,7 +101,9 @@ mod test {
 
         ctx.expect_intern()
             .once()
-            .return_const::<crate::ctx::Symbol>(Symbol::try_from_usize(0).unwrap());
+            .return_const::<crate::util::symbol_map::interner_symbol_map::Symbol>(
+                Symbol::try_from_usize(0).unwrap(),
+            );
 
         let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
 

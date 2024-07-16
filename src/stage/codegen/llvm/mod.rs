@@ -12,9 +12,9 @@ use inkwell::{
 };
 
 use crate::{
-    ctx::Symbol,
     repr::ir::{BinaryOp, Triple, UnaryOp, Value},
     stage::lower_ir::{FunctionIdx, IRCtx},
+    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 use crate::repr::ir::{BasicBlockIdx, ConstantValue, TripleIdx};

@@ -1,4 +1,7 @@
-use crate::{ctx::Symbol, generate_ast, repr::ty::Ty, stage::lower_ir::FunctionIdx};
+use crate::{
+    generate_ast, repr::ty::Ty, stage::lower_ir::FunctionIdx,
+    util::symbol_map::interner_symbol_map::Symbol,
+};
 
 #[derive(Clone, Debug)]
 pub struct TyInfo {

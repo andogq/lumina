@@ -16,8 +16,10 @@ pub use integer::*;
 
 use crate::{
     ast_node,
-    ctx::Symbol,
-    util::source::{Span, Spanned},
+    util::{
+        source::{Span, Spanned},
+        symbol_map::interner_symbol_map::Symbol,
+    },
 };
 
 use super::Statement;

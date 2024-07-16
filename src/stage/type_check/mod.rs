@@ -8,8 +8,8 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::repr::ty::Ty;
 use crate::{
-    ctx::Symbol,
     repr::ast::{base as base_ast, untyped as parse_ast},
+    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 #[derive(Clone, Debug)]

@@ -1,28 +1,29 @@
 use crate::{
-    ctx::{Symbol, SymbolMapTrait},
     stage::parse::ParseCtx,
-    util::symbol_map::SymbolMap,
+    util::symbol_map::{interner_symbol_map::*, SymbolMap},
 };
 
 #[derive(Default)]
 pub struct CompilePass {
-    symbols: SymbolMap,
+    symbols: InternerSymbolMap,
 }
 
-impl SymbolMapTrait for CompilePass {
+impl SymbolMap for CompilePass {
+    type Symbol = Symbol;
+
     fn intern<T>(&mut self, s: T) -> Symbol
     where
         T: AsRef<str>,
     {
-        SymbolMapTrait::intern(&mut self.symbols, s)
+        SymbolMap::intern(&mut self.symbols, s)
     }
 
     fn get(&self, s: Symbol) -> String {
-        SymbolMapTrait::get(&self.symbols, s)
+        SymbolMap::get(&self.symbols, s)
     }
 
-    fn dump_symbols(&self) -> SymbolMap {
-        SymbolMapTrait::dump_symbols(&self.symbols)
+    fn dump_symbols(&self) -> InternerSymbolMap {
+        SymbolMap::dump_symbols(&self.symbols)
     }
 }
 

@@ -129,7 +129,7 @@ mod test {
     use ctx::MockParseCtx;
     use string_interner::Symbol as _;
 
-    use crate::ctx::Symbol;
+    use crate::util::symbol_map::interner_symbol_map::Symbol;
 
     use super::*;
 

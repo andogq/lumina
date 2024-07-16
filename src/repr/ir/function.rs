@@ -3,9 +3,9 @@ use std::collections::HashSet;
 use index_vec::IndexVec;
 
 use crate::{
-    ctx::Symbol,
     repr::ast::typed as ast,
     stage::{lower_ir::FunctionIdx, type_check::FunctionSignature},
+    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 use super::BasicBlock;

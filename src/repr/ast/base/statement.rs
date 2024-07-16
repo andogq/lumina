@@ -1,4 +1,4 @@
-use crate::{ast_node, ctx::Symbol, util::source::Span};
+use crate::{ast_node, util::source::Span, util::symbol_map::interner_symbol_map::Symbol};
 
 use super::*;
 
