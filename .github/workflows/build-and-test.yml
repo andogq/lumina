@@ -22,6 +22,10 @@ jobs:
 
       - name: "Run clippy"
         run: "cargo clippy"
+        env:
+          LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
 
       - name: "Run tests"
         run: "cargo test"
+        env:
+          LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
