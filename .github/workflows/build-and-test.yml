@@ -20,12 +20,13 @@ jobs:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
 
-      - name: "Run clippy"
-        run: "cargo clippy"
-        env:
-          LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
+      - name: "Cache build artifacts"
+        uses: "Swatinem/rust-cache@v2"
 
-      - name: "Run tests"
-        run: "cargo test"
+      - name: "Build and test"
+        run: |
+          echo "Using LLVM_PATH: $LLVM_PATH"
+          cargo clippy
+          cargo test
         env:
           LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
