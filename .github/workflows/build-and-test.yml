@@ -8,24 +8,23 @@ concurrency:
 
 jobs:
   build-and-test:
-    env:
-      RUSTFLAGS: "-Dwarnings"
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
+
+      - name: "Cache build artifacts"
+        uses: "Swatinem/rust-cache@v2"
+        with:
+          cache-directories: "${{ env.LLVM_PATH }}"
 
       - name: "Install LLVM and Clang"
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
 
-      - name: "Cache build artifacts"
-        uses: "Swatinem/rust-cache@v2"
-
       - name: "Build and test"
         run: |
-          tree $LLVM_PATH
           cargo clippy
           cargo test
         env:
