@@ -9,6 +9,8 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: "ubuntu-latest"
+    env:
+      LLVM_PATH: "./llvm"
     steps:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
@@ -22,6 +24,7 @@ jobs:
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
+          directory: "${{ env.LLVM_PATH }}"
 
       - name: "Build and test"
         run: |
