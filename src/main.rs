@@ -1,4 +1,5 @@
 use lumina::{
+    compile_pass::CompilePass,
     stage::{codegen::llvm::Pass, lex::Lexer, lower_ir as ir, parse::parse},
     util::{source::Source, test::ctx::TestCtx},
 };
@@ -15,7 +16,7 @@ fn main() -> int {
 }"#,
     );
 
-    let mut ctx = TestCtx::default();
+    let mut ctx = CompilePass::default();
 
     let program = match parse(&mut ctx, &mut Lexer::new(source)) {
         Ok(output) => output,
@@ -40,12 +41,8 @@ fn main() -> int {
 
     let ctx = inkwell::context::Context::create();
 
-    let main = ir_ctx.function_for_name("main").unwrap();
-    let function_ids = ir_ctx
-        .functions
-        .iter_enumerated()
-        .map(|(id, _)| id)
-        .collect::<Vec<_>>();
+    let main = ir_ctx.symbol_map.get("main").unwrap();
+    let function_ids = ir_ctx.functions.keys().cloned().collect::<Vec<_>>();
     let mut llvm_pass = Pass::new(&ctx, ir_ctx);
     function_ids.into_iter().for_each(|function| {
         llvm_pass.compile(function);

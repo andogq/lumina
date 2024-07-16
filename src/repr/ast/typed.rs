@@ -1,4 +1,4 @@
-use crate::{generate_ast, repr::ty::Ty, stage::lower_ir::FunctionIdx};
+use crate::{ctx::Symbol, generate_ast, repr::ty::Ty, stage::lower_ir::FunctionIdx};
 
 #[derive(Clone, Debug)]
 pub struct TyInfo {
@@ -9,5 +9,5 @@ pub struct TyInfo {
 generate_ast! {
     TyInfo: TyInfo,
     // TODO: Something else for this
-    FnIdentifier: FunctionIdx
+    FnIdentifier: Symbol
 }

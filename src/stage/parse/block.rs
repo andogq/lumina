@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn parse_block(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Block, ParseError> {
     let open_brace = match tokens.next_token() {

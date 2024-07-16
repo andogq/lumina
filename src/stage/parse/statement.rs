@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn parse_statement(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;

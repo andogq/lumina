@@ -31,7 +31,7 @@ impl Precedence {
 }
 
 fn parse_prefix(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Expression, ParseError> {
     match tokens.peek_token() {
@@ -46,7 +46,7 @@ fn parse_prefix(
 }
 
 pub fn parse_expression(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
@@ -126,33 +126,47 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
+    use ctx::MockParseCtx;
+    use string_interner::Symbol as _;
 
-    use crate::util::symbol_map::SymbolMap;
+    use crate::ctx::Symbol;
 
     use super::*;
 
-    fn run(tokens: &[Token]) -> Result<Expression, ParseError> {
-        parse_expression(
-            &mut SymbolMap::default(),
-            &mut tokens.iter().cloned().peekable(),
-            Precedence::Lowest,
-        )
+    use rstest::*;
+
+    #[fixture]
+    fn mock_ctx(#[default("func")] ident: &'static str) -> MockParseCtx {
+        let mut ctx = MockParseCtx::new();
+
+        ctx.expect_intern()
+            .once()
+            .withf(move |s| s.as_ref() == ident)
+            .return_const(Symbol::try_from_usize(0).unwrap());
+
+        ctx
     }
 
-    #[test]
+    #[rstest]
     fn simple_addition() {
-        let expression = run(&[Token::integer("3"), Token::plus(), Token::integer("4")]).unwrap();
+        let expression = parse_expression(
+            &mut MockParseCtx::new(),
+            &mut [Token::integer("3"), Token::plus(), Token::integer("4")]
+                .into_iter()
+                .peekable(),
+            Precedence::Lowest,
+        )
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 3,
+                        ty_info: None,
                     },
                 ),
                 operation: Plus(
@@ -161,40 +175,45 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 4,
+                        ty_info: None,
                     },
                 ),
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
+    #[rstest]
     fn multi_addition() {
-        let expression = run(&[
-            Token::integer("3"),
-            Token::plus(),
-            Token::integer("4"),
-            Token::plus(),
-            Token::integer("10"),
-        ])
+        let expression = parse_expression(
+            &mut MockParseCtx::new(),
+            &mut [
+                Token::integer("3"),
+                Token::plus(),
+                Token::integer("4"),
+                Token::plus(),
+                Token::integer("10"),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 left: Infix(
                     Infix {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         left: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
-                                ty_info: None,
                                 value: 3,
+                                ty_info: None,
                             },
                         ),
                         operation: Plus(
@@ -203,10 +222,11 @@ mod test {
                         right: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
-                                ty_info: None,
                                 value: 4,
+                                ty_info: None,
                             },
                         ),
+                        ty_info: None,
                     },
                 ),
                 operation: Plus(
@@ -215,110 +235,140 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 10,
+                        ty_info: None,
                     },
                 ),
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
+    #[rstest]
     fn if_statement() {
-        let expression = run(&[
-            Token::t_if(),
-            Token::integer("1"),
-            Token::left_brace(),
-            Token::ident("someident"),
-            Token::right_brace(),
-        ])
+        let mut ctx = MockParseCtx::new();
+
+        ctx.expect_intern()
+            .once()
+            .withf(|f| f.as_ref() == "someident")
+            .return_const(Symbol::try_from_usize(0).unwrap());
+
+        let expression = parse_expression(
+            &mut ctx,
+            &mut [
+                Token::t_if(),
+                Token::integer("1"),
+                Token::left_brace(),
+                Token::ident("someident"),
+                Token::right_brace(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         If(
             If {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 condition: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 1,
+                        ty_info: None,
                     },
                 ),
                 success: Block {
                     span: 1:0 -> 1:0,
-                    ty_info: None,
                     statements: [
                         Expression(
                             ExpressionStatement {
                                 span: 1:0 -> 1:0,
-                                ty_info: None,
                                 expression: Ident(
                                     Ident {
                                         span: 1:0 -> 1:0,
-                                        ty_info: None,
                                         name: SymbolU32 {
                                             value: 1,
                                         },
+                                        ty_info: None,
                                     },
                                 ),
                                 implicit_return: true,
+                                ty_info: None,
                             },
                         ),
                     ],
+                    ty_info: None,
                 },
                 otherwise: None,
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
+    #[rstest]
     fn integer() {
-        let expression = run(&[Token::integer("1")]).unwrap();
+        let expression = parse_expression(
+            &mut MockParseCtx::new(),
+            &mut [Token::integer("1")].into_iter().peekable(),
+            Precedence::Lowest,
+        )
+        .unwrap();
         insta::assert_debug_snapshot!(expression, @r###"
         Integer(
             Integer {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 value: 1,
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn ident() {
-        let expression = run(&[Token::ident("someident")]).unwrap();
+    #[rstest]
+    fn ident(#[with("someident")] mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [Token::ident("someident")].into_iter().peekable(),
+            Precedence::Lowest,
+        )
+        .unwrap();
         insta::assert_debug_snapshot!(expression, @r###"
         Ident(
             Ident {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
+    #[rstest]
     fn equality() {
-        let expression = run(&[Token::integer("1"), Token::eq(), Token::integer("1")]).unwrap();
+        let expression = parse_expression(
+            &mut MockParseCtx::new(),
+            &mut [Token::integer("1"), Token::eq(), Token::integer("1")]
+                .into_iter()
+                .peekable(),
+            Precedence::Lowest,
+        )
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 1,
+                        ty_info: None,
                     },
                 ),
                 operation: Eq(
@@ -327,36 +377,42 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 1,
+                        ty_info: None,
                     },
                 ),
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
+    #[rstest]
     fn complex_equality() {
-        let expression = run(&[
-            Token::integer("1"),
-            Token::eq(),
-            Token::integer("1"),
-            Token::plus(),
-            Token::integer("2"),
-        ])
+        let expression = parse_expression(
+            &mut MockParseCtx::new(),
+            &mut [
+                Token::integer("1"),
+                Token::eq(),
+                Token::integer("1"),
+                Token::plus(),
+                Token::integer("2"),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 left: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 1,
+                        ty_info: None,
                     },
                 ),
                 operation: Eq(
@@ -365,12 +421,11 @@ mod test {
                 right: Infix(
                     Infix {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         left: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
-                                ty_info: None,
                                 value: 1,
+                                ty_info: None,
                             },
                         ),
                         operation: Plus(
@@ -379,55 +434,68 @@ mod test {
                         right: Integer(
                             Integer {
                                 span: 1:0 -> 1:0,
-                                ty_info: None,
                                 value: 2,
+                                ty_info: None,
                             },
                         ),
+                        ty_info: None,
                     },
                 ),
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_no_param() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_no_param(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_one_param_no_comma() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_one_param_no_comma(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -435,32 +503,38 @@ mod test {
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 1,
+                            ty_info: None,
                         },
                     ),
                 ],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_one_param_trailing_comma() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::comma(),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_one_param_trailing_comma(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::comma(),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -468,35 +542,41 @@ mod test {
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 1,
+                            ty_info: None,
                         },
                     ),
                 ],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_multi_param_no_comma() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::comma(),
-            Token::integer("2"),
-            Token::comma(),
-            Token::integer("3"),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_multi_param_no_comma(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::comma(),
+                Token::integer("2"),
+                Token::comma(),
+                Token::integer("3"),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -504,50 +584,56 @@ mod test {
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 1,
+                            ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 2,
+                            ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 3,
+                            ty_info: None,
                         },
                     ),
                 ],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_multi_param_trailing_comma() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::comma(),
-            Token::integer("2"),
-            Token::comma(),
-            Token::integer("3"),
-            Token::comma(),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_multi_param_trailing_comma(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::comma(),
+                Token::integer("2"),
+                Token::comma(),
+                Token::integer("3"),
+                Token::comma(),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -555,50 +641,56 @@ mod test {
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 1,
+                            ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 2,
+                            ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 3,
+                            ty_info: None,
                         },
                     ),
                 ],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_with_expression_param() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::plus(),
-            Token::integer("2"),
-            Token::comma(),
-            Token::integer("3"),
-            Token::comma(),
-            Token::right_paren(),
-        ])
+    #[rstest]
+    fn function_call_with_expression_param(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::plus(),
+                Token::integer("2"),
+                Token::comma(),
+                Token::integer("3"),
+                Token::comma(),
+                Token::right_paren(),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 name: SymbolU32 {
                     value: 1,
                 },
@@ -606,12 +698,11 @@ mod test {
                     Infix(
                         Infix {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             left: Integer(
                                 Integer {
                                     span: 1:0 -> 1:0,
-                                    ty_info: None,
                                     value: 1,
+                                    ty_info: None,
                                 },
                             ),
                             operation: Plus(
@@ -620,46 +711,52 @@ mod test {
                             right: Integer(
                                 Integer {
                                     span: 1:0 -> 1:0,
-                                    ty_info: None,
                                     value: 2,
+                                    ty_info: None,
                                 },
                             ),
+                            ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
                             span: 1:0 -> 1:0,
-                            ty_info: None,
                             value: 3,
+                            ty_info: None,
                         },
                     ),
                 ],
+                ty_info: None,
             },
         )
         "###);
     }
 
-    #[test]
-    fn function_call_in_expression() {
-        let expression = run(&[
-            Token::ident("func"),
-            Token::left_paren(),
-            Token::integer("1"),
-            Token::right_paren(),
-            Token::plus(),
-            Token::integer("2"),
-        ])
+    #[rstest]
+    fn function_call_in_expression(mut mock_ctx: MockParseCtx) {
+        let expression = parse_expression(
+            &mut mock_ctx,
+            &mut [
+                Token::ident("func"),
+                Token::left_paren(),
+                Token::integer("1"),
+                Token::right_paren(),
+                Token::plus(),
+                Token::integer("2"),
+            ]
+            .into_iter()
+            .peekable(),
+            Precedence::Lowest,
+        )
         .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
                 span: 1:0 -> 1:0,
-                ty_info: None,
                 left: Call(
                     Call {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         name: SymbolU32 {
                             value: 1,
                         },
@@ -667,11 +764,12 @@ mod test {
                             Integer(
                                 Integer {
                                     span: 1:0 -> 1:0,
-                                    ty_info: None,
                                     value: 1,
+                                    ty_info: None,
                                 },
                             ),
                         ],
+                        ty_info: None,
                     },
                 ),
                 operation: Plus(
@@ -680,10 +778,11 @@ mod test {
                 right: Integer(
                     Integer {
                         span: 1:0 -> 1:0,
-                        ty_info: None,
                         value: 2,
+                        ty_info: None,
                     },
                 ),
+                ty_info: None,
             },
         )
         "###);

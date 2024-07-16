@@ -1,4 +1,7 @@
-use crate::repr::{ast::typed as ast, ir::*};
+use crate::{
+    ctx::Symbol,
+    repr::{ast::typed as ast, ir::*},
+};
 
 use super::{FunctionIdx, IRCtx};
 
@@ -36,7 +39,7 @@ impl FunctionLoweringCtx<'_> {
     }
 }
 
-fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> FunctionIdx {
+fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> Symbol {
     let mut repr_function = Function::new(&function);
 
     // Insert entry basic block
@@ -59,7 +62,9 @@ fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> FunctionIdx {
         ctx.function
     };
 
-    ir_ctx.functions.push(repr_function)
+    ir_ctx.functions.insert(function.name, repr_function);
+
+    function.name
 }
 
 /// Lower an AST block into the current function context.

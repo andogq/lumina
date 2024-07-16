@@ -1,3 +1,4 @@
+pub mod compile_pass;
 pub mod ctx;
 pub mod repr;
 pub mod stage;

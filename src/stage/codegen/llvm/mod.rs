@@ -25,8 +25,8 @@ pub struct Pass<'ctx> {
     module: Module<'ctx>,
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
-    basic_blocks: HashMap<(FunctionIdx, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
-    pub function_values: HashMap<FunctionIdx, FunctionValue<'ctx>>,
+    basic_blocks: HashMap<(Symbol, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
+    pub function_values: HashMap<Symbol, FunctionValue<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
@@ -34,24 +34,22 @@ impl<'ctx> Pass<'ctx> {
         let module = llvm_ctx.create_module("module");
 
         Self {
-            function_values: HashMap::from_iter(ir_ctx.functions.iter_enumerated().map(
-                |(idx, function)| {
-                    (idx, {
-                        // Forward-declare all the functions
-                        // TODO: Pick appropriate return type depending on signature
-                        let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
-                        let fn_value = module.add_function(
-                            // TODO: Determine function name from identifier
-                            // ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
-                            "my function",
-                            fn_type,
-                            None,
-                        );
+            function_values: HashMap::from_iter(ir_ctx.functions.iter().map(|(idx, function)| {
+                (*idx, {
+                    // Forward-declare all the functions
+                    // TODO: Pick appropriate return type depending on signature
+                    let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
+                    let fn_value = module.add_function(
+                        // TODO: Determine function name from identifier
+                        // ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
+                        "my function",
+                        fn_type,
+                        None,
+                    );
 
-                        fn_value
-                    })
-                },
-            )),
+                    fn_value
+                })
+            })),
             llvm_ctx,
             ir_ctx,
             module,
@@ -62,11 +60,11 @@ impl<'ctx> Pass<'ctx> {
     }
 
     /// Compile the provided function, returning the LLVM handle to it.
-    pub fn compile(&mut self, function_id: FunctionIdx) -> FunctionValue<'ctx> {
+    pub fn compile(&mut self, function_id: Symbol) -> FunctionValue<'ctx> {
         let function = self
             .ir_ctx
             .functions
-            .get(function_id)
+            .get(&function_id)
             .expect("function to exist");
 
         let builder = self.llvm_ctx.create_builder();
@@ -110,7 +108,7 @@ impl<'ctx> Pass<'ctx> {
     fn compile_basic_block(
         &mut self,
         function: &FunctionValue<'ctx>,
-        basic_block_id: (FunctionIdx, BasicBlockIdx),
+        basic_block_id: (Symbol, BasicBlockIdx),
     ) {
         let bb = *self.basic_blocks.entry(basic_block_id).or_insert_with(|| {
             self.llvm_ctx
@@ -123,7 +121,7 @@ impl<'ctx> Pass<'ctx> {
         let basic_block = self
             .ir_ctx
             .functions
-            .get(basic_block_id.0)
+            .get(&basic_block_id.0)
             .expect("function to exist")
             .basic_blocks
             .get(basic_block_id.1)

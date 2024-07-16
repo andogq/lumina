@@ -18,6 +18,7 @@ thiserror = "1.0.58"
 [dev-dependencies]
 rstest = "0.21.0"
 insta = "1.39.0"
+mockall = "0.12.1"
 
 
 [profile.dev.package.insta]

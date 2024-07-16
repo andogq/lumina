@@ -1,4 +1,5 @@
 use lumina::{
+    compile_pass::CompilePass,
     stage::{lex::Lexer, lower_ir},
     util::{source::Source, test::ctx::TestCtx},
 };
@@ -98,7 +99,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
 
     let source = Source::new(source);
 
-    let mut ctx = TestCtx::default();
+    let mut ctx = CompilePass::default();
 
     let program = match parse(&mut ctx, &mut Lexer::new(source)) {
         Ok(result) => result,
@@ -116,9 +117,10 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let mut ir_ctx = lower_ir::lower(program);
+    let ir_ctx = lower_ir::lower(program);
     let main = ir_ctx
-        .function_for_name("main")
+        .symbol_map
+        .get("main")
         .expect("main function to exist");
 
     let ctx = inkwell::context::Context::create();

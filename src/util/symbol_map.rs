@@ -5,7 +5,10 @@ use crate::ctx::{Symbol, SymbolMapTrait};
 pub type SymbolMap = StringInterner<DefaultBackend>;
 
 impl SymbolMapTrait for SymbolMap {
-    fn intern(&mut self, s: impl AsRef<str>) -> Symbol {
+    fn intern<T>(&mut self, s: T) -> Symbol
+    where
+        T: AsRef<str>,
+    {
         self.get_or_intern(s)
     }
 

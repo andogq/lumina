@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn parse_if(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<If, ParseError> {
     // Parse out the if keyword
@@ -30,17 +30,13 @@ pub fn parse_if(
 
 #[cfg(test)]
 mod test {
+    use ctx::MockParseCtx;
     use rstest::rstest;
-
-    use crate::util::symbol_map::SymbolMap;
+    use string_interner::Symbol;
 
     use super::*;
 
-    fn build_if(
-        condition: Token,
-        body: Token,
-        otherwise: Option<Token>,
-    ) -> (SymbolMap, Result<If, ParseError>) {
+    fn build_if(condition: Token, body: Token, otherwise: Option<Token>) -> Vec<Token> {
         // Build up the if statement
         let mut tokens = vec![
             Token::t_if(),
@@ -60,16 +56,15 @@ mod test {
             ]);
         }
 
-        let mut ctx = SymbolMap::default();
-        let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable());
-
-        (ctx, e_if)
+        tokens
     }
 
     #[test]
     fn integer_condition() {
-        let (_, e_if) = build_if(Token::integer("123"), Token::integer("1"), None);
-        let e_if = e_if.unwrap();
+        let tokens = build_if(Token::integer("123"), Token::integer("1"), None);
+
+        let mut ctx = MockParseCtx::new();
+        let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
 
         assert!(matches!(
             *e_if.condition,
@@ -79,20 +74,34 @@ mod test {
 
     #[test]
     fn ident_condition() {
-        let (_, e_if) = build_if(Token::ident("someident"), Token::integer("1"), None);
-        let e_if = e_if.unwrap();
+        let tokens = build_if(Token::ident("someident"), Token::integer("1"), None);
+
+        let mut ctx = MockParseCtx::new();
+
+        ctx.expect_intern()
+            .once()
+            .return_const::<crate::ctx::Symbol>(Symbol::try_from_usize(0).unwrap());
+
+        let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
 
         assert!(matches!(*e_if.condition, Expression::Ident(_)));
     }
 
     #[test]
     fn otherwise_branch() {
-        let (_, e_if) = build_if(
+        let tokens = build_if(
             Token::ident("someident"),
             Token::integer("1"),
             Some(Token::integer("2")),
         );
-        let e_if = e_if.unwrap();
+
+        let mut ctx = MockParseCtx::new();
+
+        ctx.expect_intern()
+            .once()
+            .return_const::<crate::ctx::Symbol>(Symbol::try_from_usize(0).unwrap());
+
+        let e_if = parse_if(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
 
         assert!(e_if.otherwise.is_some());
     }
@@ -117,7 +126,7 @@ mod test {
     ])]
     fn fail(#[case] tokens: &[Token]) {
         let result = parse_if(
-            &mut SymbolMap::default(),
+            &mut MockParseCtx::new(),
             &mut tokens.iter().cloned().peekable(),
         );
 

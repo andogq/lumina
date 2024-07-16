@@ -4,8 +4,11 @@ pub type Symbol = string_interner::DefaultSymbol;
 
 // TODO: Symbol type should be an associated type
 pub trait SymbolMapTrait {
-    // TODO: Get rido f this
-    fn intern(&mut self, s: impl AsRef<str>) -> Symbol;
+    fn intern<T>(&mut self, s: T) -> Symbol
+    where
+        T: AsRef<str>;
     fn get(&self, s: Symbol) -> String;
+
+    // TODO: Get rid of this
     fn dump_symbols(&self) -> SymbolMap;
 }

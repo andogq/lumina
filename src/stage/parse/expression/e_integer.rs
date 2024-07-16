@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn parse_integer(
-    _ctx: &mut impl SymbolMapTrait,
+    _ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Integer, ParseError> {
     let token = tokens.integer("integer peeked")?;
@@ -19,29 +19,30 @@ pub fn parse_integer(
 
 #[cfg(test)]
 mod test {
-    use crate::util::symbol_map::SymbolMap;
-
     use super::*;
 
+    use ctx::MockParseCtx;
     use rstest::rstest;
 
-    fn run(tokens: &[Token]) -> (SymbolMap, Result<Integer, ParseError>) {
-        let mut ctx = SymbolMap::default();
-        let integer = parse_integer(&mut ctx, &mut tokens.iter().cloned().peekable());
-        (ctx, integer)
+    fn run(tokens: &[Token]) -> Result<Integer, ParseError> {
+        let integer = parse_integer(
+            &mut MockParseCtx::new(),
+            &mut tokens.iter().cloned().peekable(),
+        );
+        integer
     }
 
     #[rstest]
     #[case::single_digit(1)]
     #[case::multi_digit(123)]
     fn success(#[case] value: i64) {
-        let (_, integer) = run(&[Token::integer(&value.to_string())]);
+        let integer = run(&[Token::integer(&value.to_string())]);
         assert_eq!(integer.unwrap().value, value);
     }
 
     #[test]
     fn fail() {
-        let (_, integer) = run(&[Token::ident("someident")]);
+        let integer = run(&[Token::ident("someident")]);
         assert!(integer.is_err());
     }
 
@@ -50,7 +51,7 @@ mod test {
     #[case::fail(Token::ident("someident"))]
     fn single_token(#[case] token: Token) {
         let mut tokens = [token, Token::semicolon()].into_iter().peekable();
-        let _ = parse_integer(&mut SymbolMap::default(), &mut tokens);
+        let _ = parse_integer(&mut MockParseCtx::new(), &mut tokens);
         assert_eq!(tokens.len(), 1);
     }
 }

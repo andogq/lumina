@@ -1,4 +1,5 @@
 mod block;
+mod ctx;
 mod expression;
 mod function;
 mod statement;
@@ -6,7 +7,8 @@ mod token_generator;
 
 use std::collections::HashMap;
 
-use crate::ctx::SymbolMapTrait;
+pub use ctx::ParseCtx;
+
 use crate::repr::token::*;
 use crate::util::source::*;
 
@@ -41,7 +43,7 @@ pub enum ParseError {
 }
 
 pub fn parse(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Program, ParseError> {
     // WARN: wacky af

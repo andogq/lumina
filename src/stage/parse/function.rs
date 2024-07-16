@@ -3,7 +3,7 @@ use crate::repr::ty::Ty;
 use super::*;
 
 pub fn parse_function(
-    ctx: &mut impl SymbolMapTrait,
+    ctx: &mut impl ParseCtx,
     tokens: &mut impl TokenGenerator,
 ) -> Result<Function, ParseError> {
     // `fn` keyword

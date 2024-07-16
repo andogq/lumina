@@ -25,7 +25,7 @@ pub enum Triple {
     /// Jump to the corresponding basic block.
     Jump(BasicBlockIdx),
     /// Call the corresponding function.
-    Call(FunctionIdx),
+    Call(Symbol),
     /// Return with the provided value.
     Return(Value),
     /// Assign some symbol to some value.
