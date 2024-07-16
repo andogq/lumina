@@ -1,0 +1,27 @@
+name: "Build and Test"
+
+on: "push"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  clippy:
+    env:
+      RUSTFLAGS: "-Dwarnings"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Install LLVM and Clang"
+        uses: "KyleMayes/install-llvm-action@v2"
+        with:
+          version: "17.0"
+
+      - name: "Checkout code"
+        uses: "actions/checkout@v4"
+
+      - name: "Run clippy"
+        run: "cargo clippy"
+
+      - name: "Run tests"
+        run: "cargo test"
