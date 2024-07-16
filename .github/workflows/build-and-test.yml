@@ -16,7 +16,6 @@ jobs:
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
-          cached: true
 
       - name: "Checkout code"
         uses: "actions/checkout@v4"
