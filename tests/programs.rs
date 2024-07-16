@@ -1,7 +1,7 @@
 use lumina::{
     compile_pass::CompilePass,
     stage::{lex::Lexer, lower_ir},
-    util::{source::Source, test::ctx::TestCtx},
+    util::source::Source,
 };
 use rstest::rstest;
 

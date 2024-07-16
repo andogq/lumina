@@ -1,7 +1,7 @@
 use lumina::{
     compile_pass::CompilePass,
     stage::{codegen::llvm::Pass, lex::Lexer, lower_ir as ir, parse::parse},
-    util::{source::Source, test::ctx::TestCtx},
+    util::source::Source,
 };
 
 fn main() {
@@ -34,7 +34,7 @@ fn main() -> int {
         }
     };
 
-    let mut ir_ctx = ir::lower(program);
+    let ir_ctx = ir::lower(program);
     let _main = ir_ctx
         .function_for_name("main")
         .expect("main function to exist");
