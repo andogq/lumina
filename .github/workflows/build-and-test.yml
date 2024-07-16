@@ -15,15 +15,14 @@ jobs:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
 
-      - name: "Cache build artifacts"
-        uses: "Swatinem/rust-cache@v2"
-
       - name: "Install LLVM and Clang"
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
           directory: "${{ env.LLVM_PATH }}"
-          cached: true
+
+      - name: "Cache build artifacts"
+        uses: "Swatinem/rust-cache@v2"
 
       - name: "Build and test"
         run: |
