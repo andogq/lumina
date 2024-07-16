@@ -17,14 +17,13 @@ jobs:
 
       - name: "Cache build artifacts"
         uses: "Swatinem/rust-cache@v2"
-        with:
-          cache-directories: "${{ env.LLVM_PATH }}"
 
       - name: "Install LLVM and Clang"
         uses: "KyleMayes/install-llvm-action@v2"
         with:
           version: "17.0"
           directory: "${{ env.LLVM_PATH }}"
+          cached: true
 
       - name: "Build and test"
         run: |
