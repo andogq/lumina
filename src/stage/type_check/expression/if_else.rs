@@ -1,18 +1,18 @@
 use super::*;
 
 impl parse_ast::If {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<If, TyError> {
+    pub fn ty_solve(self, ctx: &mut impl TypeCheckCtx, scope: &mut Scope) -> Result<If, TyError> {
         // Make sure the condition is correctly typed
-        let condition = self.condition.ty_solve(ctx)?;
+        let condition = self.condition.ty_solve(ctx, scope)?;
         let condition_ty = condition.get_ty_info();
         if !matches!(condition_ty.ty, Ty::Boolean) {
             return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty));
         }
 
-        let success = self.success.ty_solve(ctx)?;
+        let success = self.success.ty_solve(ctx, scope)?;
         let otherwise = self
             .otherwise
-            .map(|otherwise| otherwise.ty_solve(ctx))
+            .map(|otherwise| otherwise.ty_solve(ctx, scope))
             .transpose()?;
 
         let ty_info = TyInfo::try_from((

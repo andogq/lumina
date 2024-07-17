@@ -12,8 +12,11 @@ use inkwell::{
 };
 
 use crate::{
-    repr::ir::{BinaryOp, Triple, UnaryOp, Value},
-    stage::lower_ir::{FunctionIdx, IRCtx},
+    repr::{
+        identifier::FunctionIdx,
+        ir::{BinaryOp, Triple, UnaryOp, Value},
+    },
+    stage::lower_ir::IRCtx,
     util::symbol_map::interner_symbol_map::Symbol,
 };
 
@@ -25,8 +28,8 @@ pub struct Pass<'ctx> {
     module: Module<'ctx>,
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
-    basic_blocks: HashMap<(Symbol, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
-    pub function_values: HashMap<Symbol, FunctionValue<'ctx>>,
+    basic_blocks: HashMap<(FunctionIdx, BasicBlockIdx), inkwell::basic_block::BasicBlock<'ctx>>,
+    pub function_values: HashMap<FunctionIdx, FunctionValue<'ctx>>,
 }
 
 impl<'ctx> Pass<'ctx> {
@@ -60,23 +63,23 @@ impl<'ctx> Pass<'ctx> {
     }
 
     /// Compile the provided function, returning the LLVM handle to it.
-    pub fn compile(&mut self, function_id: Symbol) -> FunctionValue<'ctx> {
+    pub fn compile(&mut self, function_idx: FunctionIdx) -> FunctionValue<'ctx> {
         let function = self
             .ir_ctx
             .functions
-            .get(&function_id)
+            .get(&function_idx)
             .expect("function to exist");
 
         let builder = self.llvm_ctx.create_builder();
 
         let fn_value = self
             .function_values
-            .get(&function_id)
+            .get(&function_idx)
             .expect("function to exist")
             .to_owned();
 
         // BUG: This won't work with multiple functions
-        let entry_bb = (function_id, BasicBlockIdx::new(0));
+        let entry_bb = (function_idx, BasicBlockIdx::new(0));
         let entry = *self.basic_blocks.entry(entry_bb).or_insert_with(|| {
             self.llvm_ctx
                 .append_basic_block(fn_value, &format!("bb_{:?}_{:?}", entry_bb.0, entry_bb.1))
@@ -108,7 +111,7 @@ impl<'ctx> Pass<'ctx> {
     fn compile_basic_block(
         &mut self,
         function: &FunctionValue<'ctx>,
-        basic_block_id: (Symbol, BasicBlockIdx),
+        basic_block_id: (FunctionIdx, BasicBlockIdx),
     ) {
         let bb = *self.basic_blocks.entry(basic_block_id).or_insert_with(|| {
             self.llvm_ctx

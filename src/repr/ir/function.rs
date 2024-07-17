@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use index_vec::IndexVec;
 
 use crate::{
-    repr::ast::typed as ast,
-    stage::{lower_ir::FunctionIdx, type_check::FunctionSignature},
+    repr::{ast::typed as ast, identifier::FunctionIdx},
+    stage::type_check::FunctionSignature,
     util::symbol_map::interner_symbol_map::Symbol,
 };
 
@@ -16,8 +16,7 @@ index_vec::define_index_type! {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    // TODO: This should be something else
-    pub symbol: Symbol,
+    pub symbol: FunctionIdx,
     pub signature: FunctionSignature,
     pub basic_blocks: IndexVec<BasicBlockIdx, BasicBlock>,
     pub scope: HashSet<Symbol>,

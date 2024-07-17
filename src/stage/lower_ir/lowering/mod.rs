@@ -1,9 +1,6 @@
-use crate::{
-    repr::{ast::typed as ast, ir::*},
-    util::symbol_map::interner_symbol_map::Symbol,
-};
+use crate::repr::{ast::typed as ast, identifier::FunctionIdx, ir::*};
 
-use super::{FunctionIdx, IRCtx};
+use super::IRCtx;
 
 pub fn lower(program: ast::Program) -> IRCtx {
     let mut ir = IRCtx::new(program.symbols);
@@ -39,7 +36,7 @@ impl FunctionLoweringCtx<'_> {
     }
 }
 
-fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> Symbol {
+fn lower_function(ir_ctx: &mut IRCtx, function: ast::Function) -> FunctionIdx {
     let mut repr_function = Function::new(&function);
 
     // Insert entry basic block

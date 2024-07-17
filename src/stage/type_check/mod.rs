@@ -1,16 +1,18 @@
+mod ctx;
 mod expression;
 mod function;
 mod program;
 mod statement;
 
 use itertools::Itertools;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::repr::ty::Ty;
 use crate::{
     repr::ast::{base as base_ast, untyped as parse_ast},
     util::symbol_map::interner_symbol_map::Symbol,
 };
+
+pub use ctx::TypeCheckCtx;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
@@ -24,35 +26,6 @@ impl<TyInfo, FnIdentifier> From<&base_ast::Function<TyInfo, FnIdentifier>> for F
             arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
             return_ty: function.return_ty,
         }
-    }
-}
-
-#[derive(Default)]
-pub struct TyCtx {
-    function_signatures: HashMap<Symbol, FunctionSignature>,
-}
-
-impl TyCtx {
-    pub fn mock() -> Self {
-        Self::default()
-    }
-}
-
-pub struct FnCtx {
-    ty_ctx: Rc<RefCell<TyCtx>>,
-    scope: HashMap<Symbol, Ty>,
-}
-
-impl FnCtx {
-    pub fn new(ty_ctx: Rc<RefCell<TyCtx>>) -> Self {
-        Self {
-            ty_ctx,
-            scope: HashMap::new(),
-        }
-    }
-
-    pub fn mock() -> Self {
-        Self::new(Rc::new(RefCell::new(TyCtx::mock())))
     }
 }
 

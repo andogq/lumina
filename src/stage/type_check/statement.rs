@@ -1,19 +1,29 @@
+use ctx::{Scope, TypeCheckCtx};
+
 use super::*;
 
 impl parse_ast::Statement {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Statement, TyError> {
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<Statement, TyError> {
         Ok(match self {
-            parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(ctx)?),
-            parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(ctx)?),
-            parse_ast::Statement::Expression(s) => Statement::Expression(s.ty_solve(ctx)?),
+            parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(ctx, scope)?),
+            parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(ctx, scope)?),
+            parse_ast::Statement::Expression(s) => Statement::Expression(s.ty_solve(ctx, scope)?),
         })
     }
 }
 
 impl parse_ast::LetStatement {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<LetStatement, TyError> {
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<LetStatement, TyError> {
         // Work out what the type of the value is
-        let value = self.value.ty_solve(ctx)?;
+        let value = self.value.ty_solve(ctx, scope)?;
 
         // Make sure the value type matches what the statement was annotated with
         if let Some(ty) = self.ty_info {
@@ -24,7 +34,7 @@ impl parse_ast::LetStatement {
         }
 
         // Record the type
-        ctx.scope.insert(self.name, value.get_ty_info().ty);
+        scope.register(self.name, value.get_ty_info().ty);
 
         Ok(LetStatement {
             ty_info: TyInfo {
@@ -39,8 +49,12 @@ impl parse_ast::LetStatement {
 }
 
 impl parse_ast::ReturnStatement {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<ReturnStatement, TyError> {
-        let value = self.value.ty_solve(ctx)?;
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<ReturnStatement, TyError> {
+        let value = self.value.ty_solve(ctx, scope)?;
 
         Ok(ReturnStatement {
             ty_info: TyInfo::try_from((
@@ -54,8 +68,12 @@ impl parse_ast::ReturnStatement {
 }
 
 impl parse_ast::ExpressionStatement {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<ExpressionStatement, TyError> {
-        let expression = self.expression.ty_solve(ctx)?;
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<ExpressionStatement, TyError> {
+        let expression = self.expression.ty_solve(ctx, scope)?;
 
         // Expression statement has same type as the underlying expression
         let mut ty_info = expression.get_ty_info().clone();
@@ -74,29 +92,27 @@ impl parse_ast::ExpressionStatement {
 
 #[cfg(test)]
 mod test_statement {
-    use std::collections::HashMap;
 
     use string_interner::Symbol as _;
 
     use crate::{
-        repr::ast::untyped::*, util::source::Span, util::symbol_map::interner_symbol_map::Symbol,
+        repr::ast::untyped::*,
+        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
+        util::{source::Span, symbol_map::interner_symbol_map::Symbol},
     };
 
-    use super::{FnCtx, Ty, TyError, TyInfo};
-
-    fn run(s: Statement) -> Result<(TyInfo, HashMap<Symbol, Ty>), TyError> {
-        let mut fn_ctx = FnCtx::mock();
-        let ty = s.ty_solve(&mut fn_ctx)?.get_ty_info().clone();
-
-        Ok((ty, fn_ctx.scope.clone()))
-    }
+    use super::Ty;
 
     #[test]
     fn return_statement() {
         // return 0;
         let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
 
-        let (ty_info, _) = run(s).unwrap();
+        let ty_info = s
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .get_ty_info()
+            .clone();
 
         assert_eq!(ty_info.ty, Ty::Unit);
         assert_eq!(ty_info.return_ty, Some(Ty::Int));
@@ -111,13 +127,19 @@ mod test_statement {
             Span::default(),
         );
 
-        let (ty_info, symbols) = run(s).unwrap();
+        let mut scope = Scope::new();
+
+        let ty_info = s
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut scope)
+            .unwrap()
+            .get_ty_info()
+            .clone();
 
         assert_eq!(ty_info.ty, Ty::Unit);
         assert_eq!(ty_info.return_ty, None);
         assert_eq!(
-            symbols.get(&Symbol::try_from_usize(0).unwrap()).cloned(),
-            Some(Ty::Int)
+            scope.resolve(Symbol::try_from_usize(0).unwrap()).unwrap().1,
+            Ty::Int
         );
     }
 
@@ -130,7 +152,11 @@ mod test_statement {
             Span::default(),
         );
 
-        let (ty_info, _) = run(s).unwrap();
+        let ty_info = s
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .get_ty_info()
+            .clone();
 
         assert_eq!(ty_info.ty, Ty::Unit);
         assert_eq!(ty_info.return_ty, None);
@@ -145,7 +171,11 @@ mod test_statement {
             Span::default(),
         );
 
-        let (ty_info, _) = run(s).unwrap();
+        let ty_info = s
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .get_ty_info()
+            .clone();
 
         assert_eq!(ty_info.ty, Ty::Int);
         assert_eq!(ty_info.return_ty, None);

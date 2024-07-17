@@ -14,9 +14,13 @@ impl InfixOperation {
 }
 
 impl parse_ast::Infix {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Infix, TyError> {
-        let left = self.left.ty_solve(ctx)?;
-        let right = self.right.ty_solve(ctx)?;
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<Infix, TyError> {
+        let left = self.left.ty_solve(ctx, scope)?;
+        let right = self.right.ty_solve(ctx, scope)?;
 
         let left_ty_info = left.get_ty_info();
         let right_ty_info = right.get_ty_info();
@@ -42,14 +46,9 @@ impl parse_ast::Infix {
 mod test_infix {
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
+        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
         util::source::Span,
     };
-
-    use super::expression::{FnCtx, TyError, TyInfo};
-
-    fn run(i: Infix) -> Result<TyInfo, TyError> {
-        Ok(i.ty_solve(&mut FnCtx::mock())?.ty_info)
-    }
 
     #[test]
     fn infix_same() {
@@ -61,7 +60,10 @@ mod test_infix {
             Span::default(),
         );
 
-        let ty_info = run(infix).unwrap();
+        let ty_info = infix
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .ty_info;
         assert_eq!(ty_info.ty, Ty::Int);
         assert_eq!(ty_info.return_ty, None);
     }
@@ -75,6 +77,7 @@ mod test_infix {
             Span::default(),
         );
 
-        assert!(run(infix).is_err());
+        let result = infix.ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new());
+        assert!(result.is_err());
     }
 }

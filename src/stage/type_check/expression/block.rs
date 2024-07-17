@@ -1,11 +1,17 @@
+use ctx::{Scope, TypeCheckCtx};
+
 use super::*;
 
 impl parse_ast::Block {
-    pub fn ty_solve(self, ctx: &mut FnCtx) -> Result<Block, TyError> {
+    pub fn ty_solve(
+        self,
+        ctx: &mut impl TypeCheckCtx,
+        scope: &mut Scope,
+    ) -> Result<Block, TyError> {
         let statements = self
             .statements
             .into_iter()
-            .map(|statement| statement.ty_solve(ctx))
+            .map(|statement| statement.ty_solve(ctx, scope))
             .collect::<Result<Vec<_>, _>>()?;
 
         let ty_info = TyInfo::try_from((
@@ -43,14 +49,9 @@ mod test {
 
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
+        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
         util::source::Span,
     };
-
-    use super::expression::{FnCtx, TyError, TyInfo};
-
-    fn run(b: Block) -> Result<TyInfo, TyError> {
-        Ok(b.ty_solve(&mut FnCtx::mock())?.ty_info)
-    }
 
     #[test]
     fn ty_check_block() {
@@ -76,7 +77,10 @@ mod test {
             Span::default(),
         );
 
-        let ty_info = run(b).unwrap();
+        let ty_info = b
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .ty_info;
 
         assert_eq!(ty_info.ty, Ty::Unit);
         assert_eq!(ty_info.return_ty, Some(Ty::Int));
@@ -108,7 +112,9 @@ mod test {
             Span::default(),
         );
 
-        assert!(run(b).is_err());
+        let result = b.ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new());
+
+        assert!(result.is_err());
     }
 
     #[test]
@@ -133,7 +139,10 @@ mod test {
             Span::default(),
         );
 
-        let ty_info = run(b).unwrap();
+        let ty_info = b
+            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .unwrap()
+            .ty_info;
 
         assert_eq!(ty_info.ty, Ty::Unit);
         assert_eq!(ty_info.return_ty, None);

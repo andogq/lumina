@@ -26,7 +26,7 @@ fn main() -> int {
         }
     };
 
-    let program = match program.ty_solve() {
+    let program = match program.ty_solve(&mut ctx) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");
@@ -34,14 +34,11 @@ fn main() -> int {
         }
     };
 
-    let ir_ctx = ir::lower(program);
-    let _main = ir_ctx
-        .function_for_name("main")
-        .expect("main function to exist");
+    let main = program.main.name;
 
+    let ir_ctx = ir::lower(program);
     let ctx = inkwell::context::Context::create();
 
-    let main = ir_ctx.symbol_map.get("main").unwrap();
     let function_ids = ir_ctx.functions.keys().cloned().collect::<Vec<_>>();
     let mut llvm_pass = Pass::new(&ctx, ir_ctx);
     function_ids.into_iter().for_each(|function| {

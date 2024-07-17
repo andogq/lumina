@@ -109,7 +109,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let program = match program.ty_solve() {
+    let program = match program.ty_solve(&mut ctx) {
         Ok(program) => program,
         Err(e) => {
             eprintln!("{e}");
@@ -117,12 +117,9 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
         }
     };
 
-    let ir_ctx = lower_ir::lower(program);
-    let main = ir_ctx
-        .symbol_map
-        .get("main")
-        .expect("main function to exist");
+    let main = program.main.name;
 
+    let ir_ctx = lower_ir::lower(program);
     let ctx = inkwell::context::Context::create();
 
     let mut llvm_pass = Pass::new(&ctx, ir_ctx);

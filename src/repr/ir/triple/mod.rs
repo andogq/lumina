@@ -1,6 +1,6 @@
 use index_vec::define_index_type;
 
-use crate::{stage::lower_ir::FunctionIdx, util::symbol_map::interner_symbol_map::Symbol};
+use crate::{repr::identifier::FunctionIdx, util::symbol_map::interner_symbol_map::Symbol};
 
 use super::{BasicBlockIdx, Value};
 
@@ -25,7 +25,7 @@ pub enum Triple {
     /// Jump to the corresponding basic block.
     Jump(BasicBlockIdx),
     /// Call the corresponding function.
-    Call(Symbol),
+    Call(FunctionIdx),
     /// Return with the provided value.
     Return(Value),
     /// Assign some symbol to some value.
