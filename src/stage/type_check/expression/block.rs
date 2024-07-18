@@ -8,6 +8,9 @@ impl parse_ast::Block {
         ctx: &mut impl TypeCheckCtx,
         scope: &mut Scope,
     ) -> Result<Block, TyError> {
+        // Enter a new scope
+        let block_scope = scope.enter();
+
         let statements = self
             .statements
             .into_iter()
@@ -34,6 +37,13 @@ impl parse_ast::Block {
                 .iter()
                 .map(|statement| statement.get_ty_info().return_ty),
         ))?;
+
+        // Leave a scope
+        assert_eq!(
+            block_scope,
+            scope.leave(),
+            "ensure the scope that is left was the same that was entered"
+        );
 
         Ok(Block {
             span: self.span,
