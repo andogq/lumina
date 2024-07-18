@@ -8,6 +8,7 @@ use crate::{
     util::symbol_map::interner_symbol_map::Symbol,
 };
 
+#[cfg_attr(test, mockall::automock(type FunctionBuilder = MockFunctionBuilder;))]
 pub trait IRCtx {
     type FunctionBuilder: FunctionBuilder;
 
@@ -21,19 +22,6 @@ pub trait IRCtx {
 
     // TODO: Probably get rid of this
     fn all_functions(&self) -> Vec<(FunctionIdx, Function)>;
-}
-
-#[cfg(test)]
-mockall::mock! {
-    pub IRCtx {}
-
-    impl IRCtx for IRCtx {
-        type FunctionBuilder = MockFunctionBuilder;
-
-        fn register_function(&mut self, idx: FunctionIdx, function: Function);
-        fn new_builder(&self, function: &ast::Function) -> MockFunctionBuilder;
-        fn all_functions(&self) -> Vec<(FunctionIdx, Function)>;
-    }
 }
 
 /// A stateful representation of a function that is being constructed. A function consists of basic
