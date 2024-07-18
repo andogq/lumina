@@ -1,6 +1,6 @@
 use lumina::{
     compile_pass::CompilePass,
-    stage::{lex::Lexer, lower_ir},
+    stage::{codegen::llvm::Pass, lex::Lexer, lower_ir, lower_ir::IRCtx, parse::parse},
     util::source::Source,
 };
 use rstest::rstest;
@@ -95,8 +95,6 @@ fn main() -> int {
 }"#
 )]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
-    use lumina::stage::{codegen::llvm::Pass, parse::parse};
-
     let source = Source::new(source);
 
     let mut ctx = CompilePass::default();
@@ -119,11 +117,19 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
 
     let main = program.main.name;
 
-    let ir_ctx = lower_ir::lower(program);
-    let ctx = inkwell::context::Context::create();
+    lower_ir::lower(&mut ctx, program);
+    let llvm_ctx = inkwell::context::Context::create();
 
-    let mut llvm_pass = Pass::new(&ctx, ir_ctx);
-    let main = llvm_pass.compile(main);
+    let function_ids = ctx
+        .all_functions()
+        .iter()
+        .map(|(idx, _)| *idx)
+        .collect::<Vec<_>>();
+    let mut llvm_pass = Pass::new(&llvm_ctx, ctx);
+    function_ids.into_iter().for_each(|function| {
+        llvm_pass.compile(function);
+    });
+    let main = *llvm_pass.function_values.get(&main).unwrap();
 
     let result = llvm_pass.jit(main);
 

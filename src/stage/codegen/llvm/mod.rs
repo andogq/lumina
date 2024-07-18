@@ -14,17 +14,15 @@ use inkwell::{
 use crate::{
     repr::{
         identifier::FunctionIdx,
-        ir::{BinaryOp, Triple, UnaryOp, Value},
+        ir::{BasicBlockIdx, BinaryOp, ConstantValue, Triple, TripleIdx, UnaryOp, Value},
     },
     stage::lower_ir::IRCtx,
     util::symbol_map::interner_symbol_map::Symbol,
 };
 
-use crate::repr::ir::{BasicBlockIdx, ConstantValue, TripleIdx};
-
-pub struct Pass<'ctx> {
+pub struct Pass<'ctx, I> {
     llvm_ctx: &'ctx LLVMContext,
-    ir_ctx: IRCtx,
+    ir_ctx: I,
     module: Module<'ctx>,
 
     symbols: HashMap<Symbol, PointerValue<'ctx>>,
@@ -32,27 +30,32 @@ pub struct Pass<'ctx> {
     pub function_values: HashMap<FunctionIdx, FunctionValue<'ctx>>,
 }
 
-impl<'ctx> Pass<'ctx> {
-    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: IRCtx) -> Self {
+impl<'ctx, I> Pass<'ctx, I>
+where
+    I: IRCtx,
+{
+    pub fn new(llvm_ctx: &'ctx LLVMContext, ir_ctx: I) -> Self {
         let module = llvm_ctx.create_module("module");
 
         Self {
-            function_values: HashMap::from_iter(ir_ctx.functions.iter().map(|(idx, function)| {
-                (*idx, {
-                    // Forward-declare all the functions
-                    // TODO: Pick appropriate return type depending on signature
-                    let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
-                    let fn_value = module.add_function(
-                        // TODO: Determine function name from identifier
-                        // ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
-                        "my function",
-                        fn_type,
-                        None,
-                    );
+            function_values: HashMap::from_iter(ir_ctx.all_functions().iter().map(
+                |(idx, _function)| {
+                    (*idx, {
+                        // Forward-declare all the functions
+                        // TODO: Pick appropriate return type depending on signature
+                        let fn_type = llvm_ctx.i64_type().fn_type(&[], false);
+                        let fn_value = module.add_function(
+                            // TODO: Determine function name from identifier
+                            // ir_ctx.symbol_map.resolve(function.symbol).unwrap(),
+                            "my function",
+                            fn_type,
+                            None,
+                        );
 
-                    fn_value
-                })
-            })),
+                        fn_value
+                    })
+                },
+            )),
             llvm_ctx,
             ir_ctx,
             module,
@@ -66,9 +69,12 @@ impl<'ctx> Pass<'ctx> {
     pub fn compile(&mut self, function_idx: FunctionIdx) -> FunctionValue<'ctx> {
         let function = self
             .ir_ctx
-            .functions
-            .get(&function_idx)
-            .expect("function to exist");
+            .all_functions()
+            .iter()
+            .find(|(idx, _)| idx == &function_idx)
+            .expect("function to exist")
+            .1
+            .clone();
 
         let builder = self.llvm_ctx.create_builder();
 
@@ -92,13 +98,7 @@ impl<'ctx> Pass<'ctx> {
             (
                 symbol.to_owned(),
                 builder
-                    .build_alloca(
-                        self.llvm_ctx.i64_type(),
-                        self.ir_ctx
-                            .symbol_map
-                            .resolve(*symbol)
-                            .expect("symbol to exist in map"),
-                    )
+                    .build_alloca(self.llvm_ctx.i64_type(), "todo: work out symbol name")
                     .unwrap(),
             )
         }));
@@ -123,9 +123,12 @@ impl<'ctx> Pass<'ctx> {
 
         let basic_block = self
             .ir_ctx
-            .functions
-            .get(&basic_block_id.0)
+            .all_functions()
+            .iter()
+            .find(|(idx, _)| idx == &basic_block_id.0)
             .expect("function to exist")
+            .1
+            .clone()
             .basic_blocks
             .get(basic_block_id.1)
             .expect("requested basic block must exist")

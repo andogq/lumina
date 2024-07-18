@@ -1,6 +1,11 @@
 use lumina::{
     compile_pass::CompilePass,
-    stage::{codegen::llvm::Pass, lex::Lexer, lower_ir as ir, parse::parse},
+    stage::{
+        codegen::llvm::Pass,
+        lex::Lexer,
+        lower_ir::{self as ir, IRCtx},
+        parse::parse,
+    },
     util::source::Source,
 };
 
@@ -36,11 +41,15 @@ fn main() -> int {
 
     let main = program.main.name;
 
-    let ir_ctx = ir::lower(program);
-    let ctx = inkwell::context::Context::create();
+    ir::lower(&mut ctx, program);
+    let llvm_ctx = inkwell::context::Context::create();
 
-    let function_ids = ir_ctx.functions.keys().cloned().collect::<Vec<_>>();
-    let mut llvm_pass = Pass::new(&ctx, ir_ctx);
+    let function_ids = ctx
+        .all_functions()
+        .iter()
+        .map(|(idx, _)| *idx)
+        .collect::<Vec<_>>();
+    let mut llvm_pass = Pass::new(&llvm_ctx, ctx);
     function_ids.into_iter().for_each(|function| {
         llvm_pass.compile(function);
     });
