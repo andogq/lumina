@@ -8,7 +8,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: "always"
       LLVM_PATH: "./llvm"
-      LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
+      LLVM_SYS_170_PREFIX: "./llvm"
     steps:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
