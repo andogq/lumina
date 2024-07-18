@@ -6,7 +6,9 @@ jobs:
   build-and-test:
     runs-on: "ubuntu-latest"
     env:
+      CARGO_TERM_COLOR: "always"
       LLVM_PATH: "./llvm"
+      LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
     steps:
       - name: "Checkout code"
         uses: "actions/checkout@v4"
@@ -20,9 +22,11 @@ jobs:
       - name: "Cache build artifacts"
         uses: "Swatinem/rust-cache@v2"
 
-      - name: "Build and test"
-        run: |
-          cargo clippy
-          cargo test
-        env:
-          LLVM_SYS_170_PREFIX: "${{ env.LLVM_PATH }}"
+      - name: "Clippy"
+        run: cargo clippy --verbose
+
+      - name: "Build"
+        run: cargo build --verbose
+
+      - name: "Test"
+        run: cargo test --verbose
