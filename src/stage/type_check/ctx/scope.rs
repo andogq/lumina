@@ -58,12 +58,15 @@ impl Scope {
     }
 
     /// Exit the most recent scope.
-    pub fn leave(&mut self) {
-        let Some(scope) = self.scopes.last_mut() else {
-            return;
-        };
+    pub fn leave(&mut self) -> ScopeIdx {
+        // Find the active scope
+        let active = self.active_scope();
 
-        scope.exit();
+        // Exit the active scope
+        self.scopes[active].exit();
+
+        // Return the scope index
+        active
     }
 
     /// Register a symbol and associated type, and produce a unique binding for it.
@@ -243,5 +246,23 @@ mod test {
 
         // Verify shadowed variable returned to original state
         assert_eq!(scope.resolve(symbol).unwrap(), (binding_int, Ty::Int),);
+    }
+
+    #[test]
+    fn deeply_nested_scopes() {
+        let mut scope = Scope::new();
+
+        let scope_a = scope.enter();
+        let scope_b = scope.enter();
+        let scope_c = scope.enter();
+
+        assert_eq!(scope.active_scope(), scope_c);
+        assert_eq!(scope.leave(), scope_c);
+
+        assert_eq!(scope.active_scope(), scope_b);
+        assert_eq!(scope.leave(), scope_b);
+
+        assert_eq!(scope.active_scope(), scope_a);
+        assert_eq!(scope.leave(), scope_a);
     }
 }
