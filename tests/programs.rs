@@ -1,6 +1,7 @@
+use inkwell::{module::Module, values::FunctionValue, OptimizationLevel};
 use lumina::{
     compile_pass::CompilePass,
-    stage::{codegen::llvm::Pass, lex::Lexer, lower_ir, lower_ir::IRCtx, parse::parse},
+    stage::{lex::Lexer, lower_ir, lower_ir::IRCtx, parse::parse},
     util::source::Source,
 };
 use rstest::rstest;
@@ -95,6 +96,10 @@ fn main() -> int {
 }"#
 )]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
+    use std::collections::HashMap;
+
+    use lumina::stage::codegen::llvm::FunctionGenerator;
+
     let source = Source::new(source);
 
     let mut ctx = CompilePass::default();
@@ -119,19 +124,46 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
 
     lower_ir::lower(&mut ctx, program);
     let llvm_ctx = inkwell::context::Context::create();
+    let module = llvm_ctx.create_module("module");
 
-    let function_ids = ctx
+    let function_map = ctx
         .all_functions()
         .iter()
-        .map(|(idx, _)| *idx)
-        .collect::<Vec<_>>();
-    let mut llvm_pass = Pass::new(&llvm_ctx, ctx);
-    function_ids.into_iter().for_each(|function| {
-        llvm_pass.compile(function);
-    });
-    let main = *llvm_pass.function_values.get(&main).unwrap();
+        .map(|(idx, _)| {
+            (
+                *idx,
+                module.add_function("fn", llvm_ctx.i64_type().fn_type(&[], false), None),
+            )
+        })
+        .collect::<HashMap<_, _>>();
 
-    let result = llvm_pass.jit(main);
+    for (idx, function) in ctx.all_functions() {
+        FunctionGenerator::new(
+            &mut ctx,
+            &llvm_ctx,
+            function_map.clone(),
+            *function_map.get(&idx).unwrap(),
+            function,
+        )
+        .codegen();
+    }
+
+    let main = function_map.get(&main).unwrap();
+
+    let result = jit(&module, *main);
 
     assert_eq!(result, expected);
+}
+
+fn jit(module: &Module, entry: FunctionValue) -> i64 {
+    let engine = module
+        .create_jit_execution_engine(OptimizationLevel::None)
+        .unwrap();
+
+    unsafe {
+        engine
+            .get_function::<unsafe extern "C" fn() -> i64>(entry.get_name().to_str().unwrap())
+            .unwrap()
+            .call()
+    }
 }

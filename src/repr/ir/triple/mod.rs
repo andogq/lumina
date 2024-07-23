@@ -43,7 +43,7 @@ define_index_type! {
 }
 
 /// A reference to a specific triple.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct TripleRef {
     pub basic_block: BasicBlockIdx,
     pub triple: TripleIdx,

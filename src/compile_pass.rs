@@ -5,7 +5,6 @@ use index_vec::IndexVec;
 use crate::{
     repr::{ast::typed::Function, identifier::FunctionIdx, ir, ty::Ty},
     stage::{
-        codegen::llvm::{LLVMCodegenCtx, LLVMFunctionBuilder},
         lower_ir::{FunctionBuilder as FunctionBuilderTrait, IRCtx},
         parse::ParseCtx,
         type_check::{FunctionSignature, TypeCheckCtx},
@@ -20,8 +19,6 @@ pub struct CompilePass {
     function_symbols: HashMap<Symbol, FunctionIdx>,
 
     ir_functions: HashMap<FunctionIdx, ir::Function>,
-
-    llvm_ctx: inkwell::context::Context,
 }
 
 impl CompilePass {
@@ -31,7 +28,6 @@ impl CompilePass {
             function_signatures: IndexVec::new(),
             function_symbols: HashMap::new(),
             ir_functions: HashMap::new(),
-            llvm_ctx: inkwell::context::Context::create(),
         }
     }
 }
@@ -161,87 +157,5 @@ impl FunctionBuilderTrait for FunctionBuilder {
                 scope: self.scope.into_iter().map(|(symbol, _)| symbol).collect(),
             },
         )
-    }
-}
-
-impl<'ctx> LLVMCodegenCtx<'ctx> for CompilePass {
-    type FunctionBuilder = CompilePassFunctionBuilder;
-
-    fn new_builder(&self) -> inkwell::builder::Builder<'ctx> {
-        self.llvm_ctx.create_builder()
-    }
-
-    fn lookup_function_value(
-        &self,
-        function_idx: FunctionIdx,
-    ) -> Option<inkwell::values::FunctionValue<'ctx>> {
-        todo!()
-    }
-
-    fn create_function_value(
-        &mut self,
-        function_idx: FunctionIdx,
-    ) -> inkwell::values::FunctionValue<'ctx> {
-        todo!()
-    }
-
-    fn append_basic_block(
-        &mut self,
-        function_idx: FunctionIdx,
-    ) -> inkwell::basic_block::BasicBlock<'ctx> {
-        todo!()
-    }
-
-    fn get_function(&self, function_idx: FunctionIdx) -> ir::Function {
-        todo!()
-    }
-
-    fn get_type(&self, ty: Ty) -> impl inkwell::types::BasicType<'ctx> {
-        todo!()
-    }
-
-    fn const_int(&self, value: i64) -> inkwell::values::IntValue<'ctx> {
-        todo!()
-    }
-
-    fn const_bool(&self, value: bool) -> inkwell::values::IntValue<'ctx> {
-        todo!()
-    }
-
-    fn create_function_builder(
-        &self,
-        symbol_locations: HashMap<Symbol, inkwell::values::PointerValue<'ctx>>,
-    ) -> Self::FunctionBuilder {
-        todo!()
-    }
-}
-
-pub struct CompilePassFunctionBuilder {}
-
-impl<'ctx> LLVMFunctionBuilder<'ctx> for CompilePassFunctionBuilder {
-    fn lookup_basic_block(
-        &self,
-        basic_block_idx: ir::BasicBlockIdx,
-    ) -> Option<inkwell::basic_block::BasicBlock<'ctx>> {
-        todo!()
-    }
-
-    fn create_basic_block(
-        &mut self,
-        basic_block_idx: ir::BasicBlockIdx,
-    ) -> inkwell::basic_block::BasicBlock<'ctx> {
-        todo!()
-    }
-
-    fn anonymous_basic_block(&self) -> inkwell::basic_block::BasicBlock<'ctx> {
-        todo!()
-    }
-
-    fn lookup_symbol(&self, symbol: Symbol) -> inkwell::values::PointerValue<'ctx> {
-        todo!()
-    }
-
-    fn get_triples(&self, basic_block_idx: ir::BasicBlockIdx) -> Vec<ir::Triple> {
-        todo!()
     }
 }

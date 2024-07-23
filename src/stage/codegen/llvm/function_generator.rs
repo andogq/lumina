@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use index_vec::IndexVec;
 use inkwell::{
     basic_block::BasicBlock,
     builder::Builder,
     context::Context,
+    module::Module,
+    types::BasicType,
     values::{BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate,
 };
@@ -11,7 +14,7 @@ use inkwell::{
 use crate::{
     repr::{
         identifier::FunctionIdx,
-        ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleRef, UnaryOp, Value},
+        ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleIdx, UnaryOp, Value},
         ty::Ty,
     },
     util::symbol_map::{interner_symbol_map::Symbol, SymbolMap},
@@ -32,13 +35,13 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
 
     /// Resulting values for each of the triples
     // TODO: Replace this with a more robust system
-    results: HashMap<TripleRef, Option<IntValue<'ink>>>,
+    results: IndexVec<TripleIdx, Option<IntValue<'ink>>>,
     symbols: HashMap<Symbol, PointerValue<'ink>>,
 
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
 
-impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, Ctx> {
+impl<'ctx, 'ink, Ctx: FunctionGeneratorCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     pub fn new(
         ctx: &'ctx mut Ctx,
         llvm_ctx: &'ink Context,
@@ -65,15 +68,14 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             builder,
             function,
             symbols: HashMap::new(),
-            results: HashMap::new(),
+            results: IndexVec::new(),
             blocks: HashMap::new(),
         }
     }
 
     pub fn codegen(&mut self) {
         // Set up all the parameters
-        self.symbols = self
-            .function
+        self.function
             .scope
             .iter()
             .map(|symbol| {
@@ -87,39 +89,22 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                 )
             })
             .collect::<HashMap<_, _>>();
-
-        let user_entry = self.gen_block(
-            &self
-                .function
-                .basic_blocks
-                .iter_enumerated()
-                .next()
-                .unwrap()
-                .0,
-        );
-
-        self.builder
-            .position_at_end(self.llvm_function.get_first_basic_block().unwrap());
-        self.builder.build_unconditional_branch(user_entry).unwrap();
     }
 
-    fn gen_block(&mut self, block_idx: &BasicBlockIdx) -> BasicBlock<'ink> {
-        if let Some(block) = self.blocks.get(block_idx) {
+    fn gen_block(&mut self, block: &BasicBlockIdx) -> BasicBlock<'ink> {
+        if let Some(block) = self.blocks.get(block) {
             return *block;
         }
 
-        let prev_builder = self.builder.get_insert_block();
-
         let basic_block = self
             .llvm_ctx
-            .append_basic_block(self.llvm_function, &format!("bb_{block_idx:?}"));
-        self.blocks.insert(*block_idx, basic_block);
-        self.builder.position_at_end(basic_block);
+            .append_basic_block(self.llvm_function, &format!("bb_{block:?}"));
+        self.blocks.insert(*block, basic_block.clone());
 
-        let block = self.function.basic_blocks.get(*block_idx).unwrap().clone();
+        let block = self.function.basic_blocks.get(*block).unwrap().clone();
 
-        for (idx, triple) in block.triples.iter_enumerated() {
-            let result = match dbg!(triple) {
+        for triple in &block.triples {
+            let result = match triple {
                 Triple::BinaryOp { lhs, rhs, op } => Some(self.gen_op_binary(lhs, rhs, op)),
                 Triple::UnaryOp { rhs, op } => Some(self.gen_op_unary(rhs, op)),
                 Triple::Copy(value) => Some(self.gen_copy(value)),
@@ -140,13 +125,8 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                     value,
                     default,
                     branches,
-                } => self.gen_switch(value, default, branches),
+                } => todo!(),
             };
-            self.results.insert(TripleRef::new(*block_idx, idx), result);
-        }
-
-        if let Some(prev) = prev_builder {
-            self.builder.position_at_end(prev);
         }
 
         basic_block
@@ -219,7 +199,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
 
     fn gen_assign(&self, symbol: &Symbol, value: &Value) {
         let value = self
-            .retrieve_value(value)
+            .retrieve_value(&value)
             .expect("unit value cannot be assigned");
         let ptr = self.symbols.get(symbol).unwrap();
 
@@ -229,8 +209,8 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
     fn gen_switch(
         &mut self,
         value: &Value,
-        default: &(BasicBlockIdx, Value),
-        branches: &[(Value, BasicBlockIdx, Value)],
+        default: (BasicBlockIdx, Value),
+        branches: Vec<(Value, BasicBlockIdx, Value)>,
     ) -> Option<IntValue<'ink>> {
         // Emit the switch instruction
         let cases = branches
@@ -251,7 +231,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
         self.builder
             .build_switch(
                 // Build the value to switch on
-                self.retrieve_value(value)
+                self.retrieve_value(&value)
                     .expect("cannot switch on unit value"),
                 // Compile out the default branch
                 else_block,
@@ -289,7 +269,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             for (bb, final_value) in branches
                 .iter()
                 .map(|(_, bb, final_value)| (*bb, *final_value))
-                .chain([*default])
+                .chain([default])
             {
                 // Pull the block out
                 let basic_block = self.gen_block(&bb);
@@ -369,7 +349,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             }),
             Value::Triple(triple) => Some(
                 self.results
-                    .get(triple)
+                    .get(triple.triple)
                     .expect("triple must exist")
                     .expect("triple must produce value"),
             ),
@@ -377,3 +357,5 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
         }
     }
 }
+
+pub trait FunctionGeneratorCtx: SymbolMap<Symbol = Symbol> {}

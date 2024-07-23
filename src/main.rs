@@ -1,7 +1,16 @@
+use std::collections::HashMap;
+
+use inkwell::{
+    module::Module,
+    passes::PassBuilderOptions,
+    targets::{CodeModel, RelocMode, Target, TargetMachine},
+    values::FunctionValue,
+    OptimizationLevel,
+};
 use lumina::{
     compile_pass::CompilePass,
     stage::{
-        codegen::llvm::Pass,
+        codegen::llvm::FunctionGenerator,
         lex::Lexer,
         lower_ir::{self as ir, IRCtx},
         parse::parse,
@@ -43,17 +52,31 @@ fn main() -> int {
 
     ir::lower(&mut ctx, program);
     let llvm_ctx = inkwell::context::Context::create();
+    let module = llvm_ctx.create_module("module");
 
-    let function_ids = ctx
+    let function_map = ctx
         .all_functions()
         .iter()
-        .map(|(idx, _)| *idx)
-        .collect::<Vec<_>>();
-    let mut llvm_pass = Pass::new(&llvm_ctx, ctx);
-    function_ids.into_iter().for_each(|function| {
-        llvm_pass.compile(function);
-    });
-    let main = *llvm_pass.function_values.get(&main).unwrap();
+        .map(|(idx, _)| {
+            (
+                *idx,
+                module.add_function("fn", llvm_ctx.i64_type().fn_type(&[], false), None),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+
+    for (idx, function) in ctx.all_functions() {
+        FunctionGenerator::new(
+            &mut ctx,
+            &llvm_ctx,
+            function_map.clone(),
+            *function_map.get(&idx).unwrap(),
+            function,
+        )
+        .codegen();
+    }
+
+    let main = function_map.get(&main).unwrap();
 
     // llvm_pass.run_passes(&[
     //     "instcombine",
@@ -63,12 +86,46 @@ fn main() -> int {
     //     "mem2reg",
     // ]);
 
-    llvm_pass.debug_print();
+    module.print_to_stderr();
 
-    let result = llvm_pass.jit(main);
+    let result = jit(&module, *main);
     println!("result: {result}");
+}
 
-    // let compiler = Compiler::new();
-    // let module = compiler.compile(program);
-    // module.jit();
+fn _run_passes(module: &Module, passes: &[&str]) {
+    Target::initialize_all(&Default::default());
+
+    let target_triple = TargetMachine::get_default_triple();
+    let target = Target::from_triple(&target_triple).unwrap();
+    let target_machine = target
+        .create_target_machine(
+            &target_triple,
+            "generic",
+            "",
+            OptimizationLevel::None,
+            RelocMode::PIC,
+            CodeModel::Default,
+        )
+        .unwrap();
+
+    module
+        .run_passes(
+            passes.join(",").as_str(),
+            &target_machine,
+            PassBuilderOptions::create(),
+        )
+        .unwrap();
+}
+
+fn jit(module: &Module, entry: FunctionValue) -> i64 {
+    let engine = module
+        .create_jit_execution_engine(OptimizationLevel::None)
+        .unwrap();
+
+    unsafe {
+        engine
+            .get_function::<unsafe extern "C" fn() -> i64>(entry.get_name().to_str().unwrap())
+            .unwrap()
+            .call()
+    }
 }
