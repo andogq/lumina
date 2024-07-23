@@ -1,13 +1,9 @@
-use index_vec::{define_index_type, IndexVec};
+use index_vec::IndexVec;
 
-use crate::{repr::ty::Ty, util::symbol_map::interner_symbol_map::Symbol};
-
-define_index_type! {pub struct ScopeIdx = usize;}
-define_index_type! {pub struct BindingIdx = usize;}
-
-/// A binding within a specific scope.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ScopedBinding(ScopeIdx, BindingIdx);
+use crate::{
+    repr::{identifier::*, ty::Ty},
+    util::symbol_map::interner_symbol_map::Symbol,
+};
 
 pub struct ScopePart {
     /// Indicates that this scope (and potentially a descendant) is active.

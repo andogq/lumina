@@ -29,9 +29,9 @@ impl TryFrom<Token> for InfixOperation {
 }
 
 ast_node! {
-    typed struct Infix<TyInfo, FnIdentifier> {
-        left: Box<Expression<TyInfo, FnIdentifier>>,
+    typed struct Infix<TyInfo, FnIdentifier, IdentIdentifier> {
+        left: Box<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
         operation: InfixOperation,
-        right: Box<Expression<TyInfo, FnIdentifier>>,
+        right: Box<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
     }
 }

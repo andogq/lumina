@@ -3,7 +3,12 @@ use std::collections::HashMap;
 use index_vec::IndexVec;
 
 use crate::{
-    repr::{ast::typed::Function, identifier::FunctionIdx, ir, ty::Ty},
+    repr::{
+        ast::typed::Function,
+        identifier::{FunctionIdx, ScopedBinding},
+        ir,
+        ty::Ty,
+    },
     stage::{
         lower_ir::{FunctionBuilder as FunctionBuilderTrait, IRCtx},
         parse::ParseCtx,
@@ -97,7 +102,7 @@ pub struct FunctionBuilder {
     basic_blocks: IndexVec<ir::BasicBlockIdx, ir::BasicBlock>,
     current_basic_block: ir::BasicBlockIdx,
 
-    scope: Vec<(Symbol, Ty)>,
+    scope: Vec<(ScopedBinding, Ty)>,
 }
 
 impl FunctionBuilderTrait for FunctionBuilder {
@@ -114,8 +119,8 @@ impl FunctionBuilderTrait for FunctionBuilder {
         }
     }
 
-    fn register_scoped(&mut self, symbol: Symbol, ty: Ty) {
-        self.scope.push((symbol, ty));
+    fn register_scoped(&mut self, ident: ScopedBinding, ty: Ty) {
+        self.scope.push((ident, ty));
     }
 
     fn add_triple(&mut self, triple: ir::Triple) -> ir::TripleRef {

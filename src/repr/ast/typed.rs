@@ -1,6 +1,6 @@
 use crate::{
     generate_ast,
-    repr::{identifier::FunctionIdx, ty::Ty},
+    repr::{identifier::*, ty::Ty},
 };
 
 #[derive(Clone, Debug)]
@@ -11,5 +11,6 @@ pub struct TyInfo {
 
 generate_ast! {
     TyInfo: TyInfo,
-    FnIdentifier: FunctionIdx
+    FnIdentifier: FunctionIdx,
+    IdentIdentifier: ScopedBinding
 }

@@ -34,14 +34,14 @@ impl parse_ast::LetStatement {
         }
 
         // Record the type
-        scope.register(self.name, value.get_ty_info().ty);
+        let binding = scope.register(self.binding, value.get_ty_info().ty);
 
         Ok(LetStatement {
             ty_info: TyInfo {
                 ty: Ty::Unit,
                 return_ty: value.get_ty_info().return_ty,
             },
-            name: self.name,
+            binding,
             value,
             span: self.span,
         })

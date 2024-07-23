@@ -6,15 +6,16 @@ impl parse_ast::Ident {
         _ctx: &mut impl TypeCheckCtx,
         scope: &mut Scope,
     ) -> Result<Ident, TyError> {
+        let (binding, ty) = scope
+            .resolve(self.binding)
+            .ok_or(TyError::SymbolNotFound(self.binding))?;
+
         Ok(Ident {
             ty_info: TyInfo {
-                ty: scope
-                    .resolve(self.name)
-                    .map(|(_, ty)| ty)
-                    .ok_or(TyError::SymbolNotFound(self.name))?,
+                ty,
                 return_ty: None,
             },
-            name: self.name,
+            binding,
             span: self.span,
         })
     }

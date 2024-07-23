@@ -20,8 +20,10 @@ pub struct FunctionSignature {
     pub return_ty: Ty,
 }
 
-impl<TyInfo, FnIdentifier> From<&base_ast::Function<TyInfo, FnIdentifier>> for FunctionSignature {
-    fn from(function: &base_ast::Function<TyInfo, FnIdentifier>) -> Self {
+impl<TyInfo, FnIdentifier, IdentIdentifier>
+    From<&base_ast::Function<TyInfo, FnIdentifier, IdentIdentifier>> for FunctionSignature
+{
+    fn from(function: &base_ast::Function<TyInfo, FnIdentifier, IdentIdentifier>) -> Self {
         Self {
             arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
             return_ty: function.return_ty,

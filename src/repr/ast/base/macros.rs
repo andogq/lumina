@@ -76,25 +76,27 @@ macro_rules! ast_node {
 
 #[macro_export]
 macro_rules! generate_ast {
-    (TyInfo: $ty_info:ty, FnIdentifier: $fn_identifier:ty) => {
+    (TyInfo: $ty_info:ty, FnIdentifier: $fn_identifier:ty, IdentIdentifier: $ident_identifier:ty) => {
         use $crate::repr::ast::base as ast;
 
         // Re-export non-typed utilities
         pub use ast::InfixOperation;
 
-        pub type Block = ast::Block<$ty_info, $fn_identifier>;
+        pub type Block = ast::Block<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Boolean = ast::Boolean<$ty_info>;
-        pub type Call = ast::Call<$ty_info, $fn_identifier>;
-        pub type Ident = ast::Ident<$ty_info>;
-        pub type If = ast::If<$ty_info, $fn_identifier>;
-        pub type Infix = ast::Infix<$ty_info, $fn_identifier>;
+        pub type Call = ast::Call<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type Ident = ast::Ident<$ty_info, $ident_identifier>;
+        pub type If = ast::If<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type Infix = ast::Infix<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Integer = ast::Integer<$ty_info>;
-        pub type Expression = ast::Expression<$ty_info, $fn_identifier>;
-        pub type Function = ast::Function<$ty_info, $fn_identifier>;
-        pub type Program = ast::Program<$ty_info, $fn_identifier>;
-        pub type Statement = ast::Statement<$ty_info, $fn_identifier>;
-        pub type ReturnStatement = ast::ReturnStatement<$ty_info, $fn_identifier>;
-        pub type LetStatement = ast::LetStatement<$ty_info, $fn_identifier>;
-        pub type ExpressionStatement = ast::ExpressionStatement<$ty_info, $fn_identifier>;
+        pub type Expression = ast::Expression<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type Function = ast::Function<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type Program = ast::Program<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type Statement = ast::Statement<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type ReturnStatement =
+            ast::ReturnStatement<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type LetStatement = ast::LetStatement<$ty_info, $fn_identifier, $ident_identifier>;
+        pub type ExpressionStatement =
+            ast::ExpressionStatement<$ty_info, $fn_identifier, $ident_identifier>;
     };
 }

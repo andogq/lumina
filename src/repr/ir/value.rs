@@ -1,4 +1,4 @@
-use crate::util::symbol_map::interner_symbol_map::Symbol;
+use crate::repr::identifier::ScopedBinding;
 
 use super::TripleRef;
 
@@ -13,7 +13,7 @@ pub enum ConstantValue {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Value {
     /// Value derived from a name in the source code.
-    Name(Symbol),
+    Name(ScopedBinding),
     /// Constant value, potentially inserted from the compiler or originating from the source code.
     Constant(ConstantValue),
     /// Temporary value representing the result of some triple.

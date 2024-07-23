@@ -16,34 +16,33 @@ pub use integer::*;
 
 use crate::{
     ast_node,
-    util::{
-        source::{Span, Spanned},
-        symbol_map::interner_symbol_map::Symbol,
-    },
+    util::source::{Span, Spanned},
 };
 
 use super::Statement;
 
 ast_node!(
-    enum Expression<TyInfo, FnIdentifier> {
-        Infix(Infix<TyInfo, FnIdentifier>),
+    enum Expression<TyInfo, FnIdentifier, IdentIdentifier> {
+        Infix(Infix<TyInfo, FnIdentifier, IdentIdentifier>),
         Integer(Integer<TyInfo>),
         Boolean(Boolean<TyInfo>),
-        Ident(Ident<TyInfo>),
-        Block(Block<TyInfo, FnIdentifier>),
-        If(If<TyInfo, FnIdentifier>),
-        Call(Call<TyInfo, FnIdentifier>),
+        Ident(Ident<TyInfo, IdentIdentifier>),
+        Block(Block<TyInfo, FnIdentifier, IdentIdentifier>),
+        If(If<TyInfo, FnIdentifier, IdentIdentifier>),
+        Call(Call<TyInfo, FnIdentifier, IdentIdentifier>),
     }
 );
 
-impl<TyInfo: Default, FnIdentifier> Expression<TyInfo, FnIdentifier> {
+impl<TyInfo: Default, FnIdentifier, IdentIdentifier>
+    Expression<TyInfo, FnIdentifier, IdentIdentifier>
+{
     pub fn infix(
-        left: Expression<TyInfo, FnIdentifier>,
+        left: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
         operation: InfixOperation,
-        right: Expression<TyInfo, FnIdentifier>,
+        right: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
     ) -> Self {
         let span = Spanned::span(&left).to(&right);
-        Self::Infix(Infix::<TyInfo, FnIdentifier>::new(
+        Self::Infix(Infix::<TyInfo, FnIdentifier, IdentIdentifier>::new(
             Box::new(left),
             operation,
             Box::new(right),
@@ -59,21 +58,26 @@ impl<TyInfo: Default, FnIdentifier> Expression<TyInfo, FnIdentifier> {
         Self::Boolean(Boolean::<TyInfo>::new(value, span))
     }
 
-    pub fn ident(name: Symbol, span: Span) -> Self {
-        Self::Ident(Ident::<TyInfo>::new(name, span))
+    pub fn ident(name: IdentIdentifier, span: Span) -> Self {
+        Self::Ident(Ident::<TyInfo, IdentIdentifier>::new(name, span))
     }
 
-    pub fn block(statements: Vec<Statement<TyInfo, FnIdentifier>>, span: Span) -> Self {
-        Self::Block(Block::<TyInfo, FnIdentifier>::new(statements, span))
+    pub fn block(
+        statements: Vec<Statement<TyInfo, FnIdentifier, IdentIdentifier>>,
+        span: Span,
+    ) -> Self {
+        Self::Block(Block::<TyInfo, FnIdentifier, IdentIdentifier>::new(
+            statements, span,
+        ))
     }
 
     pub fn _if(
-        condition: Expression<TyInfo, FnIdentifier>,
-        success: Block<TyInfo, FnIdentifier>,
-        otherwise: Option<Block<TyInfo, FnIdentifier>>,
+        condition: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
+        success: Block<TyInfo, FnIdentifier, IdentIdentifier>,
+        otherwise: Option<Block<TyInfo, FnIdentifier, IdentIdentifier>>,
         span: Span,
     ) -> Self {
-        Self::If(If::<TyInfo, FnIdentifier>::new(
+        Self::If(If::<TyInfo, FnIdentifier, IdentIdentifier>::new(
             Box::new(condition),
             success,
             otherwise,
@@ -83,7 +87,7 @@ impl<TyInfo: Default, FnIdentifier> Expression<TyInfo, FnIdentifier> {
 
     pub fn call(
         identifier: FnIdentifier,
-        args: Vec<Expression<TyInfo, FnIdentifier>>,
+        args: Vec<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
         span: Span,
     ) -> Self {
         Self::Call(Call::new(identifier, args, span))

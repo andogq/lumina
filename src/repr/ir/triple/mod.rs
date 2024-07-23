@@ -1,6 +1,6 @@
 use index_vec::define_index_type;
 
-use crate::{repr::identifier::FunctionIdx, util::symbol_map::interner_symbol_map::Symbol};
+use crate::repr::identifier::{FunctionIdx, ScopedBinding};
 
 use super::{BasicBlockIdx, Value};
 
@@ -29,7 +29,7 @@ pub enum Triple {
     /// Return with the provided value.
     Return(Value),
     /// Assign some symbol to some value.
-    Assign(Symbol, Value),
+    Assign(ScopedBinding, Value),
     Switch {
         value: Value,
         default: (BasicBlockIdx, Value),

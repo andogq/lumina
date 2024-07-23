@@ -1,11 +1,8 @@
-use crate::{
-    repr::{
-        ast::typed as ast,
-        identifier::FunctionIdx,
-        ir::{BasicBlockIdx, Function, Triple, TripleRef},
-        ty::Ty,
-    },
-    util::symbol_map::interner_symbol_map::Symbol,
+use crate::repr::{
+    ast::typed as ast,
+    identifier::{FunctionIdx, ScopedBinding},
+    ir::{BasicBlockIdx, Function, Triple, TripleRef},
+    ty::Ty,
 };
 
 #[cfg_attr(test, mockall::automock(type FunctionBuilder = MockFunctionBuilder;))]
@@ -31,7 +28,7 @@ pub trait FunctionBuilder {
     fn new(function: &ast::Function) -> Self;
 
     /// Register the provided symbol with the given type into the function scope.
-    fn register_scoped(&mut self, symbol: Symbol, ty: Ty);
+    fn register_scoped(&mut self, ident: ScopedBinding, ty: Ty);
 
     /// Add a triple to the current basic block.
     fn add_triple(&mut self, triple: Triple) -> TripleRef;
@@ -55,7 +52,7 @@ mockall::mock! {
 
     impl FunctionBuilder for FunctionBuilder {
         fn new(function: &ast::Function) -> Self;
-        fn register_scoped(&mut self, symbol: Symbol, ty: Ty);
+        fn register_scoped(&mut self, ident: ScopedBinding, ty: Ty);
         fn add_triple(&mut self, triple: Triple) -> TripleRef;
         fn current_bb(&self) -> BasicBlockIdx;
         fn goto_bb(&mut self, bb: BasicBlockIdx) ;

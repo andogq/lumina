@@ -47,7 +47,11 @@ fn lower_block(
                 let value = lower_expression(ctx, builder, value);
                 builder.add_triple(Triple::Return(value));
             }
-            ast::Statement::Let(ast::LetStatement { name, value, .. }) => {
+            ast::Statement::Let(ast::LetStatement {
+                binding: name,
+                value,
+                ..
+            }) => {
                 builder.register_scoped(*name, value.get_ty_info().ty);
 
                 let value = lower_expression(ctx, builder, value);
@@ -89,7 +93,7 @@ fn lower_expression(
         }
         ast::Expression::Integer(integer) => Value::integer(integer.value),
         ast::Expression::Boolean(boolean) => Value::boolean(boolean.value),
-        ast::Expression::Ident(ast::Ident { name, .. }) => Value::Name(*name),
+        ast::Expression::Ident(ast::Ident { binding: name, .. }) => Value::Name(*name),
         ast::Expression::Block(block) => lower_block(ctx, builder, block),
         ast::Expression::If(ast::If {
             condition,

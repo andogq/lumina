@@ -32,7 +32,7 @@ mod test {
             .return_const(mocked_symbol);
 
         let ident = parse_ident(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
-        assert_eq!(ident.name, mocked_symbol);
+        assert_eq!(ident.binding, mocked_symbol);
     }
 
     #[test]

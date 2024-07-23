@@ -2,5 +2,6 @@ use crate::{generate_ast, repr::ty::Ty, util::symbol_map::interner_symbol_map::S
 
 generate_ast! {
     TyInfo: Option<Ty>,
-    FnIdentifier: Symbol
+    FnIdentifier: Symbol,
+    IdentIdentifier: Symbol
 }

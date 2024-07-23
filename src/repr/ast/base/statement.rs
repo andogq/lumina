@@ -1,26 +1,35 @@
-use crate::{ast_node, util::source::Span, util::symbol_map::interner_symbol_map::Symbol};
+use crate::{ast_node, util::source::Span};
 
 use super::*;
 
 ast_node!(
-    enum Statement<TyInfo, FnIdentifier> {
-        Return(ReturnStatement<TyInfo, FnIdentifier>),
-        Let(LetStatement<TyInfo, FnIdentifier>),
-        Expression(ExpressionStatement<TyInfo, FnIdentifier>),
+    enum Statement<TyInfo, FnIdentifier, IdentIdentifier> {
+        Return(ReturnStatement<TyInfo, FnIdentifier, IdentIdentifier>),
+        Let(LetStatement<TyInfo, FnIdentifier, IdentIdentifier>),
+        Expression(ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier>),
     }
 );
 
-impl<TyInfo: Default, FnIdentifier> Statement<TyInfo, FnIdentifier> {
-    pub fn _return(expression: Expression<TyInfo, FnIdentifier>, span: Span) -> Self {
+impl<TyInfo: Default, FnIdentifier, IdentIdentifier>
+    Statement<TyInfo, FnIdentifier, IdentIdentifier>
+{
+    pub fn _return(
+        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
+        span: Span,
+    ) -> Self {
         Self::Return(ReturnStatement::new(expression, span))
     }
 
-    pub fn _let(name: Symbol, value: Expression<TyInfo, FnIdentifier>, span: Span) -> Self {
+    pub fn _let(
+        name: IdentIdentifier,
+        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
+        span: Span,
+    ) -> Self {
         Self::Let(LetStatement::new(name, value, span))
     }
 
     pub fn expression(
-        expression: Expression<TyInfo, FnIdentifier>,
+        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
         implicit_return: bool,
         span: Span,
     ) -> Self {
@@ -29,21 +38,21 @@ impl<TyInfo: Default, FnIdentifier> Statement<TyInfo, FnIdentifier> {
 }
 
 ast_node! {
-    typed struct ReturnStatement<TyInfo, FnIdentifier> {
-        value: Expression<TyInfo, FnIdentifier>,
+    typed struct ReturnStatement<TyInfo, FnIdentifier, IdentIdentifier> {
+        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
     }
 }
 
 ast_node! {
-    typed struct LetStatement<TyInfo, FnIdentifier> {
-        name: Symbol,
-        value: Expression<TyInfo, FnIdentifier>,
+    typed struct LetStatement<TyInfo, FnIdentifier, IdentIdentifier> {
+        binding: IdentIdentifier,
+        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
     }
 }
 
 ast_node! {
-    typed struct ExpressionStatement<TyInfo, FnIdentifier> {
-        expression: Expression<TyInfo, FnIdentifier>,
+    typed struct ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier> {
+        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
         implicit_return: bool,
     }
 }

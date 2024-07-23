@@ -96,7 +96,7 @@ pub fn parse_expression(
                 };
 
                 let span = name.span().to(right_paren.span());
-                left = Expression::Call(Call::new(name.name, args, span));
+                left = Expression::Call(Call::new(name.binding, args, span));
             }
             // Regular infix operation
             (token, _) => {
@@ -289,7 +289,7 @@ mod test {
                                 expression: Ident(
                                     Ident {
                                         span: 1:0 -> 1:0,
-                                        name: SymbolU32 {
+                                        binding: SymbolU32 {
                                             value: 1,
                                         },
                                         ty_info: None,
@@ -340,7 +340,7 @@ mod test {
         Ident(
             Ident {
                 span: 1:0 -> 1:0,
-                name: SymbolU32 {
+                binding: SymbolU32 {
                     value: 1,
                 },
                 ty_info: None,

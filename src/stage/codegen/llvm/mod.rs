@@ -10,7 +10,7 @@ use inkwell::{
 
 use crate::{
     repr::{
-        identifier::FunctionIdx,
+        identifier::{FunctionIdx, ScopedBinding},
         ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleRef, UnaryOp, Value},
         ty::Ty,
     },
@@ -33,7 +33,7 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     /// Resulting values for each of the triples
     // TODO: Replace this with a more robust system
     results: HashMap<TripleRef, Option<IntValue<'ink>>>,
-    symbols: HashMap<Symbol, PointerValue<'ink>>,
+    symbols: HashMap<ScopedBinding, PointerValue<'ink>>,
 
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
@@ -82,7 +82,8 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                     self.alloca(
                         // TODO: Actually determine the type of this symbol
                         Ty::Int,
-                        &self.ctx.get(*symbol),
+                        // TODO: Map between BindingIdx and string
+                        "some symbol",
                     ),
                 )
             })
@@ -119,7 +120,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
         let block = self.function.basic_blocks.get(*block_idx).unwrap().clone();
 
         for (idx, triple) in block.triples.iter_enumerated() {
-            let result = match dbg!(triple) {
+            let result = match triple {
                 Triple::BinaryOp { lhs, rhs, op } => Some(self.gen_op_binary(lhs, rhs, op)),
                 Triple::UnaryOp { rhs, op } => Some(self.gen_op_unary(rhs, op)),
                 Triple::Copy(value) => Some(self.gen_copy(value)),
@@ -217,11 +218,11 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             .unwrap();
     }
 
-    fn gen_assign(&self, symbol: &Symbol, value: &Value) {
+    fn gen_assign(&self, ident: &ScopedBinding, value: &Value) {
         let value = self
             .retrieve_value(value)
             .expect("unit value cannot be assigned");
-        let ptr = self.symbols.get(symbol).unwrap();
+        let ptr = self.symbols.get(ident).unwrap();
 
         self.builder.build_store(*ptr, value).unwrap();
     }

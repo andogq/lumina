@@ -3,9 +3,11 @@ use std::collections::HashSet;
 use index_vec::IndexVec;
 
 use crate::{
-    repr::{ast::typed as ast, identifier::FunctionIdx},
+    repr::{
+        ast::typed as ast,
+        identifier::{FunctionIdx, ScopedBinding},
+    },
     stage::type_check::FunctionSignature,
-    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 use super::BasicBlock;
@@ -19,7 +21,7 @@ pub struct Function {
     pub symbol: FunctionIdx,
     pub signature: FunctionSignature,
     pub basic_blocks: IndexVec<BasicBlockIdx, BasicBlock>,
-    pub scope: HashSet<Symbol>,
+    pub scope: HashSet<ScopedBinding>,
 }
 
 impl Function {
