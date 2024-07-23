@@ -16,8 +16,8 @@ pub use ctx::TypeCheckCtx;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
-    arguments: Vec<Ty>,
-    return_ty: Ty,
+    pub arguments: Vec<Ty>,
+    pub return_ty: Ty,
 }
 
 impl<TyInfo, FnIdentifier> From<&base_ast::Function<TyInfo, FnIdentifier>> for FunctionSignature {
