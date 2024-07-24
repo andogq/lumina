@@ -30,7 +30,11 @@ impl Function {
             symbol: function.name,
             signature: FunctionSignature::from(function),
             basic_blocks: IndexVec::new(),
-            scope: HashSet::new(),
+            scope: dbg!(function
+                .parameters
+                .iter()
+                .map(|(binding, _)| dbg!(*binding))
+                .collect()),
         }
     }
 }

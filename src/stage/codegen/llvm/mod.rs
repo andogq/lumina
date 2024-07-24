@@ -33,7 +33,7 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     /// Resulting values for each of the triples
     // TODO: Replace this with a more robust system
     results: HashMap<TripleRef, Option<IntValue<'ink>>>,
-    symbols: HashMap<ScopedBinding, PointerValue<'ink>>,
+    bindings: HashMap<ScopedBinding, PointerValue<'ink>>,
 
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
@@ -55,7 +55,9 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             0,
             "function should not have any basic blocks"
         );
-        llvm_ctx.append_basic_block(llvm_function, "entry");
+        let entry = llvm_ctx.append_basic_block(llvm_function, "entry");
+
+        builder.position_at_end(entry);
 
         Self {
             ctx,
@@ -64,7 +66,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
             functions,
             builder,
             function,
-            symbols: HashMap::new(),
+            bindings: HashMap::new(),
             results: HashMap::new(),
             blocks: HashMap::new(),
         }
@@ -72,13 +74,13 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
 
     pub fn codegen(&mut self) {
         // Set up all the parameters
-        self.symbols = self
+        self.bindings = self
             .function
             .scope
             .iter()
-            .map(|symbol| {
+            .map(|binding| {
                 (
-                    *symbol,
+                    *binding,
                     self.alloca(
                         // TODO: Actually determine the type of this symbol
                         Ty::Int,
@@ -88,6 +90,16 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                 )
             })
             .collect::<HashMap<_, _>>();
+
+        for (i, (_binding, ptr)) in self
+            .bindings
+            .iter()
+            .take(self.function.signature.arguments.len())
+            .enumerate()
+        {
+            let param = self.llvm_function.get_nth_param(i as u32).unwrap();
+            self.builder.build_store(*ptr, param).unwrap();
+        }
 
         let user_entry = self.gen_block(
             &self
@@ -128,7 +140,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                     self.gen_jump(bb);
                     None
                 }
-                Triple::Call(function) => Some(self.gen_call(function)),
+                Triple::Call(function, params) => Some(self.gen_call(function, params)),
                 Triple::Return(value) => {
                     self.gen_return(value);
                     None
@@ -198,12 +210,20 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
         self.builder.build_unconditional_branch(bb).unwrap();
     }
 
-    fn gen_call(&mut self, function: &FunctionIdx) -> IntValue<'ink> {
+    fn gen_call(&mut self, function: &FunctionIdx, params: &[Value]) -> IntValue<'ink> {
         // Ensure the function is compiled
         let function = self.functions.get(function).unwrap();
 
         self.builder
-            .build_call(function.to_owned(), &[], "call some function")
+            .build_call(
+                function.to_owned(),
+                params
+                    .iter()
+                    .map(|param| self.retrieve_value(param).unwrap().into())
+                    .collect::<Vec<_>>()
+                    .as_slice(),
+                "call some function",
+            )
             .unwrap()
             .try_as_basic_value()
             .unwrap_left()
@@ -222,7 +242,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
         let value = self
             .retrieve_value(value)
             .expect("unit value cannot be assigned");
-        let ptr = self.symbols.get(ident).unwrap();
+        let ptr = self.bindings.get(ident).unwrap();
 
         self.builder.build_store(*ptr, value).unwrap();
     }
@@ -346,7 +366,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
     fn retrieve_value(&self, value: &Value) -> Option<IntValue<'ink>> {
         match value {
             Value::Name(symbol) => {
-                let ptr = self.symbols.get(symbol).expect("symbol must be defined");
+                let ptr = self.bindings.get(symbol).expect("symbol must be defined");
                 Some(
                     self.builder
                         .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol:?}"))

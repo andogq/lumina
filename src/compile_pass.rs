@@ -115,7 +115,7 @@ impl FunctionBuilderTrait for FunctionBuilder {
             signature: FunctionSignature::from(function),
             basic_blocks,
             current_basic_block,
-            scope: Vec::new(),
+            scope: function.parameters.to_vec(),
         }
     }
 

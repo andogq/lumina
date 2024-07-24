@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::repr::ty::Ty;
 
 use super::*;
@@ -31,7 +33,7 @@ pub fn parse_function(
     };
 
     // opening paren for argument list
-    match tokens.next_token() {
+    match tokens.peek_token() {
         Token::LeftParen(_) => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -42,8 +44,44 @@ pub fn parse_function(
         }
     }
 
-    // TODO: this
-    let parameters = Vec::new();
+    let parameters = iter::from_fn(|| {
+        match tokens.peek_token() {
+            Token::RightParen(_) => None,
+            Token::LeftParen(_) | Token::Comma(_) => {
+                // Consume the opening paren or comma
+                tokens.next_token();
+
+                // If the closing parenthesis is encountered, stop parsing arguments
+                if matches!(tokens.peek_token(), Token::RightParen(_)) {
+                    return None;
+                }
+
+                // Parse the identifier
+                let ident = ctx.intern(tokens.ident("param identifier").ok()?.literal);
+
+                let colon = tokens.next_token();
+                if !matches!(colon, Token::Colon(_)) {
+                    return Some(Err(ParseError::ExpectedToken {
+                        expected: Box::new(Token::colon()),
+                        found: Box::new(colon),
+                        reason: "param name and type must be separated by a colon".to_string(),
+                    }));
+                }
+
+                let ty_token = tokens.ident("ty").ok()?;
+                assert_eq!(ty_token.literal, "int", "only support int type");
+                let ty = Ty::Int;
+
+                Some(Ok((ident, ty)))
+            }
+            token => Some(Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::comma()),
+                found: Box::new(token),
+                reason: "function arguments must be separated by a comma".to_string(),
+            })),
+        }
+    })
+    .collect::<Result<Vec<_>, _>>()?;
 
     // closing paren for argument list
     match tokens.next_token() {

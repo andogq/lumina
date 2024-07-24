@@ -131,7 +131,12 @@ fn lower_expression(
         }
         ast::Expression::Call(call) => {
             let idx = call.name;
-            Value::Triple(builder.add_triple(Triple::Call(idx)))
+            let params = call
+                .args
+                .iter()
+                .map(|e| lower_expression(ctx, builder, e))
+                .collect();
+            Value::Triple(builder.add_triple(Triple::Call(idx, params)))
         }
     }
 }

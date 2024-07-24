@@ -12,9 +12,11 @@ impl parse_ast::Function {
         let mut scope = Scope::new();
 
         // Add all of the function's parameters into the scope so they're accessible
-        self.parameters.iter().for_each(|(symbol, ty)| {
-            scope.register(*symbol, *ty);
-        });
+        let parameters = self
+            .parameters
+            .iter()
+            .map(|(symbol, ty)| (scope.register(*symbol, *ty), *ty))
+            .collect();
 
         let body = self.body.ty_solve(ctx, &mut scope)?;
 
@@ -32,7 +34,7 @@ impl parse_ast::Function {
 
         Ok(Function {
             name: identifier,
-            parameters: self.parameters,
+            parameters,
             return_ty: self.return_ty,
             body,
             span: self.span,

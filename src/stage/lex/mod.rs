@@ -70,6 +70,7 @@ impl Iterator for TokenIter {
                         })
                     }
 
+                    ':' => Token::Colon(ColonToken { span }),
                     ';' => Token::Semicolon(SemicolonToken { span }),
                     ',' => Token::Comma(CommaToken { span }),
 

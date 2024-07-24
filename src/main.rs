@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use inkwell::{
     module::Module,
@@ -21,12 +21,12 @@ use lumina::{
 fn main() {
     let source = Source::new(
         r#"
-fn a() -> int {
-    return 7;
+fn a(num: int) -> int {
+    return num + 2;
 }
 
 fn main() -> int {
-    return a();
+    return a(3);
 }"#,
     );
 
@@ -57,10 +57,26 @@ fn main() -> int {
     let function_map = ctx
         .all_functions()
         .iter()
-        .map(|(idx, _)| {
+        .map(|(idx, f)| {
             (
                 *idx,
-                module.add_function("fn", llvm_ctx.i64_type().fn_type(&[], false), None),
+                module.add_function(
+                    "fn",
+                    llvm_ctx.i64_type().fn_type(
+                        f.signature
+                            .arguments
+                            .iter()
+                            .map(|arg| match arg {
+                                lumina::repr::ty::Ty::Int => llvm_ctx.i64_type().into(),
+                                lumina::repr::ty::Ty::Boolean => todo!(),
+                                lumina::repr::ty::Ty::Unit => todo!(),
+                            })
+                            .collect::<Vec<_>>()
+                            .as_slice(),
+                        false,
+                    ),
+                    None,
+                ),
             )
         })
         .collect::<HashMap<_, _>>();

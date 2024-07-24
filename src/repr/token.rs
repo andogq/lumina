@@ -142,6 +142,7 @@ token!(NotEqToken, "!=");
 
 token!(EqualsToken, "=");
 
+token!(ColonToken, ":");
 token!(SemicolonToken, ";");
 token!(ThinArrowToken, "->");
 token!(CommaToken, ",");
@@ -173,6 +174,7 @@ token_enum! {
 
     Equals: EqualsToken,
 
+    Colon: ColonToken,
     Semicolon: SemicolonToken,
     ThinArrow: ThinArrowToken,
     Comma: CommaToken,
@@ -220,6 +222,9 @@ impl Token {
         Self::Equals(Default::default())
     }
 
+    pub fn colon() -> Self {
+        Self::Colon(Default::default())
+    }
     pub fn semicolon() -> Self {
         Self::Semicolon(Default::default())
     }
