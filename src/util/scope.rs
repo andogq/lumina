@@ -31,6 +31,12 @@ impl ScopePart {
     }
 }
 
+impl Default for ScopePart {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Scope {
     scopes: IndexVec<ScopeIdx, ScopePart>,
 }
@@ -95,6 +101,11 @@ impl Scope {
                     .map(move |(binding_idx, (_, ty))| (ScopedBinding(scope_idx, binding_idx), *ty))
             })
             .next_back()
+    }
+
+    /// Get the information for a binding.
+    pub fn get_binding(&self, binding: &ScopedBinding) -> (Symbol, Ty) {
+        self.scopes[binding.0].bindings[binding.1]
     }
 
     /// Find the currently activated scope identifier.

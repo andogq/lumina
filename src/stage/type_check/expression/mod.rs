@@ -1,4 +1,6 @@
-use ctx::{Scope, TypeCheckCtx};
+use ctx::TypeCheckCtx;
+
+use crate::util::scope::Scope;
 
 use super::*;
 

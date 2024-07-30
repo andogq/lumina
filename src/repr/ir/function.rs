@@ -15,7 +15,7 @@ index_vec::define_index_type! {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub symbol: FunctionIdx,
+    pub identifier: FunctionIdx,
     pub signature: FunctionSignature,
     pub basic_blocks: IndexVec<BasicBlockIdx, BasicBlock>,
     pub scope: HashSet<ScopedBinding>,

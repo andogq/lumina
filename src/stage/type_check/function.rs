@@ -1,4 +1,6 @@
-use ctx::{Scope, TypeCheckCtx};
+use ctx::TypeCheckCtx;
+
+use crate::util::scope::Scope;
 
 use super::*;
 
@@ -18,7 +20,11 @@ impl parse_ast::Function {
             .map(|(symbol, ty)| (scope.register(*symbol, *ty), *ty))
             .collect();
 
+        // Type check the body, allowing it to use the function's scope
         let body = self.body.ty_solve(ctx, &mut scope)?;
+
+        // Store the function's scope for future reference
+        ctx.set_function_scope(identifier, scope);
 
         // If the body contains any return statements, they must match the annotated return statement
         if let Some(return_ty) = body.ty_info.return_ty {

@@ -1,3 +1,5 @@
+use crate::util::scope::Scope;
+
 use super::*;
 
 impl InfixOperation {
@@ -46,8 +48,8 @@ impl parse_ast::Infix {
 mod test_infix {
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
-        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
-        util::source::Span,
+        stage::type_check::ctx::MockTypeCheckCtx,
+        util::{scope::Scope, source::Span},
     };
 
     #[test]

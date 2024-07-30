@@ -1,3 +1,5 @@
+use crate::util::scope::Scope;
+
 use super::*;
 
 impl parse_ast::Ident {
@@ -27,8 +29,8 @@ mod test_ident {
 
     use crate::{
         repr::ast::untyped::Ident,
-        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
-        util::source::Span,
+        stage::type_check::ctx::MockTypeCheckCtx,
+        util::{scope::Scope, source::Span},
     };
 
     use super::expression::Ty;

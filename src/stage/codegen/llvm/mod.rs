@@ -8,14 +8,13 @@ use inkwell::{
     IntPredicate,
 };
 
-use crate::{
-    repr::{
-        identifier::{FunctionIdx, ScopedBinding},
-        ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleRef, UnaryOp, Value},
-        ty::Ty,
-    },
-    util::symbol_map::{interner_symbol_map::Symbol, SymbolMap},
+use crate::repr::{
+    identifier::{FunctionIdx, ScopedBinding},
+    ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleRef, UnaryOp, Value},
+    ty::Ty,
 };
+
+use super::ctx::LLVMCtx;
 
 pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     ctx: &'ctx mut Ctx,
@@ -37,7 +36,7 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
 
-impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, Ctx> {
+impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     pub fn new(
         ctx: &'ctx mut Ctx,
         llvm_ctx: &'ink Context,
@@ -81,10 +80,11 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                 (
                     *binding,
                     self.alloca(
-                        // TODO: Actually determine the type of this symbol
-                        Ty::Int,
-                        // TODO: Map between BindingIdx and string
-                        "some symbol",
+                        self.ctx
+                            .get_scoped_binding_ty(&self.function.identifier, binding),
+                        &self
+                            .ctx
+                            .get_scoped_binding_name(&self.function.identifier, binding),
                     ),
                 )
             })

@@ -1,4 +1,6 @@
-use ctx::{Scope, TypeCheckCtx};
+use ctx::TypeCheckCtx;
+
+use crate::util::scope::Scope;
 
 use super::*;
 
@@ -59,8 +61,8 @@ mod test {
 
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
-        stage::type_check::ctx::{MockTypeCheckCtx, Scope},
-        util::source::Span,
+        stage::type_check::ctx::MockTypeCheckCtx,
+        util::{scope::Scope, source::Span},
     };
 
     #[test]

@@ -1,14 +1,16 @@
-mod scope;
-
-use crate::{repr::identifier::FunctionIdx, util::symbol_map::interner_symbol_map::Symbol};
+use crate::{
+    repr::identifier::FunctionIdx,
+    util::{scope::*, symbol_map::interner_symbol_map::Symbol},
+};
 
 use super::FunctionSignature;
-
-pub use self::scope::*;
 
 pub trait TypeCheckCtx {
     /// Register a function's signature and associated symbol, to produce a unique identifier for the function.
     fn register_function(&mut self, symbol: Symbol, signature: FunctionSignature) -> FunctionIdx;
+
+    /// Store the scope for a function
+    fn set_function_scope(&mut self, function: FunctionIdx, scope: Scope);
 
     /// Get the signature associated with a function identifier.
     fn get_function(&self, idx: FunctionIdx) -> FunctionSignature;
@@ -23,6 +25,7 @@ mockall::mock! {
 
     impl TypeCheckCtx for TypeCheckCtx {
         fn register_function(&mut self, symbol: Symbol, signature: FunctionSignature) -> FunctionIdx;
+        fn set_function_scope(&mut self, function: FunctionIdx, scope: Scope);
         fn get_function(&self, idx: FunctionIdx) -> FunctionSignature;
         fn lookup_function_symbol(&self, symbol: Symbol) -> Option<FunctionIdx>;
     }

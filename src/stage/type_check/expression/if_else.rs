@@ -1,3 +1,5 @@
+use crate::util::scope::Scope;
+
 use super::*;
 
 impl parse_ast::If {

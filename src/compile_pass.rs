@@ -10,29 +10,40 @@ use crate::{
         ty::Ty,
     },
     stage::{
+        codegen::ctx::LLVMCtx,
         lower_ir::{FunctionBuilder as FunctionBuilderTrait, IRCtx},
         parse::ParseCtx,
         type_check::{FunctionSignature, TypeCheckCtx},
     },
-    util::symbol_map::{interner_symbol_map::*, SymbolMap},
+    util::{
+        scope::Scope,
+        symbol_map::{interner_symbol_map::*, SymbolMap},
+    },
 };
 
+struct FunctionInfo {
+    signature: FunctionSignature,
+    scope: Option<Scope>,
+    ir: Option<ir::Function>,
+}
+
 pub struct CompilePass {
+    /// Backing symbol store for entire compile.
     symbols: InternerSymbolMap,
 
-    function_signatures: IndexVec<FunctionIdx, FunctionSignature>,
-    function_symbols: HashMap<Symbol, FunctionIdx>,
+    /// All available functions within this pass
+    functions: IndexVec<FunctionIdx, FunctionInfo>,
 
-    ir_functions: HashMap<FunctionIdx, ir::Function>,
+    /// Mapping between interned symbol and a function identifier.
+    function_symbols: HashMap<Symbol, FunctionIdx>,
 }
 
 impl CompilePass {
     pub fn new() -> Self {
         Self {
             symbols: InternerSymbolMap::new(),
-            function_signatures: IndexVec::new(),
+            functions: IndexVec::new(),
             function_symbols: HashMap::new(),
-            ir_functions: HashMap::new(),
         }
     }
 }
@@ -66,17 +77,25 @@ impl ParseCtx for CompilePass {}
 
 impl TypeCheckCtx for CompilePass {
     fn register_function(&mut self, symbol: Symbol, signature: FunctionSignature) -> FunctionIdx {
-        let idx = self.function_signatures.push(signature);
+        let idx = self.functions.push(FunctionInfo {
+            signature,
+            scope: None,
+            ir: None,
+        });
         self.function_symbols.insert(symbol, idx);
         idx
     }
 
     fn get_function(&self, idx: FunctionIdx) -> FunctionSignature {
-        self.function_signatures[idx].clone()
+        self.functions[idx].signature.clone()
     }
 
     fn lookup_function_symbol(&self, symbol: Symbol) -> Option<FunctionIdx> {
         self.function_symbols.get(&symbol).cloned()
+    }
+
+    fn set_function_scope(&mut self, function: FunctionIdx, scope: Scope) {
+        self.functions[function].scope = Some(scope);
     }
 }
 
@@ -84,13 +103,13 @@ impl IRCtx for CompilePass {
     type FunctionBuilder = FunctionBuilder;
 
     fn register_function(&mut self, idx: FunctionIdx, function: ir::Function) {
-        self.ir_functions.insert(idx, function);
+        self.functions[idx].ir = Some(function);
     }
 
     fn all_functions(&self) -> Vec<(FunctionIdx, ir::Function)> {
-        self.ir_functions
-            .iter()
-            .map(|(idx, function)| (*idx, function.clone()))
+        self.functions
+            .iter_enumerated()
+            .filter_map(|(idx, function)| Some((idx, function.ir.as_ref()?.clone())))
             .collect()
     }
 }
@@ -156,11 +175,31 @@ impl FunctionBuilderTrait for FunctionBuilder {
         ctx.register_function(
             self.idx,
             ir::Function {
-                symbol: self.idx,
+                identifier: self.idx,
                 signature: self.signature,
                 basic_blocks: self.basic_blocks,
                 scope: self.scope.into_iter().map(|(symbol, _)| symbol).collect(),
             },
         )
+    }
+}
+
+impl LLVMCtx for CompilePass {
+    fn get_scoped_binding_name(&self, function: &FunctionIdx, binding: &ScopedBinding) -> String {
+        let (symbol, _) = self.functions[*function]
+            .scope
+            .as_ref()
+            .unwrap()
+            .get_binding(binding);
+        self.get(symbol)
+    }
+
+    fn get_scoped_binding_ty(&self, function: &FunctionIdx, binding: &ScopedBinding) -> Ty {
+        self.functions[*function]
+            .scope
+            .as_ref()
+            .unwrap()
+            .get_binding(binding)
+            .1
     }
 }
