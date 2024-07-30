@@ -344,7 +344,7 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
             .build_alloca(
                 match ty {
                     Ty::Int => self.llvm_ctx.i64_type(),
-                    Ty::Boolean => todo!(),
+                    Ty::Boolean => self.llvm_ctx.bool_type(),
                     Ty::Unit => todo!(),
                 },
                 name,
