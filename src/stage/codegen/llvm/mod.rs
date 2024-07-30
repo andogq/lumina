@@ -31,7 +31,6 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     functions: HashMap<FunctionIdx, FunctionValue<'ink>>,
 
     /// Resulting values for each of the triples
-    // TODO: Replace this with a more robust system
     results: HashMap<TripleRef, Option<IntValue<'ink>>>,
     bindings: HashMap<ScopedBinding, PointerValue<'ink>>,
 
@@ -73,7 +72,7 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
     }
 
     pub fn codegen(&mut self) {
-        // Set up all the parameters
+        // Create stack allocations for all of the variables in scope
         self.bindings = self
             .function
             .scope
@@ -90,16 +89,6 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                 )
             })
             .collect::<HashMap<_, _>>();
-
-        for (i, (_binding, ptr)) in self
-            .bindings
-            .iter()
-            .take(self.function.signature.arguments.len())
-            .enumerate()
-        {
-            let param = self.llvm_function.get_nth_param(i as u32).unwrap();
-            self.builder.build_store(*ptr, param).unwrap();
-        }
 
         let user_entry = self.gen_block(
             &self
@@ -393,6 +382,12 @@ impl<'ctx, 'ink, Ctx: SymbolMap<Symbol = Symbol>> FunctionGenerator<'ctx, 'ink, 
                     .get(triple)
                     .expect("triple must exist")
                     .expect("triple must produce value"),
+            ),
+            Value::Parameter(i) => Some(
+                self.llvm_function
+                    .get_nth_param(*i as u32)
+                    .unwrap()
+                    .into_int_value(),
             ),
             Value::Unit => None,
         }

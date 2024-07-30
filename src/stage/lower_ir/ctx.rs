@@ -22,7 +22,7 @@ pub trait IRCtx {
 }
 
 /// A stateful representation of a function that is being constructed. A function consists of basic
-///  blocks, and the builder is always 'located' at a basic block.
+/// blocks, and the builder is always 'located' at a basic block.
 pub trait FunctionBuilder {
     /// Initialise a new builder with the provided function, positioned at the entry point.
     fn new(function: &ast::Function) -> Self;

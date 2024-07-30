@@ -18,6 +18,9 @@ pub enum Value {
     Constant(ConstantValue),
     /// Temporary value representing the result of some triple.
     Triple(TripleRef),
+    /// A parameter passed to the current function.
+    Parameter(usize),
+    /// No value.
     Unit,
 }
 

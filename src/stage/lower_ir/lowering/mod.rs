@@ -15,6 +15,16 @@ fn lower_function(ctx: &mut impl IRCtx, function: ast::Function) {
     // Create a new function builder, which will already be positioned at the entry point.
     let mut builder = ctx.new_builder(&function);
 
+    // Load all the parameters
+    function
+        .parameters
+        .iter()
+        .enumerate()
+        .for_each(|(i, (binding, _ty))| {
+            // Copy each parameter into its binding
+            builder.add_triple(Triple::Assign(*binding, Value::Parameter(i)));
+        });
+
     // Perform the lowering
     lower_block(ctx, &mut builder, &function.body);
 
