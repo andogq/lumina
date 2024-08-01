@@ -136,7 +136,7 @@ fn lower_expression(
             Value::Triple(builder.add_triple(Triple::Switch {
                 value: condition,
                 default: (success_bb, success_value),
-                branches: vec![(Value::integer(0), otherwise_bb, otherwise_value)],
+                branches: vec![(Value::boolean(false), otherwise_bb, otherwise_value)],
             }))
         }
         ast::Expression::Call(call) => {
