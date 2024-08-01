@@ -95,6 +95,30 @@ fn main() -> int {
     return result;
 }"#
 )]
+#[case::fibonacci(
+    4181,
+    r#"fn fib(n: int) -> int {
+        if n == 0 {
+            return n;
+        } else {
+            return fibinner(n);
+        }
+    }
+
+    fn fibinner(n: int) -> int {
+        if n == 1 {
+            return n;
+        } else {
+            let a = n - 1;
+            let b = n - 2;
+            return fib(a) + fib(b);
+        }
+    }
+
+    fn main() -> int {
+        return fib(19);
+    }"#
+)]
 fn programs(#[case] expected: i64, #[case] source: &'static str) {
     use std::collections::HashMap;
 
@@ -105,7 +129,7 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
     let mut ctx = CompilePass::default();
 
     let program = match parse(&mut ctx, &mut Lexer::new(source)) {
-        Ok(result) => result,
+        Ok(output) => output,
         Err(e) => {
             eprintln!("{e}");
             return;
@@ -129,10 +153,26 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
     let function_map = ctx
         .all_functions()
         .iter()
-        .map(|(idx, _)| {
+        .map(|(idx, f)| {
             (
                 *idx,
-                module.add_function("fn", llvm_ctx.i64_type().fn_type(&[], false), None),
+                module.add_function(
+                    "fn",
+                    llvm_ctx.i64_type().fn_type(
+                        f.signature
+                            .arguments
+                            .iter()
+                            .map(|arg| match arg {
+                                lumina::repr::ty::Ty::Int => llvm_ctx.i64_type().into(),
+                                lumina::repr::ty::Ty::Boolean => todo!(),
+                                lumina::repr::ty::Ty::Unit => todo!(),
+                            })
+                            .collect::<Vec<_>>()
+                            .as_slice(),
+                        false,
+                    ),
+                    None,
+                ),
             )
         })
         .collect::<HashMap<_, _>>();

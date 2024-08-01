@@ -12,7 +12,7 @@ use lumina::{
     stage::{
         codegen::llvm::FunctionGenerator,
         lex::Lexer,
-        lower_ir::{self as ir, IRCtx},
+        lower_ir::{self as lower_ir, IRCtx},
         parse::parse,
     },
     util::source::Source,
@@ -22,17 +22,25 @@ fn main() {
     let source = Source::new(
         r#"
 fn fib(n: int) -> int {
+    if n == 0 {
+        return n;
+    } else {
+        return fibinner(n);
+    }
+}
+
+fn fibinner(n: int) -> int {
     if n == 1 {
         return n;
     } else {
         let a = n - 1;
-        let b = n - 1;
+        let b = n - 2;
         return fib(a) + fib(b);
     }
 }
 
 fn main() -> int {
-    return fib(3);
+    return fib(19);
 }"#,
     );
 
@@ -56,7 +64,7 @@ fn main() -> int {
 
     let main = program.main.name;
 
-    ir::lower(&mut ctx, program);
+    lower_ir::lower(&mut ctx, program);
     let llvm_ctx = inkwell::context::Context::create();
     let module = llvm_ctx.create_module("module");
 
