@@ -33,9 +33,7 @@ fn fibinner(n: int) -> int {
     if n == 1 {
         return n;
     } else {
-        let a = n - 1;
-        let b = n - 2;
-        return fib(a) + fib(b);
+        return fib(n - 1) + fib(n - 2);
     }
 }
 
