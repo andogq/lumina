@@ -22,7 +22,7 @@ pub enum Precedence {
 impl Precedence {
     pub fn of(token: &Token) -> Self {
         match token {
-            Token::Plus(_) => Precedence::Sum,
+            Token::Minus(_) | Token::Plus(_) => Precedence::Sum,
             Token::Eq(_) | Token::NotEq(_) => Precedence::Equality,
             Token::LeftParen(_) => Precedence::Call,
             _ => Precedence::Lowest,

@@ -21,12 +21,18 @@ use lumina::{
 fn main() {
     let source = Source::new(
         r#"
-fn a(num: int) -> int {
-    return num + 2;
+fn fib(n: int) -> int {
+    if n == 1 {
+        return n;
+    } else {
+        let a = n - 1;
+        let b = n - 1;
+        return fib(a) + fib(b);
+    }
 }
 
 fn main() -> int {
-    return a(3);
+    return fib(3);
 }"#,
     );
 

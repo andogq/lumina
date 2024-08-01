@@ -136,6 +136,7 @@ token!(EOFToken, "<EOF>");
 token!(IntegerToken { literal: String }, "integer");
 token!(IdentToken { literal: String }, "ident");
 
+token!(MinusToken, "-");
 token!(PlusToken, "+");
 token!(EqToken, "==");
 token!(NotEqToken, "!=");
@@ -168,6 +169,7 @@ token_enum! {
     Integer: IntegerToken,
     Ident: IdentToken,
 
+    Minus: MinusToken,
     Plus: PlusToken,
     Eq: EqToken,
     NotEq: NotEqToken,

@@ -69,6 +69,7 @@ impl Iterator for TokenIter {
                             span: (location, end_location).into(),
                         })
                     }
+                    '-' => Token::Minus(MinusToken { span }),
 
                     ':' => Token::Colon(ColonToken { span }),
                     ';' => Token::Semicolon(SemicolonToken { span }),
