@@ -282,7 +282,6 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                     .build_phi(self.llvm_ctx.i64_type(), "switch phi")
                     .unwrap(),
                 |phi, (value, bb)| {
-                    dbg!(value, bb);
                     let bb = self.gen_block(bb);
                     let value = self.retrieve_value(value).unwrap();
 
