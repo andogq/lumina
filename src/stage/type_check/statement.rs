@@ -30,7 +30,7 @@ impl parse_ast::LetStatement {
         // Make sure the value type matches what the statement was annotated with
         if let Some(ty) = self.ty_info {
             let value_ty = value.get_ty_info();
-            if ty != value_ty.ty {
+            if !ty.check(&value_ty.ty) {
                 return Err(TyError::Mismatch(ty, value_ty.ty));
             }
         }
@@ -60,7 +60,7 @@ impl parse_ast::ReturnStatement {
 
         Ok(ReturnStatement {
             ty_info: TyInfo::try_from((
-                Ty::Unit,
+                Ty::Never,
                 [Some(value.get_ty_info().ty), value.get_ty_info().return_ty],
             ))?,
             value,
@@ -116,7 +116,7 @@ mod test_statement {
             .get_ty_info()
             .clone();
 
-        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.ty, Ty::Never);
         assert_eq!(ty_info.return_ty, Some(Ty::Int));
     }
 

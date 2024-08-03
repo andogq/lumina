@@ -9,6 +9,7 @@ use inkwell::{
 };
 use lumina::{
     compile_pass::CompilePass,
+    repr::ty::Ty,
     stage::{
         codegen::llvm::FunctionGenerator,
         lex::Lexer,
@@ -21,25 +22,21 @@ use lumina::{
 fn main() {
     let source = Source::new(
         r#"
-fn fib(n: int) -> int {
-    if n == 0 {
-        return n;
-    } else {
-        return fibinner(n);
-    }
-}
+        fn fib(n: int) -> int {
+            if n == 0 {
+                return n;
+            }
 
-fn fibinner(n: int) -> int {
-    if n == 1 {
-        return n;
-    } else {
-        return fib(n - 1) + fib(n - 2);
-    }
-}
+            if n == 1 {
+                return n;
+            }
 
-fn main() -> int {
-    return fib(19);
-}"#,
+            return fib(n - 1) + fib(n - 2);
+        }
+
+        fn main() -> int {
+            return fib(19);
+        }"#,
     );
 
     let mut ctx = CompilePass::default();
@@ -79,9 +76,12 @@ fn main() -> int {
                             .arguments
                             .iter()
                             .map(|arg| match arg {
-                                lumina::repr::ty::Ty::Int => llvm_ctx.i64_type().into(),
-                                lumina::repr::ty::Ty::Boolean => todo!(),
-                                lumina::repr::ty::Ty::Unit => todo!(),
+                                Ty::Int => llvm_ctx.i64_type().into(),
+                                Ty::Boolean => todo!(),
+                                Ty::Unit => todo!(),
+                                Ty::Never => {
+                                    unreachable!("cannot have an argument that is never type")
+                                }
                             })
                             .collect::<Vec<_>>()
                             .as_slice(),

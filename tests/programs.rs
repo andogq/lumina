@@ -1,7 +1,12 @@
 use inkwell::{module::Module, values::FunctionValue, OptimizationLevel};
 use lumina::{
     compile_pass::CompilePass,
-    stage::{lex::Lexer, lower_ir, lower_ir::IRCtx, parse::parse},
+    repr::ty::Ty,
+    stage::{
+        lex::Lexer,
+        lower_ir::{self, IRCtx},
+        parse::parse,
+    },
     util::source::Source,
 };
 use rstest::rstest;
@@ -161,9 +166,12 @@ fn programs(#[case] expected: i64, #[case] source: &'static str) {
                             .arguments
                             .iter()
                             .map(|arg| match arg {
-                                lumina::repr::ty::Ty::Int => llvm_ctx.i64_type().into(),
-                                lumina::repr::ty::Ty::Boolean => todo!(),
-                                lumina::repr::ty::Ty::Unit => todo!(),
+                                Ty::Int => llvm_ctx.i64_type().into(),
+                                Ty::Boolean => todo!(),
+                                Ty::Unit => todo!(),
+                                Ty::Never => {
+                                    unreachable!("cannot have function argument that is never type")
+                                }
                             })
                             .collect::<Vec<_>>()
                             .as_slice(),

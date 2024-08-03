@@ -5,7 +5,7 @@ use super::*;
 impl parse_ast::Program {
     pub fn ty_solve(self, ctx: &mut impl TypeCheckCtx) -> Result<Program, TyError> {
         // Main function must return int
-        if self.main.return_ty != Ty::Int {
+        if !self.main.return_ty.check(&Ty::Int) {
             return Err(TyError::Mismatch(Ty::Int, self.main.return_ty));
         }
 

@@ -47,11 +47,15 @@ pub enum TyError {
 }
 
 impl TyInfo {
-    fn collapse(mut iter: impl Iterator<Item = Ty>) -> Result<Option<Ty>, TyError> {
-        iter.all_equal_value().map(Some).or_else(|e| match e {
-            Some((ty1, ty2)) => Err(TyError::Mismatch(ty1, ty2)),
-            None => Ok(None),
-        })
+    fn collapse(iter: impl Iterator<Item = Ty>) -> Result<Option<Ty>, TyError> {
+        // Filter out all instances of `never` type, as it could be any type
+        iter.filter(|ty| !matches!(ty, Ty::Never))
+            .all_equal_value()
+            .map(Some)
+            .or_else(|e| match e {
+                Some((ty1, ty2)) => Err(TyError::Mismatch(ty1, ty2)),
+                None => Ok(None),
+            })
     }
 }
 
@@ -65,7 +69,7 @@ where
     fn try_from((ty_iter, return_ty_iter): (TyIter, RetTyIter)) -> Result<Self, Self::Error> {
         Ok(Self {
             // All of the provided types must match
-            ty: TyInfo::collapse(ty_iter.into_iter())?.unwrap_or(Ty::Unit),
+            ty: TyInfo::collapse(ty_iter.into_iter())?.unwrap_or(Ty::Never),
             return_ty: TyInfo::collapse(return_ty_iter.into_iter().flatten())?,
         })
     }

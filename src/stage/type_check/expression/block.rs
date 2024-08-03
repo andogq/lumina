@@ -24,15 +24,15 @@ impl parse_ast::Block {
             statements
                 .last()
                 // The block can only inherit the type of an expression statement
-                .filter(|s| {
-                    matches!(
-                        s,
-                        Statement::Expression(ExpressionStatement {
-                            implicit_return: true,
-                            ..
-                        })
-                    )
-                })
+                // .filter(|s| {
+                //     matches!(
+                //         s,
+                //         Statement::Expression(ExpressionStatement {
+                //             implicit_return: true,
+                //             ..
+                //         })
+                //     )
+                // })
                 .map(|s| s.get_ty_info().ty)
                 .unwrap_or(Ty::Unit),
             statements

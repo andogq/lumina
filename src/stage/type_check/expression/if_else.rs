@@ -7,7 +7,7 @@ impl parse_ast::If {
         // Make sure the condition is correctly typed
         let condition = self.condition.ty_solve(ctx, scope)?;
         let condition_ty = condition.get_ty_info();
-        if !matches!(condition_ty.ty, Ty::Boolean) {
+        if !condition_ty.ty.check(&Ty::Boolean) {
             return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty));
         }
 

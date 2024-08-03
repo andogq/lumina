@@ -142,7 +142,11 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                     value,
                     default,
                     branches,
-                } => self.gen_switch(value, default, branches),
+                } => {
+                    self.gen_switch(value, default, branches);
+                    None
+                }
+                Triple::Phi(values) => Some(self.gen_phi(values)),
             };
             self.results.insert(TripleRef::new(*block_idx, idx), result);
         }
@@ -239,13 +243,13 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     fn gen_switch(
         &mut self,
         value: &Value,
-        default: &(BasicBlockIdx, Value),
-        branches: &[(Value, BasicBlockIdx, Value)],
-    ) -> Option<IntValue<'ink>> {
+        default: &BasicBlockIdx,
+        branches: &[(Value, BasicBlockIdx)],
+    ) {
         // Emit the switch instruction
         let cases = branches
             .iter()
-            .map(|(case, bb, _)| {
+            .map(|(case, bb)| {
                 (
                     // Compile the case value
                     self.retrieve_value(case)
@@ -256,7 +260,7 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
             })
             .collect::<Vec<_>>();
 
-        let else_block = self.gen_block(&default.0);
+        let else_block = self.gen_block(default);
 
         self.builder
             .build_switch(
@@ -268,67 +272,27 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                 &cases,
             )
             .unwrap();
+    }
 
-        // Only create the phi node if the branches aren't unit value
-        let make_phi = branches
-            .first()
-            // TODO: This check should probably be less-specific
-            .map(|(_, _, value)| !matches!(value, Value::Unit))
-            .unwrap_or(false);
-        assert!(
-            branches
-                .iter()
-                .all(|(_, _, value)| matches!(value, Value::Unit) != make_phi),
-            "all or none of the branches must be unit, not a mix"
-        );
+    fn gen_phi(&mut self, values: &[(Value, BasicBlockIdx)]) -> IntValue<'ink> {
+        values
+            .iter()
+            .fold(
+                self.builder
+                    .build_phi(self.llvm_ctx.i64_type(), "switch phi")
+                    .unwrap(),
+                |phi, (value, bb)| {
+                    dbg!(value, bb);
+                    let bb = self.gen_block(bb);
+                    let value = self.retrieve_value(value).unwrap();
 
-        if make_phi {
-            // Create the block to merge
-            let merge = self
-                .llvm_ctx
-                .append_basic_block(self.llvm_function, "merge");
+                    phi.add_incoming(&[(&value, bb)]);
 
-            // Position at merge block to create phi node
-            self.builder.position_at_end(merge);
-            let phi = self
-                .builder
-                .build_phi(self.llvm_ctx.i64_type(), "switch phi")
-                .unwrap();
-
-            // Build merge nodes
-            for (bb, final_value) in branches
-                .iter()
-                .map(|(_, bb, final_value)| (*bb, *final_value))
-                .chain([*default])
-            {
-                // Pull the block out
-                let basic_block = self.gen_block(&bb);
-
-                // Ensure the block doesn't have a terminator
-                if basic_block.get_terminator().is_some() {
-                    panic!("basic block already has terminator, but one needs to be inserted for switch.");
-                }
-
-                // Add the terminator
-                self.builder.position_at_end(basic_block);
-                self.builder.build_unconditional_branch(merge).unwrap();
-
-                // Update the phi node
-                phi.add_incoming(&[(
-                    &self
-                        .retrieve_value(&final_value)
-                        .expect("value to be not unit"),
-                    basic_block,
-                )]);
-            }
-
-            // Continue appending to end of merge block
-            self.builder.position_at_end(merge);
-
-            Some(phi.as_basic_value().into_int_value())
-        } else {
-            None
-        }
+                    phi
+                },
+            )
+            .as_basic_value()
+            .into_int_value()
     }
 
     /// Emit an allocation instruction in the entry basic block
@@ -346,6 +310,7 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                     Ty::Int => self.llvm_ctx.i64_type(),
                     Ty::Boolean => self.llvm_ctx.bool_type(),
                     Ty::Unit => todo!(),
+                    Ty::Never => unreachable!("cannot allocate stack space for never type"),
                 },
                 name,
             )

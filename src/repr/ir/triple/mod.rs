@@ -19,7 +19,10 @@ pub enum Triple {
         op: BinaryOp,
     },
     /// Standard unary operation.
-    UnaryOp { rhs: Value, op: UnaryOp },
+    UnaryOp {
+        rhs: Value,
+        op: UnaryOp,
+    },
     /// Copy the provided value.
     Copy(Value),
     /// Jump to the corresponding basic block.
@@ -32,9 +35,10 @@ pub enum Triple {
     Assign(ScopedBinding, Value),
     Switch {
         value: Value,
-        default: (BasicBlockIdx, Value),
-        branches: Vec<(Value, BasicBlockIdx, Value)>,
+        default: BasicBlockIdx,
+        branches: Vec<(Value, BasicBlockIdx)>,
     },
+    Phi(Vec<(Value, BasicBlockIdx)>),
 }
 
 define_index_type! {

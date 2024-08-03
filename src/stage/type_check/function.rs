@@ -28,13 +28,13 @@ impl parse_ast::Function {
 
         // If the body contains any return statements, they must match the annotated return statement
         if let Some(return_ty) = body.ty_info.return_ty {
-            if self.return_ty != return_ty {
+            if !self.return_ty.check(&return_ty) {
                 return Err(TyError::Mismatch(self.return_ty, return_ty));
             }
         }
 
         // Ensure inferred return types match
-        if body.ty_info.ty != Ty::Unit && self.return_ty != body.ty_info.ty {
+        if !body.ty_info.ty.check(&Ty::Unit) && !self.return_ty.check(&body.ty_info.ty) {
             return Err(TyError::Mismatch(self.return_ty, body.ty_info.ty));
         }
 
