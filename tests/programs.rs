@@ -105,17 +105,13 @@ fn main() -> int {
     r#"fn fib(n: int) -> int {
         if n == 0 {
             return n;
-        } else {
-            return fibinner(n);
         }
-    }
 
-    fn fibinner(n: int) -> int {
         if n == 1 {
             return n;
-        } else {
-            return fib(n - 1) + fib(n - 2);
         }
+
+        return fib(n - 1) + fib(n - 2);
     }
 
     fn main() -> int {
