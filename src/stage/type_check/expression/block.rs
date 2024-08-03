@@ -94,7 +94,7 @@ mod test {
             .unwrap()
             .ty_info;
 
-        assert_eq!(ty_info.ty, Ty::Unit);
+        assert_eq!(ty_info.ty, Ty::Never);
         assert_eq!(ty_info.return_ty, Some(Ty::Int));
     }
 
