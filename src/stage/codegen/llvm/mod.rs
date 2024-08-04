@@ -167,15 +167,15 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
             .expect("rhs of binary cannot be unit");
 
         match op {
-            BinaryOp::Add => self.builder.build_int_add(lhs, rhs, "add").unwrap(),
-            BinaryOp::Sub => self.builder.build_int_sub(lhs, rhs, "sub").unwrap(),
+            BinaryOp::Add => self.builder.build_int_add(lhs, rhs, "add_result").unwrap(),
+            BinaryOp::Sub => self.builder.build_int_sub(lhs, rhs, "sub_result").unwrap(),
             BinaryOp::Eq => self
                 .builder
-                .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq")
+                .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq_result")
                 .unwrap(),
             BinaryOp::NotEq => self
                 .builder
-                .build_int_compare(IntPredicate::NE, lhs, rhs, "not eq")
+                .build_int_compare(IntPredicate::NE, lhs, rhs, "not_eq_result")
                 .unwrap(),
         }
     }
@@ -186,8 +186,8 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
             .expect("rhs of unary cannot be unit");
 
         match op {
-            UnaryOp::Minus => self.builder.build_int_neg(rhs, "neg").unwrap(),
-            UnaryOp::Not => self.builder.build_not(rhs, "not").unwrap(),
+            UnaryOp::Minus => self.builder.build_int_neg(rhs, "neg_result").unwrap(),
+            UnaryOp::Not => self.builder.build_not(rhs, "not_result").unwrap(),
         }
     }
 
@@ -205,17 +205,17 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
 
     fn gen_call(&mut self, function: &FunctionIdx, params: &[Value]) -> IntValue<'ink> {
         // Ensure the function is compiled
-        let function = self.functions.get(function).unwrap();
+        let function_value = self.functions.get(function).unwrap();
 
         self.builder
             .build_call(
-                function.to_owned(),
+                function_value.to_owned(),
                 params
                     .iter()
                     .map(|param| self.retrieve_value(param).unwrap().into())
                     .collect::<Vec<_>>()
                     .as_slice(),
-                "call some function",
+                &format!("{}_result", self.ctx.get_function_name(function)),
             )
             .unwrap()
             .try_as_basic_value()
@@ -318,11 +318,18 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
 
     fn retrieve_value(&self, value: &Value) -> Option<IntValue<'ink>> {
         match value {
-            Value::Name(symbol) => {
-                let ptr = self.bindings.get(symbol).expect("symbol must be defined");
+            Value::Name(identifier) => {
+                let ptr = self
+                    .bindings
+                    .get(identifier)
+                    .expect("symbol must be defined");
+                let name = self
+                    .ctx
+                    .get_scoped_binding_name(&self.function.identifier, identifier);
+
                 Some(
                     self.builder
-                        .build_load(self.llvm_ctx.i64_type(), *ptr, &format!("load {symbol:?}"))
+                        .build_load(self.llvm_ctx.i64_type(), *ptr, &name)
                         .unwrap()
                         .into_int_value(),
                 )

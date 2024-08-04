@@ -22,6 +22,7 @@ use crate::{
 };
 
 struct FunctionInfo {
+    symbol: Symbol,
     signature: FunctionSignature,
     scope: Option<Scope>,
     ir: Option<ir::Function>,
@@ -78,6 +79,7 @@ impl ParseCtx for CompilePass {}
 impl TypeCheckCtx for CompilePass {
     fn register_function(&mut self, symbol: Symbol, signature: FunctionSignature) -> FunctionIdx {
         let idx = self.functions.push(FunctionInfo {
+            symbol,
             signature,
             scope: None,
             ir: None,
@@ -201,5 +203,9 @@ impl LLVMCtx for CompilePass {
             .unwrap()
             .get_binding(binding)
             .1
+    }
+
+    fn get_function_name(&self, function: &FunctionIdx) -> String {
+        self.get(self.functions[*function].symbol)
     }
 }

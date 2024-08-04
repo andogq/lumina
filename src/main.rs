@@ -11,7 +11,7 @@ use lumina::{
     compile_pass::CompilePass,
     repr::ty::Ty,
     stage::{
-        codegen::llvm::FunctionGenerator,
+        codegen::{ctx::LLVMCtx as _, llvm::FunctionGenerator},
         lex::Lexer,
         lower_ir::{self as lower_ir, IRCtx},
         parse::parse,
@@ -70,7 +70,7 @@ fn main() {
             (
                 *idx,
                 module.add_function(
-                    "fn",
+                    &ctx.get_function_name(idx),
                     llvm_ctx.i64_type().fn_type(
                         f.signature
                             .arguments
