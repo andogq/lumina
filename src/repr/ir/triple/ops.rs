@@ -11,10 +11,10 @@ pub enum BinaryOp {
 impl From<&ast::InfixOperation> for BinaryOp {
     fn from(value: &ast::InfixOperation) -> Self {
         match value {
-            ast::InfixOperation::Plus(_) => Self::Add,
-            ast::InfixOperation::Minus(_) => Self::Sub,
-            ast::InfixOperation::Eq(_) => Self::Eq,
-            ast::InfixOperation::NotEq(_) => Self::NotEq,
+            ast::InfixOperation::Plus => Self::Add,
+            ast::InfixOperation::Minus => Self::Sub,
+            ast::InfixOperation::Eq => Self::Eq,
+            ast::InfixOperation::NotEq => Self::NotEq,
         }
     }
 }

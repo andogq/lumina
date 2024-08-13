@@ -100,7 +100,7 @@ mod test_statement {
     use crate::{
         repr::ast::untyped::*,
         stage::type_check::ctx::MockTypeCheckCtx,
-        util::{scope::Scope, source::Span, symbol_map::interner_symbol_map::Symbol},
+        util::{scope::Scope, span::Span, symbol_map::interner_symbol_map::Symbol},
     };
 
     use super::Ty;

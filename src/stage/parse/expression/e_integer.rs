@@ -2,19 +2,16 @@ use super::*;
 
 pub fn parse_integer(
     _ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
+    tokens: &mut Lexer<'_>,
 ) -> Result<Integer, ParseError> {
-    let token = tokens.integer("integer peeked")?;
-
-    Ok(Integer::new(
-        token
-            .literal
-            .parse()
-            .map_err(|_| ParseError::InvalidLiteral {
-                expected: "integer".to_string(),
-            })?,
-        token.span,
-    ))
+    match tokens.next_spanned().unwrap() {
+        (Token::Integer(value), span) => Ok(Integer::new(value, span)),
+        (token, _) => Err(ParseError::ExpectedToken {
+            expected: Box::new(Token::Integer(0)),
+            found: Box::new(token),
+            reason: "integer token expected".to_string(),
+        }),
+    }
 }
 
 #[cfg(test)]
@@ -24,34 +21,30 @@ mod test {
     use ctx::MockParseCtx;
     use rstest::rstest;
 
-    fn run(tokens: &[Token]) -> Result<Integer, ParseError> {
-        let integer = parse_integer(
-            &mut MockParseCtx::new(),
-            &mut tokens.iter().cloned().peekable(),
-        );
-        integer
+    fn run(source: &str) -> Result<Integer, ParseError> {
+        parse_integer(&mut MockParseCtx::new(), &mut source.into())
     }
 
     #[rstest]
     #[case::single_digit(1)]
     #[case::multi_digit(123)]
     fn success(#[case] value: i64) {
-        let integer = run(&[Token::integer(&value.to_string())]);
+        let integer = run(&value.to_string());
         assert_eq!(integer.unwrap().value, value);
     }
 
     #[test]
     fn fail() {
-        let integer = run(&[Token::ident("someident")]);
+        let integer = run("someident");
         assert!(integer.is_err());
     }
 
     #[rstest]
-    #[case::success(Token::integer("1"))]
-    #[case::fail(Token::ident("someident"))]
-    fn single_token(#[case] token: Token) {
-        let mut tokens = [token, Token::semicolon()].into_iter().peekable();
+    #[case::success("1;")]
+    #[case::fail("someident;")]
+    fn single_token(#[case] source: &str) {
+        let mut tokens = source.into();
         let _ = parse_integer(&mut MockParseCtx::new(), &mut tokens);
-        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens.0.count(), 1);
     }
 }

@@ -2,16 +2,20 @@ use super::*;
 
 pub fn parse_boolean(
     _ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
+    tokens: &mut Lexer<'_>,
 ) -> Result<Boolean, ParseError> {
-    let token = tokens.boolean("boolean peeked")?;
-
-    let (span, value) = match token {
-        BooleanToken::True(token) => (token.span, true),
-        BooleanToken::False(token) => (token.span, false),
-    };
-
-    Ok(Boolean::new(value, span))
+    match tokens.next_spanned().unwrap() {
+        (Token::True, span) => Ok(Boolean::new(true, span)),
+        (Token::False, span) => Ok(Boolean::new(false, span)),
+        (token, _) => {
+            Err(ParseError::ExpectedToken {
+                // WARN: Should be true or false
+                expected: Box::new(Token::True),
+                found: Box::new(token),
+                reason: "expected boolean token".to_string(),
+            })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -22,33 +26,25 @@ mod test {
     use super::*;
 
     #[rstest]
-    #[case::t_true(Token::t_true(), true)]
-    #[case::t_false(Token::t_false(), false)]
-    fn success(#[case] token: Token, #[case] value: bool) {
-        let boolean = parse_boolean(
-            &mut MockParseCtx::new(),
-            &mut [token].into_iter().peekable(),
-        )
-        .unwrap();
+    #[case::t_true("true", true)]
+    #[case::t_false("false", false)]
+    fn success(#[case] source: &str, #[case] value: bool) {
+        let boolean = parse_boolean(&mut MockParseCtx::new(), &mut source.into()).unwrap();
         assert_eq!(boolean.value, value);
     }
 
     #[test]
     fn fail() {
-        assert!(parse_boolean(
-            &mut MockParseCtx::new(),
-            &mut [Token::ident("someident")].into_iter().peekable()
-        )
-        .is_err());
+        assert!(parse_boolean(&mut MockParseCtx::new(), &mut "someident".into()).is_err());
     }
 
     #[rstest]
-    #[case::success(Token::t_true())]
-    #[case::fail(Token::ident("someident"))]
-    fn single_token(#[case] token: Token) {
-        let mut tokens = [token, Token::semicolon()].into_iter().peekable();
+    #[case::success("true;")]
+    #[case::fail("someident;")]
+    fn single_token(#[case] source: &str) {
+        let mut tokens = source.into();
         let _ = parse_boolean(&mut MockParseCtx::new(), &mut tokens);
 
-        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens.0.count(), 1);
     }
 }

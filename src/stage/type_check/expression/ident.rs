@@ -30,7 +30,7 @@ mod test_ident {
     use crate::{
         repr::ast::untyped::Ident,
         stage::type_check::ctx::MockTypeCheckCtx,
-        util::{scope::Scope, source::Span},
+        util::{scope::Scope, span::Span},
     };
 
     use super::expression::Ty;

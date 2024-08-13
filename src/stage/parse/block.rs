@@ -1,40 +1,36 @@
 use super::*;
 
-pub fn parse_block(
-    ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
-) -> Result<Block, ParseError> {
-    let open_brace = match tokens.next_token() {
-        Token::LeftBrace(ident) => ident,
-        token => {
+pub fn parse_block(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<Block, ParseError> {
+    let span_start = match tokens.next_spanned().unwrap() {
+        (Token::LeftBrace, span) => span.start,
+        (token, _) => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::LeftBrace(LeftBraceToken::default())),
+                expected: Box::new(Token::LeftBrace),
                 found: Box::new(token),
                 reason: "block must begin with an opening brace".to_string(),
             });
         }
     };
 
-    let statements = std::iter::from_fn(|| {
-        if !matches!(tokens.peek_token(), Token::RightBrace(_)) {
-            Some(parse_statement(ctx, tokens))
-        } else {
-            None
-        }
+    let statements = std::iter::from_fn(|| match tokens.peek_token().unwrap() {
+        Token::RightBrace => None,
+        _ => Some(parse_statement(ctx, tokens)),
     })
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let close_brace = match tokens.next_token() {
-        Token::RightBrace(ident) => ident,
-        token => {
+    let span_end = match tokens.next_spanned().unwrap() {
+        (Token::RightBrace, span) => span.end,
+        (token, _) => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::RightBrace(RightBraceToken::default())),
+                expected: Box::new(Token::RightBrace),
                 found: Box::new(token),
                 reason: "block must end with a closing brace".to_string(),
             });
         }
     };
 
-    Ok(Block::new(statements, open_brace.span().to(&close_brace)))
+    let span = span_start..span_end;
+
+    Ok(Block::new(statements, span))
 }

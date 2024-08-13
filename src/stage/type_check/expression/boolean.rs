@@ -17,7 +17,7 @@ impl parse_ast::Boolean {
 mod test_boolean {
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
-        util::source::Span,
+        util::span::Span,
     };
 
     #[test]

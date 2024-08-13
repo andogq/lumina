@@ -4,14 +4,8 @@ macro_rules! ast_node {
     (common struct $struct_name:ident<$ty_info:ident $(, $($generic:ident),*)?> {  $($name:ident: $ty:ty,)* }) => {
         #[derive(Debug, Clone)]
         pub struct $struct_name<$ty_info $(, $($generic),*)?> {
-            pub span: $crate::util::source::Span,
+            pub span: $crate::util::span::Span,
             $(pub $name: $ty,)*
-        }
-
-        impl<$ty_info $(, $($generic),*)?> $crate::util::source::Spanned for $struct_name<$ty_info $(, $($generic),*)?> {
-            fn span(&self) -> &$crate::util::source::Span {
-                &self.span
-            }
         }
     };
 
@@ -23,7 +17,7 @@ macro_rules! ast_node {
         });
 
         impl<$ty_info: Default $(, $($generic),*)?> $struct_name<$ty_info $(, $($generic),*)?> {
-            pub fn new($($name: $ty,)* span: $crate::util::source::Span) -> Self {
+            pub fn new($($name: $ty,)* span: $crate::util::span::Span) -> Self {
                 Self {
                     span,
                     ty_info: Default::default(),
@@ -40,7 +34,7 @@ macro_rules! ast_node {
         });
 
         impl<$ty_info $(, $($generic),*)?> $struct_name<$ty_info $(, $($generic),*)?> {
-            pub fn new($($name: $ty,)* span: $crate::util::source::Span) -> Self {
+            pub fn new($($name: $ty,)* span: $crate::util::span::Span) -> Self {
                 Self {
                     span,
                     $($name,)*
@@ -62,12 +56,10 @@ macro_rules! ast_node {
                     $(Self::$name(value) => &value.ty_info),*
                 }
             }
-        }
 
-        impl<$ty_info $(, $($generic),*)?> $crate::util::source::Spanned for $enum_name<$ty_info $(, $($generic),*)?> {
-            fn span(&self) -> &$crate::util::source::Span {
+            pub fn span(&self) -> &$crate::util::span::Span {
                 match self {
-                    $(Self::$name(value) => $crate::util::source::Spanned::span(value)),*
+                    $(Self::$name(value) => &value.span),*
                 }
             }
         }

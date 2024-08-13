@@ -1,3 +1,3 @@
 pub mod scope;
-pub mod source;
+pub mod span;
 pub mod symbol_map;

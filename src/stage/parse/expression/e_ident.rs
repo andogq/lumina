@@ -1,12 +1,14 @@
 use super::*;
 
-pub fn parse_ident(
-    ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
-) -> Result<Ident, ParseError> {
-    let token = tokens.ident("ident peeked")?;
-
-    Ok(Ident::new(ctx.intern(token.literal), token.span))
+pub fn parse_ident(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<Ident, ParseError> {
+    match tokens.next_spanned().unwrap() {
+        (Token::Ident(ident), span) => Ok(Ident::new(ctx.intern(ident), span)),
+        (token, _) => Err(ParseError::ExpectedToken {
+            expected: Box::new(Token::Ident(String::new())),
+            found: Box::new(token),
+            reason: "expected ident".to_string(),
+        }),
+    }
 }
 
 #[cfg(test)]
@@ -21,7 +23,7 @@ mod test {
 
     #[test]
     fn success() {
-        let tokens = [Token::ident("someident")];
+        let mut tokens = "someident".into();
 
         let mocked_symbol = Symbol::try_from_usize(0).unwrap();
 
@@ -31,32 +33,28 @@ mod test {
             .withf(|s| s.as_ref() == "someident")
             .return_const(mocked_symbol);
 
-        let ident = parse_ident(&mut ctx, &mut tokens.into_iter().peekable()).unwrap();
+        let ident = parse_ident(&mut ctx, &mut tokens).unwrap();
         assert_eq!(ident.binding, mocked_symbol);
     }
 
     #[test]
     fn fail() {
-        assert!(parse_ident(
-            &mut MockParseCtx::new(),
-            &mut [Token::integer("1")].into_iter().peekable()
-        )
-        .is_err());
+        assert!(parse_ident(&mut MockParseCtx::new(), &mut "1".into(),).is_err());
     }
 
     #[rstest]
-    #[case::success(Token::ident("someident"))]
-    #[case::fail(Token::integer("1"))]
-    fn single_token(#[case] token: Token) {
+    #[case::success("someident;")]
+    #[case::fail("1;")]
+    fn single_token(#[case] source: &str) {
         let mut ctx = MockParseCtx::new();
         ctx.expect_intern()
             .times(0..=1)
             .withf(|s| s.as_ref() == "someident")
             .return_const(Symbol::try_from_usize(0).unwrap());
 
-        let mut tokens = [token, Token::semicolon()].into_iter().peekable();
+        let mut tokens = source.into();
         let _ = parse_ident(&mut ctx, &mut tokens);
 
-        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens.0.count(), 1);
     }
 }

@@ -1,22 +1,22 @@
-use crate::{ast_node, repr::token::Token, util::source::Span};
+use crate::{ast_node, repr::token::Token};
 
 use super::Expression;
 
 #[derive(Debug, Clone)]
 pub enum InfixOperation {
-    Minus(Span),
-    Plus(Span),
-    Eq(Span),
-    NotEq(Span),
+    Minus,
+    Plus,
+    Eq,
+    NotEq,
 }
 
 impl InfixOperation {
     pub fn plus() -> Self {
-        Self::Plus(Span::default())
+        Self::Plus
     }
 
     pub fn minus() -> Self {
-        Self::Minus(Span::default())
+        Self::Minus
     }
 }
 
@@ -25,10 +25,10 @@ impl TryFrom<Token> for InfixOperation {
 
     fn try_from(token: Token) -> Result<Self, Self::Error> {
         match token {
-            Token::Plus(token) => Ok(InfixOperation::Plus(token.span)),
-            Token::Minus(token) => Ok(InfixOperation::Minus(token.span)),
-            Token::Eq(token) => Ok(InfixOperation::Eq(token.span)),
-            Token::NotEq(token) => Ok(InfixOperation::NotEq(token.span)),
+            Token::Plus => Ok(InfixOperation::Plus),
+            Token::Minus => Ok(InfixOperation::Minus),
+            Token::DoubleEq => Ok(InfixOperation::Eq),
+            Token::NotEq => Ok(InfixOperation::NotEq),
             _ => Err(()),
         }
     }

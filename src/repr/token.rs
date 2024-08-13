@@ -1,281 +1,130 @@
 use std::fmt::Display;
 
-use crate::util::source::{Span, Spanned};
+use logos::{Lexer, Logos};
 
-/// Creates a struct for a token without having to repeat all of the boiler plate, namely the span
-/// for each token.
-macro_rules! token {
-    ($name:ident { $($field:ident: $value:ty),* }, $display:expr) => {
-        token!($name { $($field: $value),* });
-        token!(display $name $display);
-    };
+#[derive(Clone, Debug, Logos, PartialEq, Eq)]
+#[logos(skip r"[ \t\r\n\f]+")]
+pub enum Token {
+    /*
+     * Arithmetic operations
+     */
+    #[token("+")]
+    Plus,
+    #[token("-")]
+    Minus,
+    #[token("==")]
+    DoubleEq,
+    #[token("!=")]
+    NotEq,
 
-    ($name:ident { $($field:ident: $value:ty),* }) => {
-        token!(struct $name { $($field: $value,)* });
+    /*
+     * Language tokens
+     */
+    #[token("=")]
+    Eq,
+    #[token("->")]
+    ThinArrow,
+    #[token(":")]
+    Colon,
+    #[token(";")]
+    SemiColon,
+    #[token(",")]
+    Comma,
 
-        impl PartialEq for $name {
-            fn eq(&self, other: &Self) -> bool {
-                token!(condition $(self.$field == other.$field);*)
-            }
-        }
-    };
+    /*
+     * Matched tokens
+     */
+    #[token("(")]
+    LeftParen,
+    #[token(")")]
+    RightParen,
+    #[token("{")]
+    LeftBrace,
+    #[token("}")]
+    RightBrace,
 
-    ($name:ident, $display:expr) => {
-        token!($name);
-        token!(display $name $display);
-    };
+    /*
+     * Keywords
+     */
+    #[token("fn")]
+    Fn,
+    #[token("return")]
+    Return,
+    #[token("let")]
+    Let,
+    #[token("if")]
+    If,
+    #[token("else")]
+    Else,
 
-    ($name:ident) => {
-        token!(struct $name { });
+    /*
+     * Primitive type
+     */
+    #[token("int")]
+    Int,
+    #[token("bool")]
+    Bool,
 
-        impl PartialEq for $name {
-            fn eq(&self, _: &Self) -> bool {
-                true
-            }
-        }
-    };
+    /*
+     * Literals
+     */
+    #[token("true")]
+    True,
+    #[token("false")]
+    False,
 
-    (struct $name:ident { $($field:ident: $value:ty,)* }) => {
-        #[derive(Clone, Debug, Default)]
-        pub struct $name {
-            pub span: Span,
-            $(pub $field: $value,)*
-        }
+    #[regex(r#""([^"\\]|\\["\\bnfrt]|u[a-fA-F0-9]{4})*""#, Token::parse_string)]
+    String(String),
 
-        impl Spanned for $name {
-            fn span(&self) -> &Span {
-                &self.span
-            }
-        }
-    };
+    #[regex(r#"\d+"#, Token::parse_integer)]
+    Integer(i64),
 
-    (display $name:ident $display:expr) => {
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-                $display.fmt(f)
-            }
-        }
-    };
-
-    (condition $field:expr) => {
-        $field
-    };
-
-    (condition $field:expr; $($tail:tt)*) => {
-        $field && token!(condition $($tail)*)
-    };
-}
-
-/// Utility macro to easily create a large enum to contain each token variant.
-macro_rules! token_enum {
-    ($($name:ident: $token:ty),*) => {
-        #[derive(Clone, Debug, PartialEq)]
-        pub enum Token {
-            $($name($token)),*
-        }
-
-        impl Spanned for Token {
-            fn span(&self) -> &Span {
-                match self {
-                    $(Self::$name(token) => token.span()),*
-                }
-            }
-        }
-
-        impl std::fmt::Display for Token {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-                match self {
-                    $(Self::$name(token) => token.fmt(f)),*
-                }
-            }
-        }
-
-
-        $(
-        impl GetAs<$token> for Token {
-            fn get(self) -> Option<$token> {
-                if let Self::$name(token) = self {
-                    Some(token)
-                } else {
-                    None
-                }
-            }
-        }
-
-        impl Name for $token {
-            fn name() -> &'static str {
-                stringify!($name)
-            }
-        }
-        )*
-    };
-}
-
-/// Convinience trait to produce a specific token variant from the mega token struct.
-pub trait GetAs<T>
-where
-    T: Name,
-{
-    fn get(self) -> Option<T>;
-}
-
-/// Trait to produce the token's name.
-pub trait Name {
-    fn name() -> &'static str;
-}
-
-token!(IllegalToken { c: char });
-impl Display for IllegalToken {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.c.fmt(f)
-    }
-}
-
-token!(EOFToken, "<EOF>");
-
-token!(IntegerToken { literal: String }, "integer");
-token!(IdentToken { literal: String }, "ident");
-
-token!(MinusToken, "-");
-token!(PlusToken, "+");
-token!(EqToken, "==");
-token!(NotEqToken, "!=");
-
-token!(EqualsToken, "=");
-
-token!(ColonToken, ":");
-token!(SemicolonToken, ";");
-token!(ThinArrowToken, "->");
-token!(CommaToken, ",");
-
-token!(LeftParenToken, "(");
-token!(RightParenToken, ")");
-token!(LeftBraceToken, "{");
-token!(RightBraceToken, "}");
-
-token!(TrueToken, "true");
-token!(FalseToken, "false");
-
-token!(FnToken, "fn");
-token!(ReturnToken, "return");
-token!(LetToken, "let");
-token!(IfToken, "if");
-token!(ElseToken, "else");
-
-token_enum! {
-    Illegal: IllegalToken,
-    EOF: EOFToken,
-
-    Integer: IntegerToken,
-    Ident: IdentToken,
-
-    Minus: MinusToken,
-    Plus: PlusToken,
-    Eq: EqToken,
-    NotEq: NotEqToken,
-
-    Equals: EqualsToken,
-
-    Colon: ColonToken,
-    Semicolon: SemicolonToken,
-    ThinArrow: ThinArrowToken,
-    Comma: CommaToken,
-
-    LeftParen: LeftParenToken,
-    RightParen: RightParenToken,
-    LeftBrace: LeftBraceToken,
-    RightBrace: RightBraceToken,
-
-    True: TrueToken,
-    False: FalseToken,
-
-    Fn: FnToken,
-    Return: ReturnToken,
-    Let: LetToken,
-    If: IfToken,
-    Else: ElseToken
+    #[regex(r#"[a-zA-Z_]\w*"#, Token::parse_ident, priority = 1)]
+    Ident(String),
 }
 
 impl Token {
-    pub fn integer(literal: &str) -> Self {
-        Self::Integer(IntegerToken {
-            literal: literal.to_string(),
-            ..Default::default()
-        })
-    }
-    pub fn ident(literal: &str) -> Self {
-        Self::Ident(IdentToken {
-            literal: literal.to_string(),
-            ..Default::default()
-        })
+    fn parse_string(lex: &mut Lexer<'_, Token>) -> String {
+        lex.slice().to_owned()
     }
 
-    pub fn plus() -> Self {
-        Self::Plus(Default::default())
-    }
-    pub fn eq() -> Self {
-        Self::Eq(Default::default())
-    }
-    pub fn not_eq() -> Self {
-        Self::NotEq(Default::default())
+    fn parse_integer(lex: &mut Lexer<'_, Token>) -> i64 {
+        lex.slice().to_owned().parse().unwrap()
     }
 
-    pub fn equals() -> Self {
-        Self::Equals(Default::default())
-    }
-
-    pub fn colon() -> Self {
-        Self::Colon(Default::default())
-    }
-    pub fn semicolon() -> Self {
-        Self::Semicolon(Default::default())
-    }
-    pub fn thin_arrow() -> Self {
-        Self::ThinArrow(Default::default())
-    }
-    pub fn comma() -> Self {
-        Self::Comma(Default::default())
-    }
-
-    pub fn left_paren() -> Self {
-        Self::LeftParen(Default::default())
-    }
-    pub fn right_paren() -> Self {
-        Self::RightParen(Default::default())
-    }
-    pub fn left_brace() -> Self {
-        Self::LeftBrace(Default::default())
-    }
-    pub fn right_brace() -> Self {
-        Self::RightBrace(Default::default())
-    }
-
-    pub fn t_true() -> Self {
-        Self::True(Default::default())
-    }
-    pub fn t_false() -> Self {
-        Self::False(Default::default())
-    }
-
-    pub fn t_fn() -> Self {
-        Self::Fn(Default::default())
-    }
-    pub fn t_return() -> Self {
-        Self::Return(Default::default())
-    }
-    pub fn t_let() -> Self {
-        Self::Let(Default::default())
-    }
-    pub fn t_if() -> Self {
-        Self::If(Default::default())
-    }
-    pub fn t_else() -> Self {
-        Self::Else(Default::default())
+    fn parse_ident(lex: &mut Lexer<'_, Token>) -> String {
+        lex.slice().to_owned()
     }
 }
 
-/// Additional 'helper' token that may be either a true or false token.
-pub enum BooleanToken {
-    True(TrueToken),
-    False(FalseToken),
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Plus => write!(f, "+"),
+            Token::Minus => write!(f, "-"),
+            Token::DoubleEq => write!(f, "=="),
+            Token::NotEq => write!(f, "!="),
+            Token::Eq => write!(f, "="),
+            Token::ThinArrow => write!(f, "->"),
+            Token::Colon => write!(f, ":"),
+            Token::SemiColon => write!(f, ";"),
+            Token::Comma => write!(f, ","),
+            Token::LeftParen => write!(f, ")"),
+            Token::RightParen => write!(f, "("),
+            Token::LeftBrace => write!(f, "{{"),
+            Token::RightBrace => write!(f, "}}"),
+            Token::Fn => write!(f, "fn"),
+            Token::Return => write!(f, "return"),
+            Token::Let => write!(f, "let"),
+            Token::If => write!(f, "if"),
+            Token::Else => write!(f, "else"),
+            Token::Int => write!(f, "int"),
+            Token::Bool => write!(f, "bool"),
+            Token::True => write!(f, "true"),
+            Token::False => write!(f, "false"),
+            Token::String(value) => write!(f, r#""{value}""#),
+            Token::Integer(value) => write!(f, "{value}"),
+            Token::Ident(value) => write!(f, "{value}"),
+        }
+    }
 }

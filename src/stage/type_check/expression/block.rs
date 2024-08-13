@@ -62,7 +62,7 @@ mod test {
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
         stage::type_check::ctx::MockTypeCheckCtx,
-        util::{scope::Scope, source::Span},
+        util::{scope::Scope, span::Span},
     };
 
     #[test]

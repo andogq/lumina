@@ -8,8 +8,8 @@ impl InfixOperation {
         use InfixOperation::*;
 
         match (self, left, right) {
-            (Plus(_) | Minus(_), Ty::Int, Ty::Int) => Ok(Ty::Int),
-            (Eq(_) | NotEq(_), left, right) if left.check(right) => Ok(Ty::Boolean),
+            (Plus | Minus, Ty::Int, Ty::Int) => Ok(Ty::Int),
+            (Eq | NotEq, left, right) if left.check(right) => Ok(Ty::Boolean),
             (_, left, right) => Err(TyError::Mismatch(*left, *right)),
         }
     }
@@ -49,7 +49,7 @@ mod test_infix {
     use crate::{
         repr::{ast::untyped::*, ty::Ty},
         stage::type_check::ctx::MockTypeCheckCtx,
-        util::{scope::Scope, source::Span},
+        util::{scope::Scope, span::Span},
     };
 
     #[test]

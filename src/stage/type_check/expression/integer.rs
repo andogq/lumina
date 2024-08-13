@@ -17,7 +17,7 @@ impl parse_ast::Integer {
 mod test_integer {
     use crate::{
         repr::{ast::untyped::Integer, ty::Ty},
-        util::source::Span,
+        util::span::Span,
     };
 
     #[test]

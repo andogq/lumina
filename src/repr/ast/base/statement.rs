@@ -1,4 +1,4 @@
-use crate::{ast_node, util::source::Span};
+use crate::{ast_node, util::span::Span};
 
 use super::*;
 

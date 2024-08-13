@@ -14,10 +14,7 @@ pub use if_else::*;
 pub use infix::*;
 pub use integer::*;
 
-use crate::{
-    ast_node,
-    util::source::{Span, Spanned},
-};
+use crate::{ast_node, util::span::Span};
 
 use super::Statement;
 
@@ -41,7 +38,7 @@ impl<TyInfo: Default, FnIdentifier, IdentIdentifier>
         operation: InfixOperation,
         right: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
     ) -> Self {
-        let span = Spanned::span(&left).to(&right);
+        let span = left.span().start..right.span().end;
         Self::Infix(Infix::<TyInfo, FnIdentifier, IdentIdentifier>::new(
             Box::new(left),
             operation,

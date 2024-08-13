@@ -6,14 +6,16 @@ use super::*;
 
 pub fn parse_function(
     ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
+    tokens: &mut Lexer<'_>,
 ) -> Result<Function, ParseError> {
     // `fn` keyword
-    let fn_token = match tokens.next_token() {
-        Token::Fn(fn_token) => fn_token,
-        token => {
+    let span_start = match tokens.next_spanned().unwrap() {
+        // `fn` keyword
+        (Token::Fn, span) => span.start,
+        // Some other token
+        (token, _) => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::Fn(FnToken::default())),
+                expected: Box::new(Token::Fn),
                 found: Box::new(token),
                 reason: "function declaration must begin with keyword".to_string(),
             });
@@ -21,11 +23,11 @@ pub fn parse_function(
     };
 
     // function name
-    let fn_name = match tokens.next_token() {
+    let fn_name = match tokens.next_token().unwrap() {
         Token::Ident(fn_name) => fn_name,
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::Ident(IdentToken::default())),
+                expected: Box::new(Token::Ident(String::new())),
                 found: Box::new(token),
                 reason: "function declaration requires identifier".to_string(),
             });
@@ -33,102 +35,125 @@ pub fn parse_function(
     };
 
     // opening paren for argument list
-    match tokens.peek_token() {
-        Token::LeftParen(_) => (),
+    match tokens.next_token().unwrap() {
+        Token::LeftParen => (),
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::LeftParen(LeftParenToken::default())),
+                expected: Box::new(Token::LeftParen),
                 found: Box::new(token),
                 reason: "argument list must begin with opening parenthesis".to_string(),
             });
         }
     }
 
-    let parameters = iter::from_fn(|| {
-        match tokens.peek_token() {
-            Token::RightParen(_) => None,
-            Token::LeftParen(_) | Token::Comma(_) => {
-                // Consume the opening paren or comma
-                tokens.next_token();
+    enum ParseState {
+        /// Waiting for an item or closing bracket
+        Item,
+        /// Waiting for a comma
+        Comma,
+    }
+    let mut parse_state = ParseState::Item;
 
-                // If the closing parenthesis is encountered, stop parsing arguments
-                if matches!(tokens.peek_token(), Token::RightParen(_)) {
+    let parameters = iter::from_fn(|| {
+        loop {
+            match (&parse_state, tokens.next_token().unwrap()) {
+                // Parameter list finished
+                (_, Token::RightParen) => {
                     return None;
                 }
-
-                // Parse the identifier
-                let ident = ctx.intern(tokens.ident("param identifier").ok()?.literal);
-
-                let colon = tokens.next_token();
-                if !matches!(colon, Token::Colon(_)) {
-                    return Some(Err(ParseError::ExpectedToken {
-                        expected: Box::new(Token::colon()),
-                        found: Box::new(colon),
-                        reason: "param name and type must be separated by a colon".to_string(),
-                    }));
+                // Comma encountered when expected
+                (ParseState::Comma, Token::Comma) => {
+                    parse_state = ParseState::Item;
                 }
+                (ParseState::Comma, token) => {
+                    return Some(Err(ParseError::ExpectedToken {
+                        expected: Box::new(Token::Comma),
+                        found: Box::new(token),
+                        reason: "function arguments must be separated by a comma".to_string(),
+                    }))
+                }
+                // Parameter item encountered
+                (ParseState::Item, Token::Ident(ident)) => {
+                    // Intern the parameter identifier
+                    let ident = ctx.intern(ident);
 
-                let ty_token = tokens.ident("ty").ok()?;
-                assert_eq!(ty_token.literal, "int", "only support int type");
-                let ty = Ty::Int;
+                    // Ensure a colon follows it
+                    match tokens.next_token().unwrap() {
+                        Token::Colon => (),
+                        token => {
+                            return Some(Err(ParseError::ExpectedToken {
+                                expected: Box::new(Token::Colon),
+                                found: Box::new(token),
+                                reason: "param name and type must be separated by a colon"
+                                    .to_string(),
+                            }));
+                        }
+                    }
 
-                Some(Ok((ident, ty)))
+                    // Extract the type
+                    let ty = match tokens.next_token().unwrap() {
+                        Token::Int => Ty::Int,
+                        Token::Bool => Ty::Boolean,
+                        token => {
+                            return Some(Err(ParseError::ExpectedToken {
+                                // WARN: This should be any of the primitive type tokens
+                                expected: Box::new(Token::Int),
+                                found: Box::new(token),
+                                reason: "parameter must have a type".to_string(),
+                            }));
+                        }
+                    };
+
+                    parse_state = ParseState::Comma;
+
+                    return Some(Ok((ident, ty)));
+                }
+                (ParseState::Item, token) => {
+                    return Some(Err(ParseError::ExpectedToken {
+                        expected: Box::new(Token::Ident(String::new())),
+                        found: Box::new(token),
+                        reason: "parameter must have identifier".to_string(),
+                    }))
+                }
             }
-            token => Some(Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::comma()),
-                found: Box::new(token),
-                reason: "function arguments must be separated by a comma".to_string(),
-            })),
         }
     })
     .collect::<Result<Vec<_>, _>>()?;
 
-    // closing paren for argument list
-    match tokens.next_token() {
-        Token::RightParen(_) => (),
-        token => {
-            return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::RightParen(RightParenToken::default())),
-                found: Box::new(token),
-                reason: "argument list must end with closing parenthesis".to_string(),
-            });
-        }
-    }
-
     // arrow for return type
-    match tokens.next_token() {
-        Token::ThinArrow(_) => (),
+    match tokens.next_token().unwrap() {
+        Token::ThinArrow => (),
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::ThinArrow(ThinArrowToken::default())),
+                expected: Box::new(Token::ThinArrow),
                 found: Box::new(token),
                 reason: "thin arrow must preceed return type".to_string(),
             });
         }
     }
 
-    // return type (can currently only be `int`)
-    let return_ty = match tokens.next_token() {
-        Token::Ident(ident) => match ident.literal.as_str() {
-            "int" => Ty::Int,
-            _ => {
-                panic!("only int can be returned from a function")
-            }
-        },
+    // return type
+    let return_ty = match tokens.next_token().unwrap() {
+        Token::Int => Ty::Int,
+        Token::Bool => Ty::Boolean,
         token => {
             return Err(ParseError::ExpectedToken {
-                expected: Box::new(Token::Ident(IdentToken::default())),
+                // WARN: This should be any of the primitive type tokens
+                expected: Box::new(Token::Int),
                 found: Box::new(token),
                 reason: "return type must follow thin arrow".to_string(),
             });
         }
     };
 
+    // Parse out the body
     let body = parse_block(ctx, tokens)?;
 
-    let span = fn_token.span.to(&body);
+    // Construct the function span to the end of the body
+    let span = span_start..body.span.end;
+
     Ok(Function::new(
-        ctx.intern(fn_name.literal),
+        ctx.intern(fn_name),
         parameters,
         return_ty,
         body,

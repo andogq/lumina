@@ -2,26 +2,29 @@ use super::*;
 
 pub fn parse_statement(
     ctx: &mut impl ParseCtx,
-    tokens: &mut impl TokenGenerator,
+    tokens: &mut Lexer<'_>,
 ) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
-    let statement = match tokens.peek_token() {
-        Token::Return(return_token) => {
+    let statement = match tokens.peek_token().unwrap() {
+        Token::Return => {
             // Parse as return statement
-            tokens.next_token();
+            let (_, return_span) = tokens.next_spanned().unwrap();
 
-            Statement::Return(ReturnStatement::new(
-                parse_expression(ctx, tokens, Precedence::Lowest)?,
-                return_token.span,
-            ))
+            // Parse out the value
+            let value = parse_expression(ctx, tokens, Precedence::Lowest)?;
+
+            // Build the span
+            let span = return_span.start..value.span().end;
+
+            Statement::Return(ReturnStatement::new(value, span))
         }
-        Token::Let(let_token) => {
+        Token::Let => {
             // let token
-            tokens.next_token();
+            let (_, let_span) = tokens.next_spanned().unwrap();
 
             // variable binding
-            let name = match tokens.next_token() {
+            let name = match tokens.next_token().unwrap() {
                 Token::Ident(name) => name,
                 token => {
                     return Err(ParseError::ExpectedToken {
@@ -33,12 +36,12 @@ pub fn parse_statement(
             };
 
             // equals sign
-            match tokens.next_token() {
-                Token::Equals(_) => (),
+            match tokens.next_token().unwrap() {
+                Token::Eq => (),
                 token => {
                     return Err(ParseError::ExpectedToken {
                         found: Box::new(token),
-                        expected: Box::new(Token::Equals(Default::default())),
+                        expected: Box::new(Token::Eq),
                         reason: "equals sign must follow ident".to_string(),
                     });
                 }
@@ -46,9 +49,9 @@ pub fn parse_statement(
 
             // value
             let value = parse_expression(ctx, tokens, Precedence::Lowest)?;
-            let span = let_token.span().to(&value);
+            let span = let_span.start..value.span().end;
 
-            Statement::Let(LetStatement::new(ctx.intern(name.literal), value, span))
+            Statement::Let(LetStatement::new(ctx.intern(name), value, span))
         }
         _ => {
             // Parse expression
@@ -57,7 +60,7 @@ pub fn parse_statement(
 
             Statement::Expression(ExpressionStatement::new(
                 expression,
-                if matches!(tokens.peek_token(), Token::Semicolon(_)) {
+                if matches!(tokens.peek_token().unwrap(), Token::SemiColon) {
                     false
                 } else {
                     expecting_semicolon = false;
@@ -70,12 +73,12 @@ pub fn parse_statement(
     };
 
     if expecting_semicolon {
-        match tokens.next_token() {
-            Token::Semicolon(_) => (),
+        match tokens.next_token().unwrap() {
+            Token::SemiColon => (),
             token => {
                 return Err(ParseError::ExpectedToken {
                     found: Box::new(token),
-                    expected: Box::new(Token::Equals(Default::default())),
+                    expected: Box::new(Token::Eq),
                     reason: "semicolon must follow statement".to_string(),
                 });
             }

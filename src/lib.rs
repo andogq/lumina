@@ -11,11 +11,9 @@ use inkwell::{
 use repr::ty::Ty;
 use stage::{
     codegen::{ctx::LLVMCtx as _, llvm::FunctionGenerator},
-    lex::Lexer,
     lower_ir::{self, IRCtx as _},
     parse::parse,
 };
-use util::source::Source;
 
 pub mod compile_pass;
 pub mod repr;
@@ -23,11 +21,9 @@ pub mod stage;
 pub mod util;
 
 pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
-    let source = Source::new(source);
-
     let mut ctx = CompilePass::default();
 
-    let program = parse(&mut ctx, &mut Lexer::new(source)).unwrap();
+    let program = parse(&mut ctx, source).unwrap();
 
     let program = program.ty_solve(&mut ctx).unwrap();
 
