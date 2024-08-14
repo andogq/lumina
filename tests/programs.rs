@@ -93,11 +93,7 @@ fn main() -> int {
 #[case::fibonacci(
     4181,
     r#"fn fib(n: int) -> int {
-        if n == 0 {
-            return n;
-        }
-
-        if n == 1 {
+        if n == 0 || n == 1 {
             return n;
         }
 

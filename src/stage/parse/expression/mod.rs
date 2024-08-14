@@ -14,6 +14,7 @@ mod e_integer;
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     Lowest,
+    Binary,
     Equality,
     Sum,
     Call,
@@ -23,6 +24,7 @@ impl Precedence {
     pub fn of(token: &Token) -> Self {
         match token {
             Token::Minus | Token::Plus => Precedence::Sum,
+            Token::And | Token::Or => Precedence::Binary,
             Token::DoubleEq | Token::NotEq => Precedence::Equality,
             Token::LeftParen => Precedence::Call,
             _ => Precedence::Lowest,

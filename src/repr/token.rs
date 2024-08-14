@@ -16,6 +16,10 @@ pub enum Token {
     DoubleEq,
     #[token("!=")]
     NotEq,
+    #[token("&&")]
+    And,
+    #[token("||")]
+    Or,
 
     /*
      * Language tokens
@@ -104,6 +108,8 @@ impl Display for Token {
             Token::Minus => write!(f, "-"),
             Token::DoubleEq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
+            Token::And => write!(f, "&&"),
+            Token::Or => write!(f, "||"),
             Token::Eq => write!(f, "="),
             Token::ThinArrow => write!(f, "->"),
             Token::Colon => write!(f, ":"),

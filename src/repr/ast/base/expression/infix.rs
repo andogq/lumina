@@ -8,6 +8,8 @@ pub enum InfixOperation {
     Plus,
     Eq,
     NotEq,
+    And,
+    Or,
 }
 
 impl InfixOperation {
@@ -29,6 +31,8 @@ impl TryFrom<Token> for InfixOperation {
             Token::Minus => Ok(InfixOperation::Minus),
             Token::DoubleEq => Ok(InfixOperation::Eq),
             Token::NotEq => Ok(InfixOperation::NotEq),
+            Token::And => Ok(InfixOperation::And),
+            Token::Or => Ok(InfixOperation::Or),
             _ => Err(()),
         }
     }
