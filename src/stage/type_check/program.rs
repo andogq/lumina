@@ -29,9 +29,6 @@ impl parse_ast::Program {
             main,
             functions,
             span: self.span,
-
-            // TODO: This should probably be migrated into something
-            symbols: self.symbols,
         })
     }
 }

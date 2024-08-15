@@ -1,5 +1,4 @@
 mod block;
-mod ctx;
 mod expression;
 mod function;
 mod statement;
@@ -9,9 +8,9 @@ use std::iter::Peekable;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-pub use ctx::ParseCtx;
 use logos::Logos;
 
+use crate::compiler::Compiler;
 use crate::repr::token::*;
 use crate::util::span::*;
 
@@ -44,16 +43,16 @@ pub enum ParseError {
     MissingReturn,
 }
 
-pub fn parse(ctx: &mut impl ParseCtx, source: &str) -> Result<Program, ParseError> {
+pub fn parse(c: &mut Compiler, source: &str) -> Result<Program, ParseError> {
     let mut tokens: Lexer = source.into();
 
     // WARN: wacky af
-    let main = ctx.intern("main");
+    let main = c.intern_string("main");
 
     // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {
         Some(match tokens.peek_token()? {
-            Token::Fn => parse_function(ctx, &mut tokens).map(|function| (function.name, function)),
+            Token::Fn => parse_function(c, &mut tokens).map(|function| (function.name, function)),
             token => Err(ParseError::ExpectedToken {
                 expected: Box::new(Token::Fn),
                 found: Box::new(token.clone()),
@@ -70,8 +69,6 @@ pub fn parse(ctx: &mut impl ParseCtx, source: &str) -> Result<Program, ParseErro
     let program = Program::new(
         functions.into_values().collect(),
         main,
-        // TODO: This should just reference the global ctx
-        ctx.dump_symbols(),
         // WARN: Really should be something better
         Span::default(),
     );

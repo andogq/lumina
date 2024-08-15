@@ -1,9 +1,6 @@
 use super::*;
 
-pub fn parse_integer(
-    _ctx: &mut impl ParseCtx,
-    tokens: &mut Lexer<'_>,
-) -> Result<Integer, ParseError> {
+pub fn parse_integer(_c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Integer, ParseError> {
     match tokens.next_spanned().unwrap() {
         (Token::Integer(value), span) => Ok(Integer::new(value, span)),
         (token, _) => Err(ParseError::ExpectedToken {
@@ -18,11 +15,10 @@ pub fn parse_integer(
 mod test {
     use super::*;
 
-    use ctx::MockParseCtx;
     use rstest::rstest;
 
     fn run(source: &str) -> Result<Integer, ParseError> {
-        parse_integer(&mut MockParseCtx::new(), &mut source.into())
+        parse_integer(&mut Compiler::default(), &mut source.into())
     }
 
     #[rstest]
@@ -44,7 +40,7 @@ mod test {
     #[case::fail("someident;")]
     fn single_token(#[case] source: &str) {
         let mut tokens = source.into();
-        let _ = parse_integer(&mut MockParseCtx::new(), &mut tokens);
+        let _ = parse_integer(&mut Compiler::default(), &mut tokens);
         assert_eq!(tokens.0.count(), 1);
     }
 }

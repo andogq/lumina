@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn parse_if(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<If, ParseError> {
+pub fn parse_if(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<If, ParseError> {
     let span_start = match tokens.next_spanned().unwrap() {
         (Token::If, span) => span.start,
         (token, _) => {
@@ -12,14 +12,14 @@ pub fn parse_if(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<If, P
         }
     };
 
-    let condition = parse_expression(ctx, tokens, Precedence::Lowest)?;
+    let condition = parse_expression(c, tokens, Precedence::Lowest)?;
 
-    let success = parse_block(ctx, tokens)?;
+    let success = parse_block(c, tokens)?;
 
     let otherwise = if matches!(tokens.peek_token(), Some(Token::Else)) {
         tokens.next_token().unwrap();
 
-        let otherwise = parse_block(ctx, tokens)?;
+        let otherwise = parse_block(c, tokens)?;
 
         Some(otherwise)
     } else {
@@ -41,9 +41,7 @@ pub fn parse_if(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<If, P
 
 #[cfg(test)]
 mod test {
-    use ctx::MockParseCtx;
     use rstest::rstest;
-    use string_interner::Symbol;
 
     use super::*;
 
@@ -51,8 +49,7 @@ mod test {
     fn integer_condition() {
         let mut tokens = "if 123 { 1 }".into();
 
-        let mut ctx = MockParseCtx::new();
-        let e_if = parse_if(&mut ctx, &mut tokens).unwrap();
+        let e_if = parse_if(&mut Compiler::default(), &mut tokens).unwrap();
 
         assert!(matches!(
             *e_if.condition,
@@ -64,15 +61,7 @@ mod test {
     fn ident_condition() {
         let mut tokens = "if someident { 1 }".into();
 
-        let mut ctx = MockParseCtx::new();
-
-        ctx.expect_intern()
-            .once()
-            .return_const::<crate::util::symbol_map::interner_symbol_map::Symbol>(
-                Symbol::try_from_usize(0).unwrap(),
-            );
-
-        let e_if = parse_if(&mut ctx, &mut tokens).unwrap();
+        let e_if = parse_if(&mut Compiler::default(), &mut tokens).unwrap();
 
         assert!(matches!(*e_if.condition, Expression::Ident(_)));
     }
@@ -81,15 +70,7 @@ mod test {
     fn otherwise_branch() {
         let mut tokens = "if someident { 1 } else { 2 }".into();
 
-        let mut ctx = MockParseCtx::new();
-
-        ctx.expect_intern()
-            .once()
-            .return_const::<crate::util::symbol_map::interner_symbol_map::Symbol>(
-                Symbol::try_from_usize(0).unwrap(),
-            );
-
-        let e_if = parse_if(&mut ctx, &mut tokens).unwrap();
+        let e_if = parse_if(&mut Compiler::default(), &mut tokens).unwrap();
 
         assert!(e_if.otherwise.is_some());
     }
@@ -98,7 +79,7 @@ mod test {
     #[case::multiple_condition_tokens("if 1 2")]
     #[case::malformed_otherwise_block("if 1 { 3 } else else { 3 }")]
     fn fail(#[case] source: &str) {
-        let result = parse_if(&mut MockParseCtx::new(), &mut source.into());
+        let result = parse_if(&mut Compiler::default(), &mut source.into());
 
         assert!(result.is_err());
     }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use compile_pass::CompilePass;
+use compiler::Compiler;
 use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
@@ -17,14 +18,17 @@ use stage::{
 };
 
 pub mod compile_pass;
+pub mod compiler;
 pub mod repr;
 pub mod stage;
 pub mod util;
 
 pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
-    let mut ctx = CompilePass::default();
+    let mut compiler = Compiler::default();
 
-    let program = parse(&mut ctx, source).unwrap();
+    let program = parse(&mut compiler, source).unwrap();
+
+    let mut ctx: CompilePass = compiler.into();
 
     let program = program.ty_solve(&mut ctx).unwrap();
 

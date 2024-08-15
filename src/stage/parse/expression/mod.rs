@@ -32,24 +32,24 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(ctx: &mut impl ParseCtx, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
+fn parse_prefix(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
     match tokens.peek_token().unwrap() {
-        Token::Integer(_) => Ok(Expression::Integer(parse_integer(ctx, tokens)?)),
-        Token::Ident(_) => Ok(Expression::Ident(parse_ident(ctx, tokens)?)),
-        Token::True => Ok(Expression::Boolean(parse_boolean(ctx, tokens)?)),
-        Token::False => Ok(Expression::Boolean(parse_boolean(ctx, tokens)?)),
-        Token::LeftBrace => Ok(Expression::Block(parse_block(ctx, tokens)?)),
-        Token::If => Ok(Expression::If(parse_if(ctx, tokens)?)),
+        Token::Integer(_) => Ok(Expression::Integer(parse_integer(c, tokens)?)),
+        Token::Ident(_) => Ok(Expression::Ident(parse_ident(c, tokens)?)),
+        Token::True => Ok(Expression::Boolean(parse_boolean(c, tokens)?)),
+        Token::False => Ok(Expression::Boolean(parse_boolean(c, tokens)?)),
+        Token::LeftBrace => Ok(Expression::Block(parse_block(c, tokens)?)),
+        Token::If => Ok(Expression::If(parse_if(c, tokens)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
     }
 }
 
 pub fn parse_expression(
-    ctx: &mut impl ParseCtx,
+    c: &mut Compiler,
     tokens: &mut Lexer<'_>,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
-    let mut left = parse_prefix(ctx, tokens)?;
+    let mut left = parse_prefix(c, tokens)?;
 
     while tokens.peek_token().is_some() && precedence < Precedence::of(tokens.peek_token().unwrap())
     {
@@ -70,7 +70,7 @@ pub fn parse_expression(
                             }
 
                             // Parse the next argument
-                            Some(parse_expression(ctx, tokens, Precedence::Lowest))
+                            Some(parse_expression(c, tokens, Precedence::Lowest))
                         }
                         token => Some(Err(ParseError::ExpectedToken {
                             expected: Box::new(Token::Comma),
@@ -102,7 +102,7 @@ pub fn parse_expression(
                     let token = tokens.next_token().unwrap();
                     let precedence = Precedence::of(&token);
 
-                    let right = parse_expression(ctx, tokens, precedence)?;
+                    let right = parse_expression(c, tokens, precedence)?;
 
                     let span = left.span().start..right.span().end;
 
@@ -120,31 +120,24 @@ pub fn parse_expression(
 
 #[cfg(test)]
 mod test {
-    use ctx::MockParseCtx;
-    use string_interner::Symbol as _;
-
-    use crate::util::symbol_map::interner_symbol_map::Symbol;
 
     use super::*;
 
     use rstest::*;
 
     #[fixture]
-    fn mock_ctx(#[default("func")] ident: &'static str) -> MockParseCtx {
-        let mut ctx = MockParseCtx::new();
+    fn mock_compiler(#[default("func")] ident: &'static str) -> Compiler {
+        let mut compiler = Compiler::default();
 
-        ctx.expect_intern()
-            .once()
-            .withf(move |s| s.as_ref() == ident)
-            .return_const(Symbol::try_from_usize(0).unwrap());
+        compiler.intern_string(ident);
 
-        ctx
+        compiler
     }
 
     #[rstest]
     fn simple_addition() {
         let expression = parse_expression(
-            &mut MockParseCtx::new(),
+            &mut Compiler::default(),
             &mut "3 + 4".into(),
             Precedence::Lowest,
         )
@@ -178,7 +171,7 @@ mod test {
     #[rstest]
     fn multi_addition() {
         let expression = parse_expression(
-            &mut MockParseCtx::new(),
+            &mut Compiler::default(),
             &mut "3 + 4 + 10".into(),
             Precedence::Lowest,
         )
@@ -225,19 +218,16 @@ mod test {
 
     #[rstest]
     fn if_statement() {
-        let mut ctx = MockParseCtx::new();
-
-        ctx.expect_intern()
-            .once()
-            .withf(|f| f.as_ref() == "someident")
-            .return_const(Symbol::try_from_usize(0).unwrap());
+        let mut compiler = Compiler::default();
 
         let expression = parse_expression(
-            &mut ctx,
+            &mut compiler,
             &mut "if 1 { someident }".into(),
             Precedence::Lowest,
         )
         .unwrap();
+
+        assert!(compiler.has_interned_string("someident"));
 
         insta::assert_debug_snapshot!(expression, @r###"
         If(
@@ -282,7 +272,7 @@ mod test {
     #[rstest]
     fn integer() {
         let expression = parse_expression(
-            &mut MockParseCtx::new(),
+            &mut Compiler::default(),
             &mut "1".into(),
             Precedence::Lowest,
         )
@@ -299,9 +289,13 @@ mod test {
     }
 
     #[rstest]
-    fn ident(#[with("someident")] mut mock_ctx: MockParseCtx) {
-        let expression =
-            parse_expression(&mut mock_ctx, &mut "someident".into(), Precedence::Lowest).unwrap();
+    fn ident(#[with("someident")] mut mock_compiler: Compiler) {
+        let expression = parse_expression(
+            &mut mock_compiler,
+            &mut "someident".into(),
+            Precedence::Lowest,
+        )
+        .unwrap();
         insta::assert_debug_snapshot!(expression, @r###"
         Ident(
             Ident {
@@ -318,7 +312,7 @@ mod test {
     #[rstest]
     fn equality() {
         let expression = parse_expression(
-            &mut MockParseCtx::new(),
+            &mut Compiler::default(),
             &mut "1 == 1".into(),
             Precedence::Lowest,
         )
@@ -352,7 +346,7 @@ mod test {
     #[rstest]
     fn complex_equality() {
         let expression = parse_expression(
-            &mut MockParseCtx::new(),
+            &mut Compiler::default(),
             &mut "1 == 1 + 2".into(),
             Precedence::Lowest,
         )
@@ -398,9 +392,9 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_no_param(mut mock_ctx: MockParseCtx) {
+    fn function_call_no_param(mut mock_compiler: Compiler) {
         let expression =
-            parse_expression(&mut mock_ctx, &mut "func()".into(), Precedence::Lowest).unwrap();
+            parse_expression(&mut mock_compiler, &mut "func()".into(), Precedence::Lowest).unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
@@ -417,9 +411,13 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_one_param_no_comma(mut mock_ctx: MockParseCtx) {
-        let expression =
-            parse_expression(&mut mock_ctx, &mut "func(1)".into(), Precedence::Lowest).unwrap();
+    fn function_call_one_param_no_comma(mut mock_compiler: Compiler) {
+        let expression = parse_expression(
+            &mut mock_compiler,
+            &mut "func(1)".into(),
+            Precedence::Lowest,
+        )
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
@@ -444,9 +442,13 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_one_param_trailing_comma(mut mock_ctx: MockParseCtx) {
-        let expression =
-            parse_expression(&mut mock_ctx, &mut "func(1,)".into(), Precedence::Lowest).unwrap();
+    fn function_call_one_param_trailing_comma(mut mock_compiler: Compiler) {
+        let expression = parse_expression(
+            &mut mock_compiler,
+            &mut "func(1,)".into(),
+            Precedence::Lowest,
+        )
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
@@ -471,9 +473,9 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_multi_param_no_comma(mut mock_ctx: MockParseCtx) {
+    fn function_call_multi_param_no_comma(mut mock_compiler: Compiler) {
         let expression = parse_expression(
-            &mut mock_ctx,
+            &mut mock_compiler,
             &mut "func(1, 2, 3)".into(),
             Precedence::Lowest,
         )
@@ -516,9 +518,9 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_multi_param_trailing_comma(mut mock_ctx: MockParseCtx) {
+    fn function_call_multi_param_trailing_comma(mut mock_compiler: Compiler) {
         let expression = parse_expression(
-            &mut mock_ctx,
+            &mut mock_compiler,
             &mut "func(1, 2, 3,)".into(),
             Precedence::Lowest,
         )
@@ -561,9 +563,9 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_with_expression_param(mut mock_ctx: MockParseCtx) {
+    fn function_call_with_expression_param(mut mock_compiler: Compiler) {
         let expression = parse_expression(
-            &mut mock_ctx,
+            &mut mock_compiler,
             &mut "func(1 + 2, 3,)".into(),
             Precedence::Lowest,
         )
@@ -613,9 +615,13 @@ mod test {
     }
 
     #[rstest]
-    fn function_call_in_expression(mut mock_ctx: MockParseCtx) {
-        let expression =
-            parse_expression(&mut mock_ctx, &mut "func(1) + 2".into(), Precedence::Lowest).unwrap();
+    fn function_call_in_expression(mut mock_compiler: Compiler) {
+        let expression = parse_expression(
+            &mut mock_compiler,
+            &mut "func(1) + 2".into(),
+            Precedence::Lowest,
+        )
+        .unwrap();
 
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(

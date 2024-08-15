@@ -12,7 +12,6 @@ use crate::{
     stage::{
         codegen::ctx::LLVMCtx,
         lower_ir::{FunctionBuilder as FunctionBuilderTrait, IRCtx},
-        parse::ParseCtx,
         type_check::{FunctionSignature, TypeCheckCtx},
     },
     util::{
@@ -30,7 +29,7 @@ struct FunctionInfo {
 
 pub struct CompilePass {
     /// Backing symbol store for entire compile.
-    symbols: InternerSymbolMap,
+    pub symbols: InternerSymbolMap,
 
     /// All available functions within this pass
     functions: IndexVec<FunctionIdx, FunctionInfo>,
@@ -73,8 +72,6 @@ impl SymbolMap for CompilePass {
         SymbolMap::dump_symbols(&self.symbols)
     }
 }
-
-impl ParseCtx for CompilePass {}
 
 impl TypeCheckCtx for CompilePass {
     fn register_function(&mut self, symbol: Symbol, signature: FunctionSignature) -> FunctionIdx {
