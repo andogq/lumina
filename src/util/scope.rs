@@ -1,8 +1,8 @@
 use index_vec::IndexVec;
 
 use crate::{
+    compiler::Symbol,
     repr::{identifier::*, ty::Ty},
-    util::symbol_map::interner_symbol_map::Symbol,
 };
 
 pub struct ScopePart {

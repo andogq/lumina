@@ -1,7 +1,4 @@
-use crate::{
-    repr::identifier::FunctionIdx,
-    util::{scope::*, symbol_map::interner_symbol_map::Symbol},
-};
+use crate::{compiler::Symbol, repr::identifier::FunctionIdx, util::scope::*};
 
 use super::FunctionSignature;
 

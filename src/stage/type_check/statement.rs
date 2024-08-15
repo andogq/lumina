@@ -98,9 +98,10 @@ mod test_statement {
     use string_interner::Symbol as _;
 
     use crate::{
+        compiler::Symbol,
         repr::ast::untyped::*,
         stage::type_check::ctx::MockTypeCheckCtx,
-        util::{scope::Scope, span::Span, symbol_map::interner_symbol_map::Symbol},
+        util::{scope::Scope, span::Span},
     };
 
     use super::Ty;

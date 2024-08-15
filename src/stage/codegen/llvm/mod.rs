@@ -8,18 +8,24 @@ use inkwell::{
     IntPredicate,
 };
 
-use crate::repr::{
-    identifier::{FunctionIdx, ScopedBinding},
-    ir::{
-        BasicBlockIdx, BinaryOp, ConstantValue, Function, Terminator, Triple, TripleRef, UnaryOp,
-        Value,
+use crate::{
+    compiler::Compiler,
+    repr::{
+        identifier::{FunctionIdx, ScopedBinding},
+        ir::{
+            BasicBlockIdx, BinaryOp, ConstantValue, Function, Terminator, Triple, TripleRef,
+            UnaryOp, Value,
+        },
+        ty::Ty,
     },
-    ty::Ty,
 };
 
 use super::ctx::LLVMCtx;
 
 pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
+    #[allow(dead_code)]
+    compiler: &'ctx mut Compiler,
+
     ctx: &'ctx mut Ctx,
     llvm_ctx: &'ink Context,
 
@@ -41,6 +47,7 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
 
 impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     pub fn new(
+        compiler: &'ctx mut Compiler,
         ctx: &'ctx mut Ctx,
         llvm_ctx: &'ink Context,
         functions: HashMap<FunctionIdx, FunctionValue<'ink>>,
@@ -61,6 +68,7 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
         builder.position_at_end(entry);
 
         Self {
+            compiler,
             ctx,
             llvm_ctx,
             llvm_function,

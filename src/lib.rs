@@ -28,7 +28,7 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
 
     let program = parse(&mut compiler, source).unwrap();
 
-    let mut ctx: CompilePass = compiler.into();
+    let mut ctx = CompilePass::from(compiler.clone());
 
     let program = program.ty_solve(&mut ctx).unwrap();
 
@@ -79,6 +79,7 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
 
     for (idx, function) in ctx.all_functions() {
         FunctionGenerator::new(
+            &mut compiler,
             &mut ctx,
             &llvm_ctx,
             function_map.clone(),

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use index_vec::IndexVec;
 
 use crate::{
+    compiler::{Compiler, Symbol},
     repr::{
         ast::typed::Function,
         identifier::{FunctionIdx, ScopedBinding},
@@ -14,10 +15,7 @@ use crate::{
         lower_ir::{FunctionBuilder as FunctionBuilderTrait, IRCtx},
         type_check::{FunctionSignature, TypeCheckCtx},
     },
-    util::{
-        scope::Scope,
-        symbol_map::{interner_symbol_map::*, SymbolMap},
-    },
+    util::scope::Scope,
 };
 
 struct FunctionInfo {
@@ -28,8 +26,7 @@ struct FunctionInfo {
 }
 
 pub struct CompilePass {
-    /// Backing symbol store for entire compile.
-    pub symbols: InternerSymbolMap,
+    pub compiler: Compiler,
 
     /// All available functions within this pass
     functions: IndexVec<FunctionIdx, FunctionInfo>,
@@ -41,7 +38,7 @@ pub struct CompilePass {
 impl CompilePass {
     pub fn new() -> Self {
         Self {
-            symbols: InternerSymbolMap::new(),
+            compiler: Compiler::default(),
             functions: IndexVec::new(),
             function_symbols: HashMap::new(),
         }
@@ -51,25 +48,6 @@ impl CompilePass {
 impl Default for CompilePass {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl SymbolMap for CompilePass {
-    type Symbol = Symbol;
-
-    fn intern<T>(&mut self, s: T) -> Symbol
-    where
-        T: AsRef<str>,
-    {
-        SymbolMap::intern(&mut self.symbols, s)
-    }
-
-    fn get(&self, s: Symbol) -> String {
-        SymbolMap::get(&self.symbols, s)
-    }
-
-    fn dump_symbols(&self) -> InternerSymbolMap {
-        SymbolMap::dump_symbols(&self.symbols)
     }
 }
 
@@ -214,7 +192,11 @@ impl LLVMCtx for CompilePass {
             .as_ref()
             .unwrap()
             .get_binding(binding);
-        self.get(symbol)
+
+        self.compiler
+            .get_interned_string(symbol)
+            .unwrap()
+            .to_string()
     }
 
     fn get_scoped_binding_ty(&self, function: &FunctionIdx, binding: &ScopedBinding) -> Ty {
@@ -227,6 +209,9 @@ impl LLVMCtx for CompilePass {
     }
 
     fn get_function_name(&self, function: &FunctionIdx) -> String {
-        self.get(self.functions[*function].symbol)
+        self.compiler
+            .get_interned_string(self.functions[*function].symbol)
+            .unwrap()
+            .to_string()
     }
 }

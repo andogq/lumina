@@ -6,11 +6,9 @@ mod statement;
 
 use itertools::Itertools;
 
+use crate::compiler::Symbol;
+use crate::repr::ast::{base as base_ast, untyped as parse_ast};
 use crate::repr::ty::Ty;
-use crate::{
-    repr::ast::{base as base_ast, untyped as parse_ast},
-    util::symbol_map::interner_symbol_map::Symbol,
-};
 
 pub use ctx::TypeCheckCtx;
 

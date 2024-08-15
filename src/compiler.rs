@@ -6,7 +6,7 @@ use crate::compile_pass::CompilePass;
 pub type Symbol = DefaultSymbol;
 
 /// Contains all of the state required for a compiler pass.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Compiler {
     /// Symbols interned by the compiler.
     symbols: StringInterner<DefaultBackend>,
@@ -33,7 +33,7 @@ impl From<Compiler> for CompilePass {
     fn from(compiler: Compiler) -> Self {
         let mut ctx = Self::default();
 
-        ctx.symbols = compiler.symbols;
+        ctx.compiler = compiler;
 
         ctx
     }
