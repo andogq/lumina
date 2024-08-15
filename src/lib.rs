@@ -5,6 +5,7 @@ use inkwell::{
     module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
+    types::BasicType,
     values::FunctionValue,
     OptimizationLevel,
 };
@@ -41,22 +42,31 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
                 *idx,
                 module.add_function(
                     &ctx.get_function_name(idx),
-                    llvm_ctx.i64_type().fn_type(
-                        f.signature
-                            .arguments
-                            .iter()
-                            .map(|arg| match arg {
-                                Ty::Int => llvm_ctx.i64_type().into(),
-                                Ty::Boolean => todo!(),
-                                Ty::Unit => todo!(),
-                                Ty::Never => {
-                                    unreachable!("cannot have an argument that is never type")
-                                }
-                            })
-                            .collect::<Vec<_>>()
-                            .as_slice(),
-                        false,
-                    ),
+                    {
+                        let return_ty = match f.signature.return_ty {
+                            Ty::Int => llvm_ctx.i64_type().as_basic_type_enum(),
+                            Ty::Boolean => llvm_ctx.bool_type().as_basic_type_enum(),
+                            Ty::Unit => todo!(),
+                            Ty::Never => todo!(),
+                        };
+
+                        return_ty.fn_type(
+                            f.signature
+                                .arguments
+                                .iter()
+                                .map(|arg| match arg {
+                                    Ty::Int => llvm_ctx.i64_type().into(),
+                                    Ty::Boolean => llvm_ctx.bool_type().into(),
+                                    Ty::Unit => todo!(),
+                                    Ty::Never => {
+                                        unreachable!("cannot have an argument that is never type")
+                                    }
+                                })
+                                .collect::<Vec<_>>()
+                                .as_slice(),
+                            false,
+                        )
+                    },
                     None,
                 ),
             )
