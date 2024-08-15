@@ -133,6 +133,7 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                     self.gen_assign(symbol, value);
                     None
                 }
+                Triple::Load(binding) => Some(self.gen_load(binding)),
                 Triple::Phi(values) => Some(self.gen_phi(values)),
             };
             self.results.insert(TripleRef::new(*block_idx, idx), result);
@@ -240,6 +241,18 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
         self.builder.build_store(*ptr, value).unwrap();
     }
 
+    fn gen_load(&self, binding: &ScopedBinding) -> IntValue<'ink> {
+        let ptr = self.bindings.get(binding).expect("symbol must be defined");
+        let name = self
+            .ctx
+            .get_scoped_binding_name(&self.function.identifier, binding);
+
+        self.builder
+            .build_load(self.llvm_ctx.i64_type(), *ptr, &name)
+            .unwrap()
+            .into_int_value()
+    }
+
     fn gen_switch(
         &mut self,
         value: &Value,
@@ -318,22 +331,6 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
 
     fn retrieve_value(&self, value: &Value) -> Option<IntValue<'ink>> {
         match value {
-            Value::Name(identifier) => {
-                let ptr = self
-                    .bindings
-                    .get(identifier)
-                    .expect("symbol must be defined");
-                let name = self
-                    .ctx
-                    .get_scoped_binding_name(&self.function.identifier, identifier);
-
-                Some(
-                    self.builder
-                        .build_load(self.llvm_ctx.i64_type(), *ptr, &name)
-                        .unwrap()
-                        .into_int_value(),
-                )
-            }
             Value::Constant(value) => Some(match value {
                 ConstantValue::Integer(value) => {
                     self.llvm_ctx.i64_type().const_int(*value as u64, false)

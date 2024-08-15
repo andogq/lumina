@@ -115,7 +115,9 @@ fn lower_expression(
         }
         ast::Expression::Integer(integer) => Some(Value::integer(integer.value)),
         ast::Expression::Boolean(boolean) => Some(Value::boolean(boolean.value)),
-        ast::Expression::Ident(ast::Ident { binding: name, .. }) => Some(Value::Name(*name)),
+        ast::Expression::Ident(ast::Ident { binding, .. }) => {
+            Some(Value::Triple(builder.add_triple(Triple::Load(*binding))))
+        }
         ast::Expression::Block(block) => Some(lower_block(ctx, builder, block)),
         ast::Expression::If(ast::If {
             condition,

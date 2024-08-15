@@ -29,6 +29,8 @@ pub enum Triple {
     Call(FunctionIdx, Vec<Value>),
     /// Assign some symbol to some value.
     Assign(ScopedBinding, Value),
+    /// Loads a value from a scoped binding
+    Load(ScopedBinding),
     Phi(Vec<(Value, BasicBlockIdx)>),
 }
 

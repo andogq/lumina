@@ -1,5 +1,3 @@
-use crate::repr::identifier::ScopedBinding;
-
 use super::TripleRef;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -12,8 +10,6 @@ pub enum ConstantValue {
 /// represent any possible source of a value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Value {
-    /// Value derived from a name in the source code.
-    Name(ScopedBinding),
     /// Constant value, potentially inserted from the compiler or originating from the source code.
     Constant(ConstantValue),
     /// Temporary value representing the result of some triple.
