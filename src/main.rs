@@ -7,11 +7,11 @@ fn main() {
                 return n;
             }
 
-            return fib(n - 1) + fib(n - 2);
+            fib(n - 1) + fib(n - 2)
         }
 
         fn main() -> int {
-            return fib(19);
+            fib(19)
         }"#;
 
     let result = compile_and_run(source, true);

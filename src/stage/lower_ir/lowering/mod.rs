@@ -26,7 +26,12 @@ fn lower_function(ctx: &mut impl IRCtx, function: ast::Function) {
         });
 
     // Perform the lowering
-    lower_block(ctx, &mut builder, &function.body);
+    let value = lower_block(ctx, &mut builder, &function.body);
+
+    // If implicit return, add in a return statement
+    if !matches!(value, Value::Unit) {
+        builder.set_terminator(Terminator::Return(value));
+    }
 
     // Consume the builder
     builder.build(ctx);
