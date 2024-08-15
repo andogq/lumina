@@ -55,7 +55,7 @@ fn lower_block(
         match statement {
             ast::Statement::Return(ast::ReturnStatement { value, .. }) => {
                 let value = lower_expression(ctx, builder, value).unwrap();
-                builder.add_triple(Triple::Return(value));
+                builder.set_terminator(Terminator::Return(value));
             }
             ast::Statement::Let(ast::LetStatement {
                 binding: name,
@@ -136,7 +136,7 @@ fn lower_expression(
 
             if let (Some(merge_bb), true) = (merge_bb, !matches!(success.ty_info.ty, Ty::Never)) {
                 // Ensure the branch returns to the merge basic block
-                builder.add_triple(Triple::Jump(merge_bb));
+                builder.set_terminator(Terminator::Jump(merge_bb));
             }
 
             let mut merge_values = vec![(success_value, success_bb)];
@@ -150,7 +150,7 @@ fn lower_expression(
 
                     if let Some(merge_bb) = merge_bb {
                         // Ensure the branch returns to the merge basic block
-                        builder.add_triple(Triple::Jump(merge_bb));
+                        builder.set_terminator(Terminator::Jump(merge_bb));
                     }
 
                     merge_values.push((otherwise_value, otherwise_bb));
@@ -166,7 +166,7 @@ fn lower_expression(
             // Revert back to original location
             builder.goto_bb(original_bb);
 
-            builder.add_triple(Triple::Switch {
+            builder.set_terminator(Terminator::Switch {
                 value: condition,
                 default: success_bb,
                 branches,

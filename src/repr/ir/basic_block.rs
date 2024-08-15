@@ -1,8 +1,9 @@
 use index_vec::IndexVec;
 
-use super::{Triple, TripleIdx};
+use super::{terminator::Terminator, Triple, TripleIdx};
 
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BasicBlock {
     pub triples: IndexVec<TripleIdx, Triple>,
+    pub terminator: Terminator,
 }

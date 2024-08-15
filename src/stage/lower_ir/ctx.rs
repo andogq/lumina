@@ -1,7 +1,7 @@
 use crate::repr::{
     ast::typed as ast,
     identifier::{FunctionIdx, ScopedBinding},
-    ir::{BasicBlockIdx, Function, Triple, TripleRef},
+    ir::{BasicBlockIdx, Function, Terminator, Triple, TripleRef},
     ty::Ty,
 };
 
@@ -33,6 +33,9 @@ pub trait FunctionBuilder {
     /// Add a triple to the current basic block.
     fn add_triple(&mut self, triple: Triple) -> TripleRef;
 
+    /// Set the terminator of the current basic block. Will panic if the terminator has already been set.
+    fn set_terminator(&mut self, terminator: Terminator);
+
     /// Get the current basic block.
     fn current_bb(&self) -> BasicBlockIdx;
 
@@ -54,6 +57,7 @@ mockall::mock! {
         fn new(function: &ast::Function) -> Self;
         fn register_scoped(&mut self, ident: ScopedBinding, ty: Ty);
         fn add_triple(&mut self, triple: Triple) -> TripleRef;
+        fn set_terminator(&mut self, terminator: Terminator);
         fn current_bb(&self) -> BasicBlockIdx;
         fn goto_bb(&mut self, bb: BasicBlockIdx) ;
         fn push_bb(&mut self) -> BasicBlockIdx;

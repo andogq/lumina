@@ -25,19 +25,10 @@ pub enum Triple {
     },
     /// Copy the provided value.
     Copy(Value),
-    /// Jump to the corresponding basic block.
-    Jump(BasicBlockIdx),
     /// Call the corresponding function.
     Call(FunctionIdx, Vec<Value>),
-    /// Return with the provided value.
-    Return(Value),
     /// Assign some symbol to some value.
     Assign(ScopedBinding, Value),
-    Switch {
-        value: Value,
-        default: BasicBlockIdx,
-        branches: Vec<(Value, BasicBlockIdx)>,
-    },
     Phi(Vec<(Value, BasicBlockIdx)>),
 }
 

@@ -6,7 +6,7 @@ use crate::{
     repr::{
         ast::typed::Function,
         identifier::{FunctionIdx, ScopedBinding},
-        ir,
+        ir::{self, Terminator, Triple},
         ty::Ty,
     },
     stage::{
@@ -116,11 +116,17 @@ impl IRCtx for CompilePass {
     }
 }
 
+#[derive(Default)]
+struct BasicBlockBuilder {
+    triples: IndexVec<ir::TripleIdx, Triple>,
+    terminator: Option<Terminator>,
+}
+
 pub struct FunctionBuilder {
     idx: FunctionIdx,
     signature: FunctionSignature,
 
-    basic_blocks: IndexVec<ir::BasicBlockIdx, ir::BasicBlock>,
+    basic_blocks: IndexVec<ir::BasicBlockIdx, BasicBlockBuilder>,
     current_basic_block: ir::BasicBlockIdx,
 
     scope: Vec<(ScopedBinding, Ty)>,
@@ -129,7 +135,7 @@ pub struct FunctionBuilder {
 impl FunctionBuilderTrait for FunctionBuilder {
     fn new(function: &Function) -> Self {
         let mut basic_blocks = IndexVec::new();
-        let current_basic_block = basic_blocks.push(ir::BasicBlock::default());
+        let current_basic_block = basic_blocks.push(BasicBlockBuilder::default());
 
         Self {
             idx: function.name,
@@ -153,6 +159,17 @@ impl FunctionBuilderTrait for FunctionBuilder {
         }
     }
 
+    fn set_terminator(&mut self, terminator: ir::Terminator) {
+        let bb = &mut self.basic_blocks[self.current_basic_block];
+
+        assert!(
+            bb.terminator.is_none(),
+            "cannot set terminator if it's already been set"
+        );
+
+        bb.terminator = Some(terminator);
+    }
+
     fn current_bb(&self) -> ir::BasicBlockIdx {
         self.current_basic_block
     }
@@ -166,7 +183,7 @@ impl FunctionBuilderTrait for FunctionBuilder {
     }
 
     fn push_bb(&mut self) -> ir::BasicBlockIdx {
-        let idx = self.basic_blocks.push(ir::BasicBlock::default());
+        let idx = self.basic_blocks.push(BasicBlockBuilder::default());
 
         self.current_basic_block = idx;
 
@@ -179,7 +196,14 @@ impl FunctionBuilderTrait for FunctionBuilder {
             ir::Function {
                 identifier: self.idx,
                 signature: self.signature,
-                basic_blocks: self.basic_blocks,
+                basic_blocks: self
+                    .basic_blocks
+                    .into_iter()
+                    .map(|builder| ir::BasicBlock {
+                        triples: builder.triples,
+                        terminator: builder.terminator.expect("terminator must be set"),
+                    })
+                    .collect(),
                 scope: self.scope.into_iter().map(|(symbol, _)| symbol).collect(),
             },
         )

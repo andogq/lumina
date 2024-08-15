@@ -10,7 +10,10 @@ use inkwell::{
 
 use crate::repr::{
     identifier::{FunctionIdx, ScopedBinding},
-    ir::{BasicBlockIdx, BinaryOp, ConstantValue, Function, Triple, TripleRef, UnaryOp, Value},
+    ir::{
+        BasicBlockIdx, BinaryOp, ConstantValue, Function, Terminator, Triple, TripleRef, UnaryOp,
+        Value,
+    },
     ty::Ty,
 };
 
@@ -125,30 +128,25 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                 Triple::BinaryOp { lhs, rhs, op } => Some(self.gen_op_binary(lhs, rhs, op)),
                 Triple::UnaryOp { rhs, op } => Some(self.gen_op_unary(rhs, op)),
                 Triple::Copy(value) => Some(self.gen_copy(value)),
-                Triple::Jump(bb) => {
-                    self.gen_jump(bb);
-                    None
-                }
                 Triple::Call(function, params) => Some(self.gen_call(function, params)),
-                Triple::Return(value) => {
-                    self.gen_return(value);
-                    None
-                }
                 Triple::Assign(symbol, value) => {
                     self.gen_assign(symbol, value);
-                    None
-                }
-                Triple::Switch {
-                    value,
-                    default,
-                    branches,
-                } => {
-                    self.gen_switch(value, default, branches);
                     None
                 }
                 Triple::Phi(values) => Some(self.gen_phi(values)),
             };
             self.results.insert(TripleRef::new(*block_idx, idx), result);
+        }
+
+        // Lower the block terminator
+        match &block.terminator {
+            Terminator::Jump(bb) => self.gen_jump(bb),
+            Terminator::Return(value) => self.gen_return(value),
+            Terminator::Switch {
+                value,
+                default,
+                branches,
+            } => self.gen_switch(value, default, branches),
         }
 
         if let Some(prev) = prev_builder {
