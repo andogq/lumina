@@ -43,16 +43,18 @@ pub enum ParseError {
     MissingReturn,
 }
 
-pub fn parse(c: &mut Compiler, source: &str) -> Result<Program, ParseError> {
+pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseError> {
     let mut tokens: Lexer = source.into();
 
     // WARN: wacky af
-    let main = c.intern_string("main");
+    let main = compiler.intern_string("main");
 
     // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {
         Some(match tokens.peek_token()? {
-            Token::Fn => parse_function(c, &mut tokens).map(|function| (function.name, function)),
+            Token::Fn => {
+                parse_function(compiler, &mut tokens).map(|function| (function.name, function))
+            }
             token => Err(ParseError::ExpectedToken {
                 expected: Box::new(Token::Fn),
                 found: Box::new(token.clone()),

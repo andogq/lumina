@@ -32,24 +32,24 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
+fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
     match tokens.peek_token().unwrap() {
-        Token::Integer(_) => Ok(Expression::Integer(parse_integer(c, tokens)?)),
-        Token::Ident(_) => Ok(Expression::Ident(parse_ident(c, tokens)?)),
-        Token::True => Ok(Expression::Boolean(parse_boolean(c, tokens)?)),
-        Token::False => Ok(Expression::Boolean(parse_boolean(c, tokens)?)),
-        Token::LeftBrace => Ok(Expression::Block(parse_block(c, tokens)?)),
-        Token::If => Ok(Expression::If(parse_if(c, tokens)?)),
+        Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, tokens)?)),
+        Token::Ident(_) => Ok(Expression::Ident(parse_ident(compiler, tokens)?)),
+        Token::True => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
+        Token::False => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
+        Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, tokens)?)),
+        Token::If => Ok(Expression::If(parse_if(compiler, tokens)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
     }
 }
 
 pub fn parse_expression(
-    c: &mut Compiler,
+    compiler: &mut Compiler,
     tokens: &mut Lexer<'_>,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
-    let mut left = parse_prefix(c, tokens)?;
+    let mut left = parse_prefix(compiler, tokens)?;
 
     while tokens.peek_token().is_some() && precedence < Precedence::of(tokens.peek_token().unwrap())
     {
@@ -70,7 +70,7 @@ pub fn parse_expression(
                             }
 
                             // Parse the next argument
-                            Some(parse_expression(c, tokens, Precedence::Lowest))
+                            Some(parse_expression(compiler, tokens, Precedence::Lowest))
                         }
                         token => Some(Err(ParseError::ExpectedToken {
                             expected: Box::new(Token::Comma),
@@ -102,7 +102,7 @@ pub fn parse_expression(
                     let token = tokens.next_token().unwrap();
                     let precedence = Precedence::of(&token);
 
-                    let right = parse_expression(c, tokens, precedence)?;
+                    let right = parse_expression(compiler, tokens, precedence)?;
 
                     let span = left.span().start..right.span().end;
 

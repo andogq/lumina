@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use compile_pass::CompilePass;
 use compiler::Compiler;
 use inkwell::{
     module::Module,
@@ -11,13 +10,8 @@ use inkwell::{
     OptimizationLevel,
 };
 use repr::ty::Ty;
-use stage::{
-    codegen::{ctx::LLVMCtx as _, llvm::FunctionGenerator},
-    lower_ir::{self, IRCtx as _},
-    parse::parse,
-};
+use stage::codegen::llvm::FunctionGenerator;
 
-pub mod compile_pass;
 pub mod compiler;
 pub mod repr;
 pub mod stage;
@@ -25,29 +19,23 @@ pub mod util;
 
 pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
     let mut compiler = Compiler::default();
+    let functions = compiler.compile(source).unwrap();
 
-    let program = parse(&mut compiler, source).unwrap();
-
-    let mut ctx = CompilePass::from(compiler.clone());
-
-    let program = program.ty_solve(&mut ctx).unwrap();
-
-    let main = program.main.name;
-
-    lower_ir::lower(&mut ctx, program);
     let llvm_ctx = inkwell::context::Context::create();
     let module = llvm_ctx.create_module("module");
 
-    let function_map = ctx
-        .all_functions()
+    let function_map = functions
         .iter()
-        .map(|(idx, f)| {
+        .map(|function| {
             (
-                *idx,
+                function.identifier,
                 module.add_function(
-                    &ctx.get_function_name(idx),
+                    compiler
+                        .get_function_symbol(function.identifier)
+                        .and_then(|symbol| compiler.get_interned_string(symbol))
+                        .expect("function to have name"),
                     {
-                        let return_ty = match f.signature.return_ty {
+                        let return_ty = match function.signature.return_ty {
                             Ty::Int => llvm_ctx.i64_type().as_basic_type_enum(),
                             Ty::Boolean => llvm_ctx.bool_type().as_basic_type_enum(),
                             Ty::Unit => todo!(),
@@ -55,7 +43,8 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
                         };
 
                         return_ty.fn_type(
-                            f.signature
+                            function
+                                .signature
                                 .arguments
                                 .iter()
                                 .map(|arg| match arg {
@@ -77,18 +66,23 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
         })
         .collect::<HashMap<_, _>>();
 
-    for (idx, function) in ctx.all_functions() {
+    for function in &functions {
         FunctionGenerator::new(
             &mut compiler,
-            &mut ctx,
             &llvm_ctx,
             function_map.clone(),
-            *function_map.get(&idx).unwrap(),
-            function,
+            *function_map.get(&function.identifier).unwrap(),
+            function.clone(),
         )
         .codegen();
     }
 
+    let main_symbol = compiler.intern_string("main");
+    let main = functions
+        .iter()
+        .map(|f| f.identifier)
+        .find(|identifier| compiler.get_function_symbol(*identifier).unwrap() == main_symbol)
+        .unwrap();
     let main = function_map.get(&main).unwrap();
 
     if debug {

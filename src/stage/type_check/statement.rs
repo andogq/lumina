@@ -1,19 +1,19 @@
-use ctx::TypeCheckCtx;
-
-use crate::util::scope::Scope;
+use crate::{compiler::Compiler, util::scope::Scope};
 
 use super::*;
 
 impl parse_ast::Statement {
     pub fn ty_solve(
         self,
-        ctx: &mut impl TypeCheckCtx,
+        compiler: &mut Compiler,
         scope: &mut Scope,
     ) -> Result<Statement, TyError> {
         Ok(match self {
-            parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(ctx, scope)?),
-            parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(ctx, scope)?),
-            parse_ast::Statement::Expression(s) => Statement::Expression(s.ty_solve(ctx, scope)?),
+            parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(compiler, scope)?),
+            parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(compiler, scope)?),
+            parse_ast::Statement::Expression(s) => {
+                Statement::Expression(s.ty_solve(compiler, scope)?)
+            }
         })
     }
 }
@@ -21,11 +21,11 @@ impl parse_ast::Statement {
 impl parse_ast::LetStatement {
     pub fn ty_solve(
         self,
-        ctx: &mut impl TypeCheckCtx,
+        compiler: &mut Compiler,
         scope: &mut Scope,
     ) -> Result<LetStatement, TyError> {
         // Work out what the type of the value is
-        let value = self.value.ty_solve(ctx, scope)?;
+        let value = self.value.ty_solve(compiler, scope)?;
 
         // Make sure the value type matches what the statement was annotated with
         if let Some(ty) = self.ty_info {
@@ -53,10 +53,10 @@ impl parse_ast::LetStatement {
 impl parse_ast::ReturnStatement {
     pub fn ty_solve(
         self,
-        ctx: &mut impl TypeCheckCtx,
+        compiler: &mut Compiler,
         scope: &mut Scope,
     ) -> Result<ReturnStatement, TyError> {
-        let value = self.value.ty_solve(ctx, scope)?;
+        let value = self.value.ty_solve(compiler, scope)?;
 
         Ok(ReturnStatement {
             ty_info: TyInfo::try_from((
@@ -72,10 +72,10 @@ impl parse_ast::ReturnStatement {
 impl parse_ast::ExpressionStatement {
     pub fn ty_solve(
         self,
-        ctx: &mut impl TypeCheckCtx,
+        compiler: &mut Compiler,
         scope: &mut Scope,
     ) -> Result<ExpressionStatement, TyError> {
-        let expression = self.expression.ty_solve(ctx, scope)?;
+        let expression = self.expression.ty_solve(compiler, scope)?;
 
         // Expression statement has same type as the underlying expression
         let mut ty_info = expression.get_ty_info().clone();
@@ -98,9 +98,8 @@ mod test_statement {
     use string_interner::Symbol as _;
 
     use crate::{
-        compiler::Symbol,
+        compiler::{Compiler, Symbol},
         repr::ast::untyped::*,
-        stage::type_check::ctx::MockTypeCheckCtx,
         util::{scope::Scope, span::Span},
     };
 
@@ -112,7 +111,7 @@ mod test_statement {
         let s = Statement::_return(Expression::integer(0, Span::default()), Span::default());
 
         let ty_info = s
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .ty_solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .get_ty_info()
             .clone();
@@ -133,7 +132,7 @@ mod test_statement {
         let mut scope = Scope::new();
 
         let ty_info = s
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut scope)
+            .ty_solve(&mut Compiler::default(), &mut scope)
             .unwrap()
             .get_ty_info()
             .clone();
@@ -156,7 +155,7 @@ mod test_statement {
         );
 
         let ty_info = s
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .ty_solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .get_ty_info()
             .clone();
@@ -175,7 +174,7 @@ mod test_statement {
         );
 
         let ty_info = s
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .ty_solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .get_ty_info()
             .clone();

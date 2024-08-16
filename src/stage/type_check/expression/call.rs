@@ -3,19 +3,22 @@ use crate::util::scope::Scope;
 use super::*;
 
 impl parse_ast::Call {
-    pub fn ty_solve(self, ctx: &mut impl TypeCheckCtx, scope: &mut Scope) -> Result<Call, TyError> {
+    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Call, TyError> {
         // Determine the types of all the arguments
         let args = self
             .args
             .into_iter()
-            .map(|arg| arg.ty_solve(ctx, scope))
+            .map(|arg| arg.ty_solve(compiler, scope))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Compare the arguments to the function types
-        let function_idx = ctx
-            .lookup_function_symbol(self.name)
+        let function_idx = compiler
+            .get_function_idx(self.name)
             .ok_or(TyError::SymbolNotFound(self.name))?;
-        let signature = ctx.get_function(function_idx);
+        let signature = compiler
+            .get_function(function_idx)
+            .expect("function must be defined")
+            .get_signature();
 
         if args.len() != signature.arguments.len() {
             // TODO: Make new type error for when the function call has too many arguments

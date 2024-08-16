@@ -1,6 +1,9 @@
 use super::*;
 
-pub fn parse_boolean(_c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Boolean, ParseError> {
+pub fn parse_boolean(
+    _compiler: &mut Compiler,
+    tokens: &mut Lexer<'_>,
+) -> Result<Boolean, ParseError> {
     match tokens.next_spanned().unwrap() {
         (Token::True, span) => Ok(Boolean::new(true, span)),
         (Token::False, span) => Ok(Boolean::new(false, span)),

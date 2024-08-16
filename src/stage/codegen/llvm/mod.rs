@@ -20,13 +20,9 @@ use crate::{
     },
 };
 
-use super::ctx::LLVMCtx;
-
-pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
-    #[allow(dead_code)]
+pub struct FunctionGenerator<'ctx, 'ink> {
     compiler: &'ctx mut Compiler,
 
-    ctx: &'ctx mut Ctx,
     llvm_ctx: &'ink Context,
 
     /// IR for this function
@@ -45,10 +41,9 @@ pub struct FunctionGenerator<'ctx, 'ink, Ctx> {
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
 
-impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
+impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
     pub fn new(
         compiler: &'ctx mut Compiler,
-        ctx: &'ctx mut Ctx,
         llvm_ctx: &'ink Context,
         functions: HashMap<FunctionIdx, FunctionValue<'ink>>,
         // NOTE: Pre-generate function value, so that a function map can be supplied even if other functions aren't generated
@@ -69,7 +64,6 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
 
         Self {
             compiler,
-            ctx,
             llvm_ctx,
             llvm_function,
             functions,
@@ -82,21 +76,22 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     }
 
     pub fn codegen(&mut self) {
+        let registration = self
+            .compiler
+            .get_function(self.function.identifier)
+            .unwrap();
+
         // Create stack allocations for all of the variables in scope
         self.bindings = self
             .function
             .scope
             .iter()
             .map(|binding| {
+                let (symbol, ty) = registration.get_binding(*binding).unwrap();
+
                 (
                     *binding,
-                    self.alloca(
-                        self.ctx
-                            .get_scoped_binding_ty(&self.function.identifier, binding),
-                        &self
-                            .ctx
-                            .get_scoped_binding_name(&self.function.identifier, binding),
-                    ),
+                    self.alloca(ty, self.compiler.get_interned_string(symbol).unwrap()),
                 )
             })
             .collect::<HashMap<_, _>>();
@@ -224,7 +219,13 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
                     .map(|param| self.retrieve_value(param).unwrap().into())
                     .collect::<Vec<_>>()
                     .as_slice(),
-                &format!("{}_result", self.ctx.get_function_name(function)),
+                &format!(
+                    "{}_result",
+                    self.compiler
+                        .get_function_symbol(*function)
+                        .and_then(|symbol| self.compiler.get_interned_string(symbol))
+                        .unwrap()
+                ),
             )
             .unwrap()
             .try_as_basic_value()
@@ -250,13 +251,18 @@ impl<'ctx, 'ink, Ctx: LLVMCtx> FunctionGenerator<'ctx, 'ink, Ctx> {
     }
 
     fn gen_load(&self, binding: &ScopedBinding) -> IntValue<'ink> {
+        let (symbol, _) = self
+            .compiler
+            .get_function(self.function.identifier)
+            .unwrap()
+            .get_binding(*binding)
+            .unwrap();
+
         let ptr = self.bindings.get(binding).expect("symbol must be defined");
-        let name = self
-            .ctx
-            .get_scoped_binding_name(&self.function.identifier, binding);
+        let name = self.compiler.get_interned_string(symbol).unwrap();
 
         self.builder
-            .build_load(self.llvm_ctx.i64_type(), *ptr, &name)
+            .build_load(self.llvm_ctx.i64_type(), *ptr, name)
             .unwrap()
             .into_int_value()
     }

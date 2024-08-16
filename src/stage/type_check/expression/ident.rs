@@ -3,11 +3,7 @@ use crate::util::scope::Scope;
 use super::*;
 
 impl parse_ast::Ident {
-    pub fn ty_solve(
-        self,
-        _ctx: &mut impl TypeCheckCtx,
-        scope: &mut Scope,
-    ) -> Result<Ident, TyError> {
+    pub fn ty_solve(self, _compiler: &mut Compiler, scope: &mut Scope) -> Result<Ident, TyError> {
         let (binding, ty) = scope
             .resolve(self.binding)
             .ok_or(TyError::SymbolNotFound(self.binding))?;
@@ -28,8 +24,8 @@ mod test_ident {
     use string_interner::Symbol;
 
     use crate::{
+        compiler::Compiler,
         repr::ast::untyped::Ident,
-        stage::type_check::ctx::MockTypeCheckCtx,
         util::{scope::Scope, span::Span},
     };
 
@@ -48,7 +44,7 @@ mod test_ident {
 
         // Run the type solve
         let ty_info = i
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut scope)
+            .ty_solve(&mut Compiler::default(), &mut scope)
             .unwrap()
             .ty_info;
 
@@ -60,7 +56,7 @@ mod test_ident {
     fn ident_infer_missing() {
         let i = Ident::new(Symbol::try_from_usize(0).unwrap(), Span::default());
 
-        let result = i.ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new());
+        let result = i.ty_solve(&mut Compiler::default(), &mut Scope::new());
 
         assert!(result.is_err());
     }

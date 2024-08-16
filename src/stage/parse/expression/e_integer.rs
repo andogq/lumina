@@ -1,6 +1,9 @@
 use super::*;
 
-pub fn parse_integer(_c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Integer, ParseError> {
+pub fn parse_integer(
+    _compiler: &mut Compiler,
+    tokens: &mut Lexer<'_>,
+) -> Result<Integer, ParseError> {
     match tokens.next_spanned().unwrap() {
         (Token::Integer(value), span) => Ok(Integer::new(value, span)),
         (token, _) => Err(ParseError::ExpectedToken {

@@ -4,7 +4,10 @@ use crate::repr::ty::Ty;
 
 use super::*;
 
-pub fn parse_function(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Function, ParseError> {
+pub fn parse_function(
+    compiler: &mut Compiler,
+    tokens: &mut Lexer<'_>,
+) -> Result<Function, ParseError> {
     // `fn` keyword
     let span_start = match tokens.next_spanned().unwrap() {
         // `fn` keyword
@@ -72,7 +75,7 @@ pub fn parse_function(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Functi
                 // Parameter item encountered
                 (ParseState::Item, Token::Ident(ident)) => {
                     // Intern the parameter identifier
-                    let ident = c.intern_string(ident);
+                    let ident = compiler.intern_string(ident);
 
                     // Ensure a colon follows it
                     match tokens.next_token().unwrap() {
@@ -144,13 +147,13 @@ pub fn parse_function(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Functi
     };
 
     // Parse out the body
-    let body = parse_block(c, tokens)?;
+    let body = parse_block(compiler, tokens)?;
 
     // Construct the function span to the end of the body
     let span = span_start..body.span.end;
 
     Ok(Function::new(
-        c.intern_string(fn_name),
+        compiler.intern_string(fn_name),
         parameters,
         return_ty,
         body,

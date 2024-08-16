@@ -1,4 +1,3 @@
-mod ctx;
 mod expression;
 mod function;
 mod program;
@@ -7,10 +6,8 @@ mod statement;
 use itertools::Itertools;
 
 use crate::compiler::Symbol;
-use crate::repr::ast::{base as base_ast, untyped as parse_ast};
+use crate::repr::ast::{base as base_ast, typed::*, untyped as parse_ast};
 use crate::repr::ty::Ty;
-
-pub use ctx::TypeCheckCtx;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
@@ -97,5 +94,3 @@ impl FromIterator<TyInfo> for Result<TyInfo, TyError> {
         TyInfo::try_from((ty_iter.into_iter(), return_ty_iter.into_iter()))
     }
 }
-
-use crate::repr::ast::typed::*;

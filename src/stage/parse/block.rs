@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn parse_block(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Block, ParseError> {
+pub fn parse_block(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Block, ParseError> {
     let span_start = match tokens.next_spanned().unwrap() {
         (Token::LeftBrace, span) => span.start,
         (token, _) => {
@@ -14,7 +14,7 @@ pub fn parse_block(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Block, Pa
 
     let statements = std::iter::from_fn(|| match tokens.peek_token().unwrap() {
         Token::RightBrace => None,
-        _ => Some(parse_statement(c, tokens)),
+        _ => Some(parse_statement(compiler, tokens)),
     })
     .collect::<Result<Vec<_>, _>>()?;
 

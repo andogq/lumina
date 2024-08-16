@@ -1,19 +1,122 @@
-use crate::repr::{ast::typed as ast, ir::*, ty::Ty};
+use index_vec::IndexVec;
 
-use super::{FunctionBuilder, IRCtx};
+use crate::{
+    compiler::Compiler,
+    repr::{
+        ast::typed as ast,
+        identifier::{FunctionIdx, ScopedBinding},
+        ir::{self, *},
+        ty::Ty,
+    },
+    stage::type_check::FunctionSignature,
+};
 
-pub fn lower(ctx: &mut impl IRCtx, program: ast::Program) {
-    // Fill up the functions in the IR
-    for function in program.functions {
-        lower_function(ctx, function);
-    }
-
-    lower_function(ctx, program.main);
+pub fn lower(compiler: &mut Compiler, program: ast::Program) -> Vec<Function> {
+    [lower_function(compiler, program.main)]
+        .into_iter()
+        .chain(
+            program
+                .functions
+                .into_iter()
+                .map(|function| lower_function(compiler, function)),
+        )
+        .collect()
 }
 
-fn lower_function(ctx: &mut impl IRCtx, function: ast::Function) {
+#[derive(Default)]
+struct BasicBlockBuilder {
+    triples: IndexVec<ir::TripleIdx, Triple>,
+    terminator: Option<Terminator>,
+}
+
+pub struct FunctionBuilder {
+    idx: FunctionIdx,
+    signature: FunctionSignature,
+
+    basic_blocks: IndexVec<ir::BasicBlockIdx, BasicBlockBuilder>,
+    current_basic_block: ir::BasicBlockIdx,
+
+    scope: Vec<(ScopedBinding, Ty)>,
+}
+
+impl FunctionBuilder {
+    pub fn new(function: &ast::Function) -> Self {
+        let mut basic_blocks = IndexVec::new();
+        let current_basic_block = basic_blocks.push(BasicBlockBuilder::default());
+
+        Self {
+            idx: function.name,
+            signature: FunctionSignature::from(function),
+            basic_blocks,
+            current_basic_block,
+            scope: function.parameters.to_vec(),
+        }
+    }
+
+    pub fn register_scoped(&mut self, ident: ScopedBinding, ty: Ty) {
+        self.scope.push((ident, ty));
+    }
+
+    pub fn add_triple(&mut self, triple: ir::Triple) -> ir::TripleRef {
+        ir::TripleRef {
+            basic_block: self.current_basic_block,
+            triple: self.basic_blocks[self.current_basic_block]
+                .triples
+                .push(triple),
+        }
+    }
+
+    pub fn set_terminator(&mut self, terminator: ir::Terminator) {
+        let bb = &mut self.basic_blocks[self.current_basic_block];
+
+        assert!(
+            bb.terminator.is_none(),
+            "cannot set terminator if it's already been set"
+        );
+
+        bb.terminator = Some(terminator);
+    }
+
+    pub fn current_bb(&self) -> ir::BasicBlockIdx {
+        self.current_basic_block
+    }
+
+    pub fn goto_bb(&mut self, bb: ir::BasicBlockIdx) {
+        assert!(
+            bb < self.basic_blocks.len_idx(),
+            "can only goto basic block if it exists"
+        );
+        self.current_basic_block = bb;
+    }
+
+    pub fn push_bb(&mut self) -> ir::BasicBlockIdx {
+        let idx = self.basic_blocks.push(BasicBlockBuilder::default());
+
+        self.current_basic_block = idx;
+
+        idx
+    }
+
+    pub fn build(self) -> Function {
+        Function {
+            identifier: self.idx,
+            signature: self.signature,
+            basic_blocks: self
+                .basic_blocks
+                .into_iter()
+                .map(|builder| ir::BasicBlock {
+                    triples: builder.triples,
+                    terminator: builder.terminator.expect("terminator must be set"),
+                })
+                .collect(),
+            scope: self.scope.into_iter().map(|(symbol, _)| symbol).collect(),
+        }
+    }
+}
+
+fn lower_function(compiler: &mut Compiler, function: ast::Function) -> Function {
     // Create a new function builder, which will already be positioned at the entry point.
-    let mut builder = ctx.new_builder(&function);
+    let mut builder = FunctionBuilder::new(&function);
 
     // Load all the parameters
     function
@@ -26,7 +129,7 @@ fn lower_function(ctx: &mut impl IRCtx, function: ast::Function) {
         });
 
     // Perform the lowering
-    let value = lower_block(ctx, &mut builder, &function.body);
+    let value = lower_block(compiler, &mut builder, &function.body);
 
     // If implicit return, add in a return statement
     if !matches!(value, Value::Unit) {
@@ -34,13 +137,13 @@ fn lower_function(ctx: &mut impl IRCtx, function: ast::Function) {
     }
 
     // Consume the builder
-    builder.build(ctx);
+    builder.build()
 }
 
 /// Lower an AST block into the current function context.
 fn lower_block(
-    ctx: &mut impl IRCtx,
-    builder: &mut impl FunctionBuilder,
+    compiler: &mut Compiler,
+    builder: &mut FunctionBuilder,
     block: &ast::Block,
 ) -> Value {
     assert!(
@@ -59,7 +162,7 @@ fn lower_block(
     {
         match statement {
             ast::Statement::Return(ast::ReturnStatement { value, .. }) => {
-                let value = lower_expression(ctx, builder, value).unwrap();
+                let value = lower_expression(compiler, builder, value).unwrap();
                 builder.set_terminator(Terminator::Return(value));
             }
             ast::Statement::Let(ast::LetStatement {
@@ -69,7 +172,7 @@ fn lower_block(
             }) => {
                 builder.register_scoped(*name, value.get_ty_info().ty);
 
-                let value = lower_expression(ctx, builder, value).unwrap();
+                let value = lower_expression(compiler, builder, value).unwrap();
                 builder.add_triple(Triple::Assign(*name, value));
             }
             ast::Statement::Expression(ast::ExpressionStatement {
@@ -77,7 +180,7 @@ fn lower_block(
                 ty_info,
                 ..
             }) => {
-                let result = lower_expression(ctx, builder, expression);
+                let result = lower_expression(compiler, builder, expression);
 
                 // Implicit return
                 if end && !matches!(ty_info.ty, Ty::Never) {
@@ -92,8 +195,8 @@ fn lower_block(
 }
 
 fn lower_expression(
-    ctx: &mut impl IRCtx,
-    builder: &mut impl FunctionBuilder,
+    compiler: &mut Compiler,
+    builder: &mut FunctionBuilder,
     expression: &ast::Expression,
 ) -> Option<Value> {
     match expression {
@@ -103,8 +206,8 @@ fn lower_expression(
             right,
             ..
         }) => {
-            let lhs = lower_expression(ctx, builder, left).unwrap();
-            let rhs = lower_expression(ctx, builder, right).unwrap();
+            let lhs = lower_expression(compiler, builder, left).unwrap();
+            let rhs = lower_expression(compiler, builder, right).unwrap();
             let op = BinaryOp::from(operation);
 
             Some(Value::Triple(builder.add_triple(Triple::BinaryOp {
@@ -118,7 +221,7 @@ fn lower_expression(
         ast::Expression::Ident(ast::Ident { binding, .. }) => {
             Some(Value::Triple(builder.add_triple(Triple::Load(*binding))))
         }
-        ast::Expression::Block(block) => Some(lower_block(ctx, builder, block)),
+        ast::Expression::Block(block) => Some(lower_block(compiler, builder, block)),
         ast::Expression::If(ast::If {
             condition,
             success,
@@ -126,7 +229,7 @@ fn lower_expression(
             ty_info,
             ..
         }) => {
-            let condition = lower_expression(ctx, builder, condition).unwrap();
+            let condition = lower_expression(compiler, builder, condition).unwrap();
 
             let original_bb = builder.current_bb();
 
@@ -139,7 +242,7 @@ fn lower_expression(
 
             // Lower success block into newly created basic block
             let success_bb = builder.push_bb();
-            let success_value = lower_block(ctx, builder, success);
+            let success_value = lower_block(compiler, builder, success);
 
             if let (Some(merge_bb), true) = (merge_bb, !matches!(success.ty_info.ty, Ty::Never)) {
                 // Ensure the branch returns to the merge basic block
@@ -153,7 +256,7 @@ fn lower_expression(
                 .as_ref()
                 .map(|otherwise| {
                     let otherwise_bb = builder.push_bb();
-                    let otherwise_value = lower_block(ctx, builder, otherwise);
+                    let otherwise_value = lower_block(compiler, builder, otherwise);
 
                     if let Some(merge_bb) = merge_bb {
                         // Ensure the branch returns to the merge basic block
@@ -198,7 +301,7 @@ fn lower_expression(
             let params = call
                 .args
                 .iter()
-                .map(|e| lower_expression(ctx, builder, e).unwrap())
+                .map(|e| lower_expression(compiler, builder, e).unwrap())
                 .collect();
             Some(Value::Triple(builder.add_triple(Triple::Call(idx, params))))
         }

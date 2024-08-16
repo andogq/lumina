@@ -1,22 +1,16 @@
-use ctx::TypeCheckCtx;
-
-use crate::util::scope::Scope;
+use crate::{compiler::Compiler, util::scope::Scope};
 
 use super::*;
 
 impl parse_ast::Block {
-    pub fn ty_solve(
-        self,
-        ctx: &mut impl TypeCheckCtx,
-        scope: &mut Scope,
-    ) -> Result<Block, TyError> {
+    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Block, TyError> {
         // Enter a new scope
         let block_scope = scope.enter();
 
         let statements = self
             .statements
             .into_iter()
-            .map(|statement| statement.ty_solve(ctx, scope))
+            .map(|statement| statement.ty_solve(compiler, scope))
             .collect::<Result<Vec<_>, _>>()?;
 
         let ty_info = TyInfo::try_from((
@@ -60,8 +54,8 @@ mod test {
     use string_interner::Symbol;
 
     use crate::{
+        compiler::Compiler,
         repr::{ast::untyped::*, ty::Ty},
-        stage::type_check::ctx::MockTypeCheckCtx,
         util::{scope::Scope, span::Span},
     };
 
@@ -90,7 +84,7 @@ mod test {
         );
 
         let ty_info = b
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .ty_solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .ty_info;
 
@@ -124,7 +118,7 @@ mod test {
             Span::default(),
         );
 
-        let result = b.ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new());
+        let result = b.ty_solve(&mut Compiler::default(), &mut Scope::new());
 
         assert!(result.is_err());
     }
@@ -152,7 +146,7 @@ mod test {
         );
 
         let ty_info = b
-            .ty_solve(&mut MockTypeCheckCtx::new(), &mut Scope::new())
+            .ty_solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .ty_info;
 

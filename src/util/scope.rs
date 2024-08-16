@@ -1,3 +1,5 @@
+use std::vec;
+
 use index_vec::IndexVec;
 
 use crate::{
@@ -116,6 +118,27 @@ impl Scope {
             .find(|(_, scope)| scope.active)
             .map(|(idx, _)| idx)
             .expect("should always be at least one scope active")
+    }
+}
+
+impl IntoIterator for Scope {
+    type Item = (ScopedBinding, Symbol, Ty);
+
+    type IntoIter = vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.scopes
+            .into_iter_enumerated()
+            .flat_map(|(scope_idx, scope)| {
+                scope
+                    .bindings
+                    .into_iter_enumerated()
+                    .map(move |(binding_idx, (symbol, ty))| {
+                        (ScopedBinding(scope_idx, binding_idx), symbol, ty)
+                    })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 }
 

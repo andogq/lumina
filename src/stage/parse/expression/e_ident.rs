@@ -1,8 +1,8 @@
 use super::*;
 
-pub fn parse_ident(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Ident, ParseError> {
+pub fn parse_ident(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Ident, ParseError> {
     match tokens.next_spanned().unwrap() {
-        (Token::Ident(ident), span) => Ok(Ident::new(c.intern_string(ident), span)),
+        (Token::Ident(ident), span) => Ok(Ident::new(compiler.intern_string(ident), span)),
         (token, _) => Err(ParseError::ExpectedToken {
             expected: Box::new(Token::Ident(String::new())),
             found: Box::new(token),

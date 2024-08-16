@@ -1,6 +1,9 @@
 use super::*;
 
-pub fn parse_statement(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Statement, ParseError> {
+pub fn parse_statement(
+    compiler: &mut Compiler,
+    tokens: &mut Lexer<'_>,
+) -> Result<Statement, ParseError> {
     let mut expecting_semicolon = true;
 
     let statement = match tokens.peek_token().unwrap() {
@@ -9,7 +12,7 @@ pub fn parse_statement(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<State
             let (_, return_span) = tokens.next_spanned().unwrap();
 
             // Parse out the value
-            let value = parse_expression(c, tokens, Precedence::Lowest)?;
+            let value = parse_expression(compiler, tokens, Precedence::Lowest)?;
 
             // Build the span
             let span = return_span.start..value.span().end;
@@ -45,14 +48,14 @@ pub fn parse_statement(c: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<State
             };
 
             // value
-            let value = parse_expression(c, tokens, Precedence::Lowest)?;
+            let value = parse_expression(compiler, tokens, Precedence::Lowest)?;
             let span = let_span.start..value.span().end;
 
-            Statement::Let(LetStatement::new(c.intern_string(name), value, span))
+            Statement::Let(LetStatement::new(compiler.intern_string(name), value, span))
         }
         _ => {
             // Parse expression
-            let expression = parse_expression(c, tokens, Precedence::Lowest)?;
+            let expression = parse_expression(compiler, tokens, Precedence::Lowest)?;
             let span = expression.span().clone();
 
             Statement::Expression(ExpressionStatement::new(
