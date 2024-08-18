@@ -13,10 +13,12 @@ impl parse_ast::Call {
 
         // Compare the arguments to the function types
         let function_idx = compiler
-            .get_function_idx(self.name)
+            .functions
+            .get_idx(self.name)
             .ok_or(TyError::SymbolNotFound(self.name))?;
         let signature = compiler
-            .get_function(function_idx)
+            .functions
+            .get(function_idx)
             .expect("function must be defined")
             .get_signature();
 

@@ -39,7 +39,7 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
         functions
             .iter()
             .find(|(identifier, _)| {
-                compiler.get_function_symbol(*identifier).unwrap() == main_symbol
+                compiler.functions.symbol_for(*identifier).unwrap() == main_symbol
             })
             .map(|(_, function)| function)
             .unwrap()

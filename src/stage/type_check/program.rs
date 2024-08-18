@@ -9,11 +9,15 @@ impl parse_ast::Program {
             return Err(TyError::Mismatch(Ty::Int, self.main.return_ty));
         }
 
-        compiler.register_function(self.main.name, FunctionSignature::from(&self.main));
+        compiler
+            .functions
+            .register(self.main.name, FunctionSignature::from(&self.main));
 
         // Pre-register all functions
         self.functions.iter().for_each(|function| {
-            compiler.register_function(function.name, FunctionSignature::from(function));
+            compiler
+                .functions
+                .register(function.name, FunctionSignature::from(function));
         });
 
         // Make sure the type of the function is correct

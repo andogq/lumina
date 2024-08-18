@@ -75,7 +75,7 @@ pub fn parse_function(
                 // Parameter item encountered
                 (ParseState::Item, Token::Ident(ident)) => {
                     // Intern the parameter identifier
-                    let ident = compiler.intern_string(ident);
+                    let ident = compiler.symbols.get_or_intern(ident);
 
                     // Ensure a colon follows it
                     match tokens.next_token().unwrap() {
@@ -153,7 +153,7 @@ pub fn parse_function(
     let span = span_start..body.span.end;
 
     Ok(Function::new(
-        compiler.intern_string(fn_name),
+        compiler.symbols.get_or_intern(fn_name),
         parameters,
         return_ty,
         body,

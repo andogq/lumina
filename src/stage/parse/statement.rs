@@ -51,7 +51,11 @@ pub fn parse_statement(
             let value = parse_expression(compiler, tokens, Precedence::Lowest)?;
             let span = let_span.start..value.span().end;
 
-            Statement::Let(LetStatement::new(compiler.intern_string(name), value, span))
+            Statement::Let(LetStatement::new(
+                compiler.symbols.get_or_intern(name),
+                value,
+                span,
+            ))
         }
         _ => {
             // Parse expression

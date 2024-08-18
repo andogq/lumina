@@ -45,8 +45,8 @@ impl<'compiler, 'ink> Module<'compiler, 'ink> {
 
         // TODO: Declare all functions in the compiler
         let functions = compiler
-            .function_manager
-            .functions()
+            .functions
+            .iter()
             .map(|(idx, registration)| {
                 module.add_function(
                     // Pull out the name of the function
@@ -54,8 +54,8 @@ impl<'compiler, 'ink> Module<'compiler, 'ink> {
                         .symbols
                         .resolve(
                             compiler
-                                .function_manager
-                                .get_function_symbol(idx)
+                                .functions
+                                .symbol_for(idx)
                                 .expect("registered function must have symbol"),
                         )
                         .unwrap(),
@@ -138,7 +138,6 @@ pub struct FunctionGenerator<'module, 'compiler, 'ink> {
 impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
     pub fn new(
         module: &'module Module<'compiler, 'ink>,
-        // NOTE: Pre-generate function value, so that a function map can be supplied even if other functions aren't generated
         llvm_function: FunctionValue<'ink>,
         function: &'module Function,
     ) -> Self {
@@ -169,7 +168,8 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
         let registration = self
             .module
             .compiler
-            .get_function(self.function.identifier)
+            .functions
+            .get(self.function.identifier)
             .unwrap();
 
         // Create stack allocations for all of the variables in scope
@@ -182,10 +182,7 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
 
                 (
                     *binding,
-                    self.alloca(
-                        ty,
-                        self.module.compiler.get_interned_string(symbol).unwrap(),
-                    ),
+                    self.alloca(ty, self.module.compiler.symbols.resolve(symbol).unwrap()),
                 )
             })
             .collect::<HashMap<_, _>>();
@@ -318,8 +315,9 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
                     "{}_result",
                     self.module
                         .compiler
-                        .get_function_symbol(*function)
-                        .and_then(|symbol| self.module.compiler.get_interned_string(symbol))
+                        .functions
+                        .symbol_for(*function)
+                        .and_then(|symbol| self.module.compiler.symbols.resolve(symbol))
                         .unwrap()
                 ),
             )
@@ -350,13 +348,14 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
         let (symbol, _) = self
             .module
             .compiler
-            .get_function(self.function.identifier)
+            .functions
+            .get(self.function.identifier)
             .unwrap()
             .get_binding(*binding)
             .unwrap();
 
         let ptr = self.bindings.get(binding).expect("symbol must be defined");
-        let name = self.module.compiler.get_interned_string(symbol).unwrap();
+        let name = self.module.compiler.symbols.resolve(symbol).unwrap();
 
         self.builder
             .build_load(self.module.llvm_ctx.i64_type(), *ptr, name)

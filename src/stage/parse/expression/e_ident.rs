@@ -2,7 +2,7 @@ use super::*;
 
 pub fn parse_ident(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Ident, ParseError> {
     match tokens.next_spanned().unwrap() {
-        (Token::Ident(ident), span) => Ok(Ident::new(compiler.intern_string(ident), span)),
+        (Token::Ident(ident), span) => Ok(Ident::new(compiler.symbols.get_or_intern(ident), span)),
         (token, _) => Err(ParseError::ExpectedToken {
             expected: Box::new(Token::Ident(String::new())),
             found: Box::new(token),
@@ -26,7 +26,7 @@ mod test {
         let ident = parse_ident(&mut compiler, &mut tokens).unwrap();
 
         assert_eq!(
-            compiler.get_interned_string(ident.binding).unwrap(),
+            compiler.symbols.resolve(ident.binding).unwrap(),
             "someident"
         );
     }

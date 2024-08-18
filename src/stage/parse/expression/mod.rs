@@ -129,7 +129,7 @@ mod test {
     fn mock_compiler(#[default("func")] ident: &'static str) -> Compiler {
         let mut compiler = Compiler::default();
 
-        compiler.intern_string(ident);
+        compiler.symbols.get_or_intern(ident);
 
         compiler
     }
@@ -227,7 +227,7 @@ mod test {
         )
         .unwrap();
 
-        assert!(compiler.has_interned_string("someident"));
+        assert!(compiler.symbols.get("someident").is_some());
 
         insta::assert_debug_snapshot!(expression, @r###"
         If(

@@ -47,7 +47,7 @@ pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseErro
     let mut tokens: Lexer = source.into();
 
     // WARN: wacky af
-    let main = compiler.intern_string("main");
+    let main = compiler.symbols.get_or_intern("main");
 
     // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {

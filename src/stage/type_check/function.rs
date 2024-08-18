@@ -5,7 +5,8 @@ use super::*;
 impl parse_ast::Function {
     pub fn ty_solve(self, compiler: &mut Compiler) -> Result<Function, TyError> {
         let idx = compiler
-            .get_function_idx(self.name)
+            .functions
+            .get_idx(self.name)
             .expect("function must already be registered");
 
         // Create the scope for this function
@@ -23,7 +24,8 @@ impl parse_ast::Function {
 
         // Access this function's registration
         let function = compiler
-            .get_function_mut(idx)
+            .functions
+            .get_mut(idx)
             .expect("function to be registered");
 
         // Add the bindings from the scope to the registration
