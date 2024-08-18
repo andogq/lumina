@@ -1,89 +1,52 @@
-use std::collections::HashMap;
-
+use codegen::llvm::Module;
 use compiler::Compiler;
 use inkwell::{
-    module::Module,
     passes::PassBuilderOptions,
     targets::{CodeModel, RelocMode, Target, TargetMachine},
-    types::BasicType,
     values::FunctionValue,
     OptimizationLevel,
 };
-use repr::ty::Ty;
-use stage::codegen::llvm::FunctionGenerator;
 
+pub mod codegen;
 pub mod compiler;
 pub mod repr;
 pub mod stage;
 pub mod util;
 
 pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
+    // Create compiler state
     let mut compiler = Compiler::default();
+
+    // Create LLVM state
+    let llvm_ctx = inkwell::context::Context::create();
+
+    // Compile the source to produce all the functions
     let functions = compiler.compile(source).unwrap();
 
-    let llvm_ctx = inkwell::context::Context::create();
-    let module = llvm_ctx.create_module("module");
+    // Create an LLVM module from the compiler and an LLVM instance
+    let module = Module::new(&compiler, &llvm_ctx);
 
-    let function_map = functions
+    // Compile each of the functions into the LLVM module, and capture the corresponding value
+    let functions = functions
         .iter()
-        .map(|function| {
-            (
-                function.identifier,
-                module.add_function(
-                    compiler
-                        .get_function_symbol(function.identifier)
-                        .and_then(|symbol| compiler.get_interned_string(symbol))
-                        .expect("function to have name"),
-                    {
-                        let return_ty = match function.signature.return_ty {
-                            Ty::Int => llvm_ctx.i64_type().as_basic_type_enum(),
-                            Ty::Boolean => llvm_ctx.bool_type().as_basic_type_enum(),
-                            Ty::Unit => todo!(),
-                            Ty::Never => todo!(),
-                        };
+        .map(|function| (function.identifier, module.compile(function)))
+        .collect::<Vec<_>>();
 
-                        return_ty.fn_type(
-                            function
-                                .signature
-                                .arguments
-                                .iter()
-                                .map(|arg| match arg {
-                                    Ty::Int => llvm_ctx.i64_type().into(),
-                                    Ty::Boolean => llvm_ctx.bool_type().into(),
-                                    Ty::Unit => todo!(),
-                                    Ty::Never => {
-                                        unreachable!("cannot have an argument that is never type")
-                                    }
-                                })
-                                .collect::<Vec<_>>()
-                                .as_slice(),
-                            false,
-                        )
-                    },
-                    None,
-                ),
-            )
-        })
-        .collect::<HashMap<_, _>>();
+    // Find the main function
+    let main = {
+        let main_symbol = compiler.symbols.get("main").unwrap();
 
-    for function in &functions {
-        FunctionGenerator::new(
-            &mut compiler,
-            &llvm_ctx,
-            function_map.clone(),
-            *function_map.get(&function.identifier).unwrap(),
-            function.clone(),
-        )
-        .codegen();
-    }
+        functions
+            .iter()
+            .find(|(identifier, _)| {
+                compiler.get_function_symbol(*identifier).unwrap() == main_symbol
+            })
+            .map(|(_, function)| function)
+            .unwrap()
+    };
 
-    let main_symbol = compiler.intern_string("main");
-    let main = functions
-        .iter()
-        .map(|f| f.identifier)
-        .find(|identifier| compiler.get_function_symbol(*identifier).unwrap() == main_symbol)
-        .unwrap();
-    let main = function_map.get(&main).unwrap();
+    // Pull out the inner LLVM module
+    let module = module.into_inner();
 
     if debug {
         module.print_to_stderr();
@@ -104,7 +67,7 @@ pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {
 }
 
 #[allow(unused)]
-fn run_passes(module: &Module, passes: &[&str]) {
+fn run_passes(module: &inkwell::module::Module, passes: &[&str]) {
     Target::initialize_all(&Default::default());
 
     let target_triple = TargetMachine::get_default_triple();
@@ -129,7 +92,7 @@ fn run_passes(module: &Module, passes: &[&str]) {
         .unwrap();
 }
 
-fn jit(module: &Module, entry: FunctionValue) -> i64 {
+fn jit(module: &inkwell::module::Module, entry: FunctionValue) -> i64 {
     let engine = module
         .create_jit_execution_engine(OptimizationLevel::None)
         .unwrap();

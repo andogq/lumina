@@ -61,7 +61,7 @@ impl FunctionRegistration {
 
 /// Handles all of the bindings and information for functions.
 #[derive(Default, Debug, Clone)]
-struct FunctionManager {
+pub struct FunctionManager {
     /// Function registrations, stored against a unique index.
     registrations: IndexVec<FunctionIdx, FunctionRegistration>,
 
@@ -101,11 +101,16 @@ impl FunctionManager {
     }
 
     /// Retrieve the original symbol for a function.
-    fn get_function_symbol(&self, idx: FunctionIdx) -> Option<Symbol> {
+    pub fn get_function_symbol(&self, idx: FunctionIdx) -> Option<Symbol> {
         self.symbols
             .iter()
             .find(|(_, test_idx)| idx == **test_idx)
             .map(|(symbol, _)| *symbol)
+    }
+
+    /// Produce an iterator of all function registrations.
+    pub fn functions(&self) -> impl Iterator<Item = (FunctionIdx, &FunctionRegistration)> {
+        self.registrations.iter_enumerated()
     }
 }
 
@@ -122,10 +127,10 @@ pub enum CompilerError {
 #[derive(Default, Debug, Clone)]
 pub struct Compiler {
     /// Symbols interned by the compiler.
-    symbols: StringInterner<DefaultBackend>,
+    pub symbols: StringInterner<DefaultBackend>,
 
     /// All functions that have been registered with the compiler.
-    function_manager: FunctionManager,
+    pub function_manager: FunctionManager,
 }
 
 impl Compiler {

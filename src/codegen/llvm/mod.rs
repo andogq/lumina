@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use index_vec::IndexVec;
 use inkwell::{
     basic_block::BasicBlock,
     builder::Builder,
     context::Context,
+    module::Module as LlvmModule,
+    types::{BasicType, BasicTypeEnum},
     values::{BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate,
 };
@@ -20,19 +23,110 @@ use crate::{
     },
 };
 
-pub struct FunctionGenerator<'ctx, 'ink> {
-    compiler: &'ctx mut Compiler,
+/// A single LLVM module.
+pub struct Module<'compiler, 'ink> {
+    /// Compiler state.
+    compiler: &'compiler Compiler,
 
+    /// LLVM context.
     llvm_ctx: &'ink Context,
 
+    /// The underlying LLVM module.
+    module: LlvmModule<'ink>,
+
+    /// All functions available within this module.
+    functions: IndexVec<FunctionIdx, FunctionValue<'ink>>,
+}
+
+impl<'compiler, 'ink> Module<'compiler, 'ink> {
+    /// Create a new module from an existing [`Compiler`] and LLVM [`Context`].
+    pub fn new(compiler: &'compiler Compiler, llvm_ctx: &'ink Context) -> Self {
+        let module = llvm_ctx.create_module("module");
+
+        // TODO: Declare all functions in the compiler
+        let functions = compiler
+            .function_manager
+            .functions()
+            .map(|(idx, registration)| {
+                module.add_function(
+                    // Pull out the name of the function
+                    compiler
+                        .symbols
+                        .resolve(
+                            compiler
+                                .function_manager
+                                .get_function_symbol(idx)
+                                .expect("registered function must have symbol"),
+                        )
+                        .unwrap(),
+                    // Build up the type for the function
+                    {
+                        let signature = registration.get_signature();
+
+                        llvm_ctx.get_ty(&signature.return_ty).fn_type(
+                            &signature
+                                .arguments
+                                .iter()
+                                .map(|ty| llvm_ctx.get_ty(ty).into())
+                                .collect::<Vec<_>>(),
+                            false,
+                        )
+                    },
+                    None,
+                )
+            })
+            // WARN: Assumes that the enumeration and collection happens in the same order.
+            .collect();
+
+        Self {
+            compiler,
+            llvm_ctx,
+            module,
+            functions,
+        }
+    }
+
+    /// Compile a [`Function`] into the module.
+    pub fn compile(&self, function: &Function) -> FunctionValue<'ink> {
+        let value = self.functions[function.identifier];
+
+        // TODO: Don't do this
+        FunctionGenerator::new(self, value, function).codegen();
+
+        value
+    }
+
+    /// Produce the inner LLVM module.
+    pub fn into_inner(self) -> LlvmModule<'ink> {
+        self.module
+    }
+}
+
+/// Utility methods for LLVM context.
+trait ContextExt {
+    /// Get the internal representation for a [`Ty`].
+    fn get_ty(&self, ty: &Ty) -> BasicTypeEnum;
+}
+
+impl ContextExt for Context {
+    fn get_ty(&self, ty: &Ty) -> BasicTypeEnum {
+        match ty {
+            Ty::Int => self.i64_type().into(),
+            Ty::Boolean => self.bool_type().into(),
+            Ty::Unit => todo!(),
+            Ty::Never => todo!(),
+        }
+    }
+}
+
+pub struct FunctionGenerator<'module, 'compiler, 'ink> {
+    module: &'module Module<'compiler, 'ink>,
+
     /// IR for this function
-    function: Function,
+    function: &'module Function,
     /// LLVM function value assigned for this function
     llvm_function: FunctionValue<'ink>,
     builder: Builder<'ink>,
-
-    /// All available functions to call
-    functions: HashMap<FunctionIdx, FunctionValue<'ink>>,
 
     /// Resulting values for each of the triples
     results: HashMap<TripleRef, Option<IntValue<'ink>>>,
@@ -41,16 +135,14 @@ pub struct FunctionGenerator<'ctx, 'ink> {
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
 }
 
-impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
+impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
     pub fn new(
-        compiler: &'ctx mut Compiler,
-        llvm_ctx: &'ink Context,
-        functions: HashMap<FunctionIdx, FunctionValue<'ink>>,
+        module: &'module Module<'compiler, 'ink>,
         // NOTE: Pre-generate function value, so that a function map can be supplied even if other functions aren't generated
         llvm_function: FunctionValue<'ink>,
-        function: Function,
+        function: &'module Function,
     ) -> Self {
-        let builder = llvm_ctx.create_builder();
+        let builder = module.llvm_ctx.create_builder();
 
         // Set up the entry block for this function
         assert_eq!(
@@ -58,15 +150,13 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
             0,
             "function should not have any basic blocks"
         );
-        let entry = llvm_ctx.append_basic_block(llvm_function, "entry");
+        let entry = module.llvm_ctx.append_basic_block(llvm_function, "entry");
 
         builder.position_at_end(entry);
 
         Self {
-            compiler,
-            llvm_ctx,
+            module,
             llvm_function,
-            functions,
             builder,
             function,
             bindings: HashMap::new(),
@@ -77,6 +167,7 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
 
     pub fn codegen(&mut self) {
         let registration = self
+            .module
             .compiler
             .get_function(self.function.identifier)
             .unwrap();
@@ -91,7 +182,10 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
 
                 (
                     *binding,
-                    self.alloca(ty, self.compiler.get_interned_string(symbol).unwrap()),
+                    self.alloca(
+                        ty,
+                        self.module.compiler.get_interned_string(symbol).unwrap(),
+                    ),
                 )
             })
             .collect::<HashMap<_, _>>();
@@ -119,6 +213,7 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
         let prev_builder = self.builder.get_insert_block();
 
         let basic_block = self
+            .module
             .llvm_ctx
             .append_basic_block(self.llvm_function, &format!("bb_{block_idx:?}"));
         self.blocks.insert(*block_idx, basic_block);
@@ -209,7 +304,7 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
 
     fn gen_call(&mut self, function: &FunctionIdx, params: &[Value]) -> IntValue<'ink> {
         // Ensure the function is compiled
-        let function_value = self.functions.get(function).unwrap();
+        let function_value = self.module.functions.get(*function).unwrap();
 
         self.builder
             .build_call(
@@ -221,9 +316,10 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
                     .as_slice(),
                 &format!(
                     "{}_result",
-                    self.compiler
+                    self.module
+                        .compiler
                         .get_function_symbol(*function)
-                        .and_then(|symbol| self.compiler.get_interned_string(symbol))
+                        .and_then(|symbol| self.module.compiler.get_interned_string(symbol))
                         .unwrap()
                 ),
             )
@@ -252,6 +348,7 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
 
     fn gen_load(&self, binding: &ScopedBinding) -> IntValue<'ink> {
         let (symbol, _) = self
+            .module
             .compiler
             .get_function(self.function.identifier)
             .unwrap()
@@ -259,10 +356,10 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
             .unwrap();
 
         let ptr = self.bindings.get(binding).expect("symbol must be defined");
-        let name = self.compiler.get_interned_string(symbol).unwrap();
+        let name = self.module.compiler.get_interned_string(symbol).unwrap();
 
         self.builder
-            .build_load(self.llvm_ctx.i64_type(), *ptr, name)
+            .build_load(self.module.llvm_ctx.i64_type(), *ptr, name)
             .unwrap()
             .into_int_value()
     }
@@ -306,7 +403,7 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
             .iter()
             .fold(
                 self.builder
-                    .build_phi(self.llvm_ctx.i64_type(), "switch phi")
+                    .build_phi(self.module.llvm_ctx.i64_type(), "switch phi")
                     .unwrap(),
                 |phi, (value, bb)| {
                     let bb = self.gen_block(bb);
@@ -327,14 +424,14 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
         let entry = self.llvm_function.get_first_basic_block().unwrap();
 
         // Create and position a builder to the end of the entry
-        let builder = self.llvm_ctx.create_builder();
+        let builder = self.module.llvm_ctx.create_builder();
         builder.position_at_end(entry);
 
         builder
             .build_alloca(
                 match ty {
-                    Ty::Int => self.llvm_ctx.i64_type(),
-                    Ty::Boolean => self.llvm_ctx.bool_type(),
+                    Ty::Int => self.module.llvm_ctx.i64_type(),
+                    Ty::Boolean => self.module.llvm_ctx.bool_type(),
                     Ty::Unit => todo!(),
                     Ty::Never => unreachable!("cannot allocate stack space for never type"),
                 },
@@ -346,11 +443,13 @@ impl<'ctx, 'ink> FunctionGenerator<'ctx, 'ink> {
     fn retrieve_value(&self, value: &Value) -> Option<IntValue<'ink>> {
         match value {
             Value::Constant(value) => Some(match value {
-                ConstantValue::Integer(value) => {
-                    self.llvm_ctx.i64_type().const_int(*value as u64, false)
-                }
+                ConstantValue::Integer(value) => self
+                    .module
+                    .llvm_ctx
+                    .i64_type()
+                    .const_int(*value as u64, false),
                 ConstantValue::Boolean(value) => {
-                    let ty = self.llvm_ctx.bool_type();
+                    let ty = self.module.llvm_ctx.bool_type();
 
                     if *value {
                         ty.const_all_ones()
