@@ -14,6 +14,7 @@ impl parse_ast::Statement {
             parse_ast::Statement::Expression(s) => {
                 Statement::Expression(s.ty_solve(compiler, scope)?)
             }
+            parse_ast::Statement::Break(s) => Statement::Break(s.ty_solve(compiler, scope)?),
         })
     }
 }
@@ -64,6 +65,22 @@ impl parse_ast::ReturnStatement {
                 [Some(value.get_ty_info().ty), value.get_ty_info().return_ty],
             ))?,
             value,
+            span: self.span,
+        })
+    }
+}
+
+impl parse_ast::BreakStatement {
+    pub fn ty_solve(
+        self,
+        _compiler: &mut Compiler,
+        _scope: &mut Scope,
+    ) -> Result<BreakStatement, TyError> {
+        Ok(BreakStatement {
+            ty_info: TyInfo {
+                ty: Ty::Never,
+                return_ty: None,
+            },
             span: self.span,
         })
     }

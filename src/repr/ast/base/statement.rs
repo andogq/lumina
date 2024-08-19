@@ -7,6 +7,7 @@ ast_node!(
         Return(ReturnStatement<TyInfo, FnIdentifier, IdentIdentifier>),
         Let(LetStatement<TyInfo, FnIdentifier, IdentIdentifier>),
         Expression(ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier>),
+        Break(BreakStatement<TyInfo>),
     }
 );
 
@@ -54,5 +55,10 @@ ast_node! {
     typed struct ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier> {
         expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
         implicit_return: bool,
+    }
+}
+
+ast_node! {
+    typed struct BreakStatement<TyInfo> {
     }
 }

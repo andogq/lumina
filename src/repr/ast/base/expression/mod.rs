@@ -5,6 +5,7 @@ mod ident;
 mod if_else;
 mod infix;
 mod integer;
+mod loop_block;
 
 pub use block::*;
 pub use boolean::*;
@@ -13,6 +14,7 @@ pub use ident::*;
 pub use if_else::*;
 pub use infix::*;
 pub use integer::*;
+pub use loop_block::*;
 
 use crate::{ast_node, util::span::Span};
 
@@ -27,6 +29,7 @@ ast_node!(
         Block(Block<TyInfo, FnIdentifier, IdentIdentifier>),
         If(If<TyInfo, FnIdentifier, IdentIdentifier>),
         Call(Call<TyInfo, FnIdentifier, IdentIdentifier>),
+        Loop(Loop<TyInfo, FnIdentifier, IdentIdentifier>),
     }
 );
 

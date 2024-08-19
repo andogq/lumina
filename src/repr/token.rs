@@ -60,6 +60,10 @@ pub enum Token {
     If,
     #[token("else")]
     Else,
+    #[token("loop")]
+    Loop,
+    #[token("break")]
+    Break,
 
     /*
      * Primitive type
@@ -124,6 +128,8 @@ impl Display for Token {
             Token::Let => write!(f, "let"),
             Token::If => write!(f, "if"),
             Token::Else => write!(f, "else"),
+            Token::Loop => write!(f, "loop"),
+            Token::Break => write!(f, "break"),
             Token::Int => write!(f, "int"),
             Token::Bool => write!(f, "bool"),
             Token::True => write!(f, "true"),

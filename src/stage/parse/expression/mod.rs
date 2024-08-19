@@ -1,5 +1,7 @@
 use std::iter;
 
+use e_loop::parse_loop;
+
 use super::*;
 
 use self::{
@@ -10,6 +12,7 @@ mod e_boolean;
 mod e_ident;
 mod e_if;
 mod e_integer;
+mod e_loop;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
@@ -40,6 +43,7 @@ fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expre
         Token::False => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
         Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, tokens)?)),
         Token::If => Ok(Expression::If(parse_if(compiler, tokens)?)),
+        Token::Loop => Ok(Expression::Loop(parse_loop(compiler, tokens)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
     }
 }

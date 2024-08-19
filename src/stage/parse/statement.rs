@@ -1,3 +1,5 @@
+use crate::repr::ast::base::BreakStatement;
+
 use super::*;
 
 pub fn parse_statement(
@@ -56,6 +58,11 @@ pub fn parse_statement(
                 value,
                 span,
             ))
+        }
+        Token::Break => {
+            let (_, break_span) = tokens.next_spanned().unwrap();
+
+            Statement::Break(BreakStatement::new(break_span))
         }
         _ => {
             // Parse expression

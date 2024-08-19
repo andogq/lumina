@@ -19,18 +19,16 @@ pub enum Triple {
         op: BinaryOp,
     },
     /// Standard unary operation.
-    UnaryOp {
-        rhs: Value,
-        op: UnaryOp,
-    },
+    UnaryOp { rhs: Value, op: UnaryOp },
     /// Copy the provided value.
     Copy(Value),
     /// Call the corresponding function.
     Call(FunctionIdx, Vec<Value>),
     /// Assign some symbol to some value.
     Assign(ScopedBinding, Value),
-    /// Loads a value from a scoped binding
+    /// Loads a value from a scoped binding.
     Load(ScopedBinding),
+    /// Merge the listed values from their basic blocks into a single value.
     Phi(Vec<(Value, BasicBlockIdx)>),
 }
 

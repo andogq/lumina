@@ -23,7 +23,7 @@ pub fn lower(compiler: &mut Compiler, program: ast::Program) -> Vec<Function> {
         .collect()
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct BasicBlockBuilder {
     triples: IndexVec<ir::TripleIdx, Triple>,
     terminator: Option<Terminator>,
@@ -35,6 +35,9 @@ pub struct FunctionBuilder {
 
     basic_blocks: IndexVec<ir::BasicBlockIdx, BasicBlockBuilder>,
     current_basic_block: ir::BasicBlockIdx,
+
+    /// Tracks the starting and ending basic block for any loops, so they can be jumped back to it
+    loop_stack: Vec<(ir::BasicBlockIdx, ir::BasicBlockIdx)>,
 
     scope: Vec<(ScopedBinding, Ty)>,
 }
@@ -49,6 +52,7 @@ impl FunctionBuilder {
             signature: FunctionSignature::from(function),
             basic_blocks,
             current_basic_block,
+            loop_stack: Vec::new(),
             scope: function.parameters.to_vec(),
         }
     }
@@ -101,8 +105,7 @@ impl FunctionBuilder {
         Function {
             identifier: self.idx,
             signature: self.signature,
-            basic_blocks: self
-                .basic_blocks
+            basic_blocks: dbg!(self.basic_blocks)
                 .into_iter()
                 .map(|builder| ir::BasicBlock {
                     triples: builder.triples,
@@ -174,6 +177,15 @@ fn lower_block(
 
                 let value = lower_expression(compiler, builder, value).unwrap();
                 builder.add_triple(Triple::Assign(*name, value));
+            }
+            ast::Statement::Break(ast::BreakStatement { .. }) => {
+                assert!(
+                    !builder.loop_stack.is_empty(),
+                    "can only break within a loop"
+                );
+
+                let (_, loop_end) = builder.loop_stack.last().unwrap();
+                builder.set_terminator(Terminator::Jump(*loop_end));
             }
             ast::Statement::Expression(ast::ExpressionStatement {
                 expression,
@@ -295,6 +307,49 @@ fn lower_expression(
                     Some(Value::Triple(builder.add_triple(Triple::Phi(merge_values))))
                 }
             }
+        }
+        ast::Expression::Loop(e_loop) => {
+            let prev = builder.current_bb();
+
+            // Create a new basic block
+            let loop_start = builder.push_bb();
+
+            // Jump from the previous block to the loop start
+            builder.goto_bb(prev);
+            builder.set_terminator(Terminator::Jump(loop_start));
+
+            // Prepare an ending basic block
+            let loop_end = builder.push_bb();
+
+            // Save the start and end locations (keeping track of how many previous loops there are)
+            builder.loop_stack.push((loop_start, loop_end));
+            let loop_count = builder.loop_stack.len();
+
+            // Lower the loop body
+            builder.goto_bb(loop_start);
+            lower_block(compiler, builder, &e_loop.body);
+
+            // HACK: Should there be a better way of determining if the loop will never end (check for never?)
+            if builder.basic_blocks[builder.current_bb()]
+                .terminator
+                .is_none()
+            {
+                // Jump from the loop end back to the start
+                builder.set_terminator(Terminator::Jump(loop_start));
+            }
+
+            // Remove this loop from the stack
+            assert_eq!(
+                builder.loop_stack.len(),
+                loop_count,
+                "must be at same position in loop stack"
+            );
+            builder.loop_stack.pop();
+
+            // Continue on from where the loop ends
+            builder.goto_bb(loop_end);
+
+            None
         }
         ast::Expression::Call(call) => {
             let idx = call.name;
