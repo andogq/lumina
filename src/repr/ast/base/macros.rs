@@ -82,6 +82,7 @@ macro_rules! generate_ast {
         pub type Loop = ast::Loop<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Infix = ast::Infix<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Integer = ast::Integer<$ty_info>;
+        pub type Assign = ast::Assign<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Expression = ast::Expression<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Function = ast::Function<$ty_info, $fn_identifier, $ident_identifier>;
         pub type Program = ast::Program<$ty_info, $fn_identifier, $ident_identifier>;

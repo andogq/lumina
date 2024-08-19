@@ -44,6 +44,6 @@ mod test {
         let mut tokens = source.into();
         let _ = parse_boolean(&mut Compiler::default(), &mut tokens);
 
-        assert_eq!(tokens.0.count(), 1);
+        assert_eq!(tokens.count(), 1);
     }
 }

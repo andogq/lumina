@@ -349,7 +349,7 @@ fn lower_expression(
             // Continue on from where the loop ends
             builder.goto_bb(loop_end);
 
-            None
+            Some(Value::Unit)
         }
         ast::Expression::Call(call) => {
             let idx = call.name;
@@ -359,6 +359,12 @@ fn lower_expression(
                 .map(|e| lower_expression(compiler, builder, e).unwrap())
                 .collect();
             Some(Value::Triple(builder.add_triple(Triple::Call(idx, params))))
+        }
+        ast::Expression::Assign(assign) => {
+            let value = lower_expression(compiler, builder, &assign.value).unwrap();
+            builder.add_triple(Triple::Assign(assign.binding, value));
+
+            Some(Value::Unit)
         }
     }
 }

@@ -1,3 +1,4 @@
+mod assign;
 mod block;
 mod boolean;
 mod call;
@@ -7,6 +8,7 @@ mod infix;
 mod integer;
 mod loop_block;
 
+pub use assign::*;
 pub use block::*;
 pub use boolean::*;
 pub use call::*;
@@ -30,6 +32,7 @@ ast_node!(
         If(If<TyInfo, FnIdentifier, IdentIdentifier>),
         Call(Call<TyInfo, FnIdentifier, IdentIdentifier>),
         Loop(Loop<TyInfo, FnIdentifier, IdentIdentifier>),
+        Assign(Assign<TyInfo, FnIdentifier, IdentIdentifier>),
     }
 );
 

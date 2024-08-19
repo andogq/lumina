@@ -1,5 +1,6 @@
 use std::iter;
 
+use e_assign::parse_assign;
 use e_loop::parse_loop;
 
 use super::*;
@@ -8,6 +9,7 @@ use self::{
     e_boolean::parse_boolean, e_ident::parse_ident, e_if::parse_if, e_integer::parse_integer,
 };
 
+mod e_assign;
 mod e_boolean;
 mod e_ident;
 mod e_if;
@@ -36,8 +38,11 @@ impl Precedence {
 }
 
 fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
-    match tokens.peek_token().unwrap() {
+    match tokens.peek_token().unwrap().clone() {
         Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, tokens)?)),
+        Token::Ident(_) if matches!(tokens.double_peek_token(), Some(Token::Eq)) => {
+            Ok(Expression::Assign(parse_assign(compiler, tokens)?))
+        }
         Token::Ident(_) => Ok(Expression::Ident(parse_ident(compiler, tokens)?)),
         Token::True => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
         Token::False => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),

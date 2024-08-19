@@ -2,6 +2,7 @@ use crate::{compiler::Compiler, util::scope::Scope};
 
 use super::*;
 
+mod assign;
 mod block;
 mod boolean;
 mod call;
@@ -26,6 +27,7 @@ impl parse_ast::Expression {
             parse_ast::Expression::If(e) => Expression::If(e.ty_solve(compiler, scope)?),
             parse_ast::Expression::Loop(e) => Expression::Loop(e.ty_solve(compiler, scope)?),
             parse_ast::Expression::Call(e) => Expression::Call(e.ty_solve(compiler, scope)?),
+            parse_ast::Expression::Assign(e) => Expression::Assign(e.ty_solve(compiler, scope)?),
         })
     }
 }

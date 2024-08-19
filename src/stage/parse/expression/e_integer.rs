@@ -44,6 +44,6 @@ mod test {
     fn single_token(#[case] source: &str) {
         let mut tokens = source.into();
         let _ = parse_integer(&mut Compiler::default(), &mut tokens);
-        assert_eq!(tokens.0.count(), 1);
+        assert_eq!(tokens.count(), 1);
     }
 }

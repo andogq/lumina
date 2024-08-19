@@ -78,9 +78,19 @@ pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseErro
     Ok(program)
 }
 
-struct Lexer<'source>(Peekable<logos::SpannedIter<'source, Token>>);
+struct Lexer<'source> {
+    next: Option<(Token, Span)>,
+    lexer: Peekable<logos::SpannedIter<'source, Token>>,
+}
 
 impl<'source> Lexer<'source> {
+    fn new(lexer: logos::Lexer<'source, Token>) -> Self {
+        Self {
+            lexer: lexer.spanned().peekable(),
+            next: None,
+        }
+    }
+
     fn next_token(&mut self) -> Option<Token> {
         self.next_spanned().map(|(token, _)| token)
     }
@@ -90,13 +100,39 @@ impl<'source> Lexer<'source> {
     }
 
     fn next_spanned(&mut self) -> Option<(Token, Span)> {
-        self.0.next().map(|(result, span)| (result.unwrap(), span))
+        self.next.take().or_else(|| self.next())
     }
 
     fn peek_spanned(&mut self) -> Option<(&Token, &Span)> {
-        self.0
+        self.next
+            .as_ref()
+            .map(|(token, span)| (token, span))
+            .or_else(|| {
+                self.lexer
+                    .peek()
+                    .map(|(result, span)| (result.as_ref().unwrap(), span))
+            })
+    }
+
+    fn double_peek_token(&mut self) -> Option<&Token> {
+        if self.next.is_none() {
+            self.next = self.next();
+        }
+
+        self.lexer
             .peek()
-            .map(|(result, span)| (result.as_ref().unwrap(), span))
+            .map(|(result, _)| result.as_ref().unwrap())
+    }
+
+    fn next(&mut self) -> Option<(Token, Span)> {
+        self.lexer
+            .next()
+            .map(|(result, span)| (result.unwrap(), span))
+    }
+
+    #[allow(dead_code)]
+    fn count(self) -> usize {
+        self.lexer.count() + self.next.map(|_| 1).unwrap_or(0)
     }
 }
 
@@ -108,7 +144,7 @@ impl<'source> From<&'source str> for Lexer<'source> {
 
 impl<'source> From<logos::Lexer<'source, Token>> for Lexer<'source> {
     fn from(lexer: logos::Lexer<'source, Token>) -> Self {
-        Self(lexer.spanned().peekable())
+        Self::new(lexer)
     }
 }
 
@@ -116,12 +152,12 @@ impl<'source> Deref for Lexer<'source> {
     type Target = Peekable<logos::SpannedIter<'source, Token>>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.lexer
     }
 }
 
 impl<'source> DerefMut for Lexer<'source> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.lexer
     }
 }
