@@ -40,9 +40,9 @@ impl Precedence {
 fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
     match tokens.peek_token().unwrap().clone() {
         Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, tokens)?)),
-        Token::Ident(_) => match tokens.double_peek_token().unwrap() {
-            Token::Eq => Ok(Expression::Assign(parse_assign(compiler, tokens)?)),
-            Token::AddAssign | Token::MinusAssign => {
+        Token::Ident(_) => match tokens.double_peek_token() {
+            Some(Token::Eq) => Ok(Expression::Assign(parse_assign(compiler, tokens)?)),
+            Some(Token::AddAssign | Token::MinusAssign) => {
                 Ok(Expression::Assign(parse_op_assign(compiler, tokens)?))
             }
             _ => Ok(Expression::Ident(parse_ident(compiler, tokens)?)),
