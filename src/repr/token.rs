@@ -64,6 +64,8 @@ pub enum Token {
     Loop,
     #[token("break")]
     Break,
+    #[token("continue")]
+    Continue,
 
     /*
      * Primitive type
@@ -130,6 +132,7 @@ impl Display for Token {
             Token::Else => write!(f, "else"),
             Token::Loop => write!(f, "loop"),
             Token::Break => write!(f, "break"),
+            Token::Continue => write!(f, "continue"),
             Token::Int => write!(f, "int"),
             Token::Bool => write!(f, "bool"),
             Token::True => write!(f, "true"),

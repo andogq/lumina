@@ -187,6 +187,15 @@ fn lower_block(
                 let (_, loop_end) = builder.loop_stack.last().unwrap();
                 builder.set_terminator(Terminator::Jump(*loop_end));
             }
+            ast::Statement::Continue(ast::ContinueStatement { .. }) => {
+                assert!(
+                    !builder.loop_stack.is_empty(),
+                    "can only continue within a loop"
+                );
+
+                let (loop_start, _) = builder.loop_stack.last().unwrap();
+                builder.set_terminator(Terminator::Jump(*loop_start));
+            }
             ast::Statement::Expression(ast::ExpressionStatement {
                 expression,
                 ty_info,

@@ -8,6 +8,7 @@ ast_node!(
         Let(LetStatement<TyInfo, FnIdentifier, IdentIdentifier>),
         Expression(ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier>),
         Break(BreakStatement<TyInfo>),
+        Continue(ContinueStatement<TyInfo>),
     }
 );
 
@@ -60,5 +61,10 @@ ast_node! {
 
 ast_node! {
     typed struct BreakStatement<TyInfo> {
+    }
+}
+
+ast_node! {
+    typed struct ContinueStatement<TyInfo> {
     }
 }

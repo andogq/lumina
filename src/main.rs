@@ -32,7 +32,23 @@ fn main() {
         }
 
         fn main() -> int {
-            let result1 = fib1(19);
+            let n = 0;
+            let counter = 0;
+            loop {
+                if counter == 20 {
+                    break;
+                }
+
+                counter = counter + 1;
+
+                if counter == 10 {
+                    continue;
+                }
+
+                n = n + 1;
+            }
+
+            let result1 = fib1(n);
             let result2 = fib2(19);
 
             if result1 == result2 {

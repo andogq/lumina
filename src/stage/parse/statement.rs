@@ -1,4 +1,4 @@
-use crate::repr::ast::base::BreakStatement;
+use crate::repr::ast::base::{BreakStatement, ContinueStatement};
 
 use super::*;
 
@@ -63,6 +63,11 @@ pub fn parse_statement(
             let (_, break_span) = tokens.next_spanned().unwrap();
 
             Statement::Break(BreakStatement::new(break_span))
+        }
+        Token::Continue => {
+            let (_, continue_span) = tokens.next_spanned().unwrap();
+
+            Statement::Continue(ContinueStatement::new(continue_span))
         }
         _ => {
             // Parse expression

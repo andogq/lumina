@@ -93,5 +93,6 @@ macro_rules! generate_ast {
         pub type ExpressionStatement =
             ast::ExpressionStatement<$ty_info, $fn_identifier, $ident_identifier>;
         pub type BreakStatement = ast::BreakStatement<$ty_info>;
+        pub type ContinueStatement = ast::ContinueStatement<$ty_info>;
     };
 }
