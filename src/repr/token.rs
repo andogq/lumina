@@ -26,6 +26,10 @@ pub enum Token {
      */
     #[token("=")]
     Eq,
+    #[token("+=")]
+    AddAssign,
+    #[token("-=")]
+    MinusAssign,
     #[token("->")]
     ThinArrow,
     #[token(":")]
@@ -117,6 +121,8 @@ impl Display for Token {
             Token::And => write!(f, "&&"),
             Token::Or => write!(f, "||"),
             Token::Eq => write!(f, "="),
+            Token::AddAssign => write!(f, "+="),
+            Token::MinusAssign => write!(f, "-="),
             Token::ThinArrow => write!(f, "->"),
             Token::Colon => write!(f, ":"),
             Token::SemiColon => write!(f, ";"),

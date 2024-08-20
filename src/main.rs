@@ -13,7 +13,7 @@ fn main() {
                     break;
                 }
 
-                count = count + 1;
+                count += 1;
 
                 let temp = a;
                 a = b;
@@ -39,13 +39,13 @@ fn main() {
                     break;
                 }
 
-                counter = counter + 1;
+                counter += 1;
 
                 if counter == 10 {
                     continue;
                 }
 
-                n = n + 1;
+                n += 1;
             }
 
             let result1 = fib1(n);
