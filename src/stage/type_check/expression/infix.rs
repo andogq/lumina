@@ -57,6 +57,7 @@ mod test_infix {
             InfixOperation::plus(),
             Box::new(Expression::integer(0, Span::default())),
             Span::default(),
+            Default::default(),
         );
 
         let ty_info = infix
@@ -74,6 +75,7 @@ mod test_infix {
             InfixOperation::plus(),
             Box::new(Expression::boolean(false, Span::default())),
             Span::default(),
+            Default::default(),
         );
 
         let result = infix.ty_solve(&mut Compiler::default(), &mut Scope::new());

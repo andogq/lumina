@@ -1,4 +1,72 @@
 #[macro_export]
+macro_rules! ast_node2 {
+    ($name:ident<$metadata:ident> { $($tokens:tt)* }) => {
+        ast_node2! { @ $name<$metadata> { $($tokens)* } -> () }
+    };
+
+    ($name:ident<$metadata:ident>( $($variant:ident,)* )) => {
+        #[derive(Clone, Debug)]
+        pub enum $name<$metadata: $crate::repr::ast::base::AstMetadata> {
+            $($variant($variant<$metadata>),)*
+        }
+
+        impl<$metadata: $crate::repr::ast::base::AstMetadata> $name<$metadata> {
+            pub fn get_ty_info(&self) -> &$metadata::TyInfo {
+                match self {
+                    $(Self::$variant(value) => &value.ty_info),*
+                }
+            }
+
+            pub fn span(&self) -> &$metadata::Span {
+                match self {
+                    $(Self::$variant(value) => &value.span),*
+                }
+            }
+        }
+    };
+
+    (@ $name:ident<$metadata:ident> { } -> ( $($field:ident: $ty:ty,)*) ) => {
+        #[derive(Clone, Debug)]
+        pub struct $name<$metadata: $crate::repr::ast::base::AstMetadata> {
+            $(pub $field: $ty,)*
+        }
+
+        impl<$metadata: $crate::repr::ast::base::AstMetadata> $name<$metadata> {
+            pub fn new($($field: $ty,)*) -> Self {
+                Self { $($field,)* }
+            }
+        }
+    };
+
+    (@ $name:ident<$metadata:ident> { span, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
+        ast_node2! {
+            @ $name<$metadata> { $($tokens)* } -> (
+                $($result)*
+                span: $metadata::Span,
+            )
+        }
+    };
+
+    (@ $name:ident<$metadata:ident> { ty_info, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
+        ast_node2! {
+            @ $name<$metadata> { $($tokens)* } -> (
+                $($result)*
+                ty_info: $metadata::TyInfo,
+            )
+        }
+    };
+
+    (@ $name:ident<$metadata:ident> { $field:ident: $ty:ty, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
+        ast_node2! {
+            @ $name<$metadata> { $($tokens)* } -> (
+                $($result)*
+                $field: $ty,
+            )
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! ast_node {
     // Common components for all variants of an AST node
     (common struct $struct_name:ident$(<$($generic:ident),*>)? {  $($name:ident: $ty:ty,)* }) => {
@@ -68,31 +136,29 @@ macro_rules! ast_node {
 
 #[macro_export]
 macro_rules! generate_ast {
-    (TyInfo: $ty_info:ty, FnIdentifier: $fn_identifier:ty, IdentIdentifier: $ident_identifier:ty) => {
+    ($metadata:ty) => {
         use $crate::repr::ast::base as ast;
 
         // Re-export non-typed utilities
         pub use ast::InfixOperation;
 
-        pub type Block = ast::Block<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Boolean = ast::Boolean<$ty_info>;
-        pub type Call = ast::Call<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Ident = ast::Ident<$ty_info, $ident_identifier>;
-        pub type If = ast::If<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Loop = ast::Loop<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Infix = ast::Infix<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Integer = ast::Integer<$ty_info>;
-        pub type Assign = ast::Assign<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Expression = ast::Expression<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Function = ast::Function<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Program = ast::Program<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type Statement = ast::Statement<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type ReturnStatement =
-            ast::ReturnStatement<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type LetStatement = ast::LetStatement<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type ExpressionStatement =
-            ast::ExpressionStatement<$ty_info, $fn_identifier, $ident_identifier>;
-        pub type BreakStatement = ast::BreakStatement<$ty_info>;
-        pub type ContinueStatement = ast::ContinueStatement<$ty_info>;
+        pub type Block = ast::Block<$metadata>;
+        pub type Boolean = ast::Boolean<$metadata>;
+        pub type Call = ast::Call<$metadata>;
+        pub type Ident = ast::Ident<$metadata>;
+        pub type If = ast::If<$metadata>;
+        pub type Loop = ast::Loop<$metadata>;
+        pub type Infix = ast::Infix<$metadata>;
+        pub type Integer = ast::Integer<$metadata>;
+        pub type Assign = ast::Assign<$metadata>;
+        pub type Expression = ast::Expression<$metadata>;
+        pub type Function = ast::Function<$metadata>;
+        pub type Program = ast::Program<$metadata>;
+        pub type Statement = ast::Statement<$metadata>;
+        pub type ReturnStatement = ast::Return<$metadata>;
+        pub type LetStatement = ast::Let<$metadata>;
+        pub type ExpressionStatement = ast::ExpressionStatement<$metadata>;
+        pub type BreakStatement = ast::Break<$metadata>;
+        pub type ContinueStatement = ast::Continue<$metadata>;
     };
 }

@@ -5,8 +5,8 @@ pub fn parse_boolean(
     tokens: &mut Lexer<'_>,
 ) -> Result<Boolean, ParseError> {
     match tokens.next_spanned().unwrap() {
-        (Token::True, span) => Ok(Boolean::new(true, span)),
-        (Token::False, span) => Ok(Boolean::new(false, span)),
+        (Token::True, span) => Ok(Boolean::new(true, span, Default::default())),
+        (Token::False, span) => Ok(Boolean::new(false, span, Default::default())),
         (token, _) => {
             Err(ParseError::ExpectedToken {
                 // WARN: Should be true or false

@@ -196,7 +196,7 @@ fn lower_block(
                 let (loop_start, _) = builder.loop_stack.last().unwrap();
                 builder.set_terminator(Terminator::Jump(*loop_start));
             }
-            ast::Statement::Expression(ast::ExpressionStatement {
+            ast::Statement::ExpressionStatement(ast::ExpressionStatement {
                 expression,
                 ty_info,
                 ..

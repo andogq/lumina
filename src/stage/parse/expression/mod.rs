@@ -106,7 +106,7 @@ pub fn parse_expression(
                 };
 
                 let span = name.span.start..end_span.end;
-                Expression::Call(Call::new(name.binding, args, span))
+                Expression::Call(Call::new(name.binding, args, span, Default::default()))
             }
             // Regular infix operation
             (left, token) => {
@@ -118,7 +118,13 @@ pub fn parse_expression(
 
                     let span = left.span().start..right.span().end;
 
-                    Expression::Infix(Infix::new(Box::new(left), operation, Box::new(right), span))
+                    Expression::Infix(Infix::new(
+                        Box::new(left),
+                        operation,
+                        Box::new(right),
+                        span,
+                        Default::default(),
+                    ))
                 } else {
                     // Probably aren't in the expression any more
                     return Ok(left);
@@ -158,22 +164,22 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
-                span: 0..5,
                 left: Integer(
                     Integer {
-                        span: 0..1,
                         value: 3,
+                        span: 0..1,
                         ty_info: None,
                     },
                 ),
                 operation: Plus,
                 right: Integer(
                     Integer {
-                        span: 4..5,
                         value: 4,
+                        span: 4..5,
                         ty_info: None,
                     },
                 ),
+                span: 0..5,
                 ty_info: None,
             },
         )
@@ -192,36 +198,36 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
-                span: 0..10,
                 left: Infix(
                     Infix {
-                        span: 0..5,
                         left: Integer(
                             Integer {
-                                span: 0..1,
                                 value: 3,
+                                span: 0..1,
                                 ty_info: None,
                             },
                         ),
                         operation: Plus,
                         right: Integer(
                             Integer {
-                                span: 4..5,
                                 value: 4,
+                                span: 4..5,
                                 ty_info: None,
                             },
                         ),
+                        span: 0..5,
                         ty_info: None,
                     },
                 ),
                 operation: Plus,
                 right: Integer(
                     Integer {
-                        span: 8..10,
                         value: 10,
+                        span: 8..10,
                         ty_info: None,
                     },
                 ),
+                span: 0..10,
                 ty_info: None,
             },
         )
@@ -244,37 +250,37 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         If(
             If {
-                span: 0..18,
                 condition: Integer(
                     Integer {
-                        span: 3..4,
                         value: 1,
+                        span: 3..4,
                         ty_info: None,
                     },
                 ),
                 success: Block {
-                    span: 5..18,
                     statements: [
-                        Expression(
+                        ExpressionStatement(
                             ExpressionStatement {
-                                span: 7..16,
                                 expression: Ident(
                                     Ident {
-                                        span: 7..16,
                                         binding: SymbolU32 {
                                             value: 1,
                                         },
+                                        span: 7..16,
                                         ty_info: None,
                                     },
                                 ),
                                 implicit_return: true,
+                                span: 7..16,
                                 ty_info: None,
                             },
                         ),
                     ],
+                    span: 5..18,
                     ty_info: None,
                 },
                 otherwise: None,
+                span: 0..18,
                 ty_info: None,
             },
         )
@@ -292,8 +298,8 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Integer(
             Integer {
-                span: 0..1,
                 value: 1,
+                span: 0..1,
                 ty_info: None,
             },
         )
@@ -311,10 +317,10 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Ident(
             Ident {
-                span: 0..9,
                 binding: SymbolU32 {
                     value: 1,
                 },
+                span: 0..9,
                 ty_info: None,
             },
         )
@@ -333,22 +339,22 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
-                span: 0..6,
                 left: Integer(
                     Integer {
-                        span: 0..1,
                         value: 1,
+                        span: 0..1,
                         ty_info: None,
                     },
                 ),
                 operation: Eq,
                 right: Integer(
                     Integer {
-                        span: 5..6,
                         value: 1,
+                        span: 5..6,
                         ty_info: None,
                     },
                 ),
+                span: 0..6,
                 ty_info: None,
             },
         )
@@ -367,36 +373,36 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
-                span: 0..10,
                 left: Integer(
                     Integer {
-                        span: 0..1,
                         value: 1,
+                        span: 0..1,
                         ty_info: None,
                     },
                 ),
                 operation: Eq,
                 right: Infix(
                     Infix {
-                        span: 5..10,
                         left: Integer(
                             Integer {
-                                span: 5..6,
                                 value: 1,
+                                span: 5..6,
                                 ty_info: None,
                             },
                         ),
                         operation: Plus,
                         right: Integer(
                             Integer {
-                                span: 9..10,
                                 value: 2,
+                                span: 9..10,
                                 ty_info: None,
                             },
                         ),
+                        span: 5..10,
                         ty_info: None,
                     },
                 ),
+                span: 0..10,
                 ty_info: None,
             },
         )
@@ -411,11 +417,11 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..6,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [],
+                span: 0..6,
                 ty_info: None,
             },
         )
@@ -434,19 +440,19 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..7,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [
                     Integer(
                         Integer {
-                            span: 5..6,
                             value: 1,
+                            span: 5..6,
                             ty_info: None,
                         },
                     ),
                 ],
+                span: 0..7,
                 ty_info: None,
             },
         )
@@ -465,19 +471,19 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..8,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [
                     Integer(
                         Integer {
-                            span: 5..6,
                             value: 1,
+                            span: 5..6,
                             ty_info: None,
                         },
                     ),
                 ],
+                span: 0..8,
                 ty_info: None,
             },
         )
@@ -496,33 +502,33 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..13,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [
                     Integer(
                         Integer {
-                            span: 5..6,
                             value: 1,
+                            span: 5..6,
                             ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
-                            span: 8..9,
                             value: 2,
+                            span: 8..9,
                             ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
-                            span: 11..12,
                             value: 3,
+                            span: 11..12,
                             ty_info: None,
                         },
                     ),
                 ],
+                span: 0..13,
                 ty_info: None,
             },
         )
@@ -541,33 +547,33 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..14,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [
                     Integer(
                         Integer {
-                            span: 5..6,
                             value: 1,
+                            span: 5..6,
                             ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
-                            span: 8..9,
                             value: 2,
+                            span: 8..9,
                             ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
-                            span: 11..12,
                             value: 3,
+                            span: 11..12,
                             ty_info: None,
                         },
                     ),
                 ],
+                span: 0..14,
                 ty_info: None,
             },
         )
@@ -586,40 +592,40 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Call(
             Call {
-                span: 0..15,
                 name: SymbolU32 {
                     value: 1,
                 },
                 args: [
                     Infix(
                         Infix {
-                            span: 5..10,
                             left: Integer(
                                 Integer {
-                                    span: 5..6,
                                     value: 1,
+                                    span: 5..6,
                                     ty_info: None,
                                 },
                             ),
                             operation: Plus,
                             right: Integer(
                                 Integer {
-                                    span: 9..10,
                                     value: 2,
+                                    span: 9..10,
                                     ty_info: None,
                                 },
                             ),
+                            span: 5..10,
                             ty_info: None,
                         },
                     ),
                     Integer(
                         Integer {
-                            span: 12..13,
                             value: 3,
+                            span: 12..13,
                             ty_info: None,
                         },
                     ),
                 ],
+                span: 0..15,
                 ty_info: None,
             },
         )
@@ -638,33 +644,33 @@ mod test {
         insta::assert_debug_snapshot!(expression, @r###"
         Infix(
             Infix {
-                span: 0..11,
                 left: Call(
                     Call {
-                        span: 0..7,
                         name: SymbolU32 {
                             value: 1,
                         },
                         args: [
                             Integer(
                                 Integer {
-                                    span: 5..6,
                                     value: 1,
+                                    span: 5..6,
                                     ty_info: None,
                                 },
                             ),
                         ],
+                        span: 0..7,
                         ty_info: None,
                     },
                 ),
                 operation: Plus,
                 right: Integer(
                     Integer {
-                        span: 10..11,
                         value: 2,
+                        span: 10..11,
                         ty_info: None,
                     },
                 ),
+                span: 0..11,
                 ty_info: None,
             },
         )

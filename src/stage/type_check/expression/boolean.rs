@@ -23,7 +23,7 @@ mod test_boolean {
     #[test]
     fn boolean_infer() {
         assert_eq!(
-            Boolean::new(false, Span::default())
+            Boolean::new(false, Span::default(), Default::default())
                 .ty_solve()
                 .unwrap()
                 .ty_info
@@ -35,7 +35,7 @@ mod test_boolean {
     #[test]
     fn boolean_return() {
         assert_eq!(
-            Boolean::new(false, Span::default())
+            Boolean::new(false, Span::default(), Default::default())
                 .ty_solve()
                 .unwrap()
                 .ty_info

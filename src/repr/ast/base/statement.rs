@@ -1,70 +1,72 @@
-use crate::{ast_node, util::span::Span};
+use crate::ast_node2;
 
 use super::*;
 
-ast_node!(
-    enum Statement<TyInfo, FnIdentifier, IdentIdentifier> {
-        Return(ReturnStatement<TyInfo, FnIdentifier, IdentIdentifier>),
-        Let(LetStatement<TyInfo, FnIdentifier, IdentIdentifier>),
-        Expression(ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier>),
-        Break(BreakStatement<TyInfo>),
-        Continue(ContinueStatement<TyInfo>),
-    }
-);
+ast_node2! {
+    Statement<M>(
+        Return,
+        Let,
+        ExpressionStatement,
+        Break,
+        Continue,
+    )
+}
 
-impl<TyInfo: Default, FnIdentifier, IdentIdentifier>
-    Statement<TyInfo, FnIdentifier, IdentIdentifier>
-{
-    pub fn _return(
-        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
-        span: Span,
-    ) -> Self {
-        Self::Return(ReturnStatement::new(expression, span))
+impl<M: AstMetadata<TyInfo: Default>> Statement<M> {
+    pub fn _return(expression: Expression<M>, span: M::Span) -> Self {
+        Self::Return(Return::new(expression, span, M::TyInfo::default()))
     }
 
-    pub fn _let(
-        name: IdentIdentifier,
-        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
-        span: Span,
-    ) -> Self {
-        Self::Let(LetStatement::new(name, value, span))
+    pub fn _let(name: M::IdentIdentifier, value: Expression<M>, span: M::Span) -> Self {
+        Self::Let(Let::new(name, value, span, M::TyInfo::default()))
     }
 
-    pub fn expression(
-        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
+    pub fn expression(expression: Expression<M>, implicit_return: bool, span: M::Span) -> Self {
+        Self::ExpressionStatement(ExpressionStatement::new(
+            expression,
+            implicit_return,
+            span,
+            M::TyInfo::default(),
+        ))
+    }
+}
+
+ast_node2! {
+    Return<M> {
+        value: Expression<M>,
+        span,
+        ty_info,
+    }
+}
+
+ast_node2! {
+    Let<M> {
+        binding: M::IdentIdentifier,
+        value: Expression<M>,
+        span,
+        ty_info,
+    }
+}
+
+ast_node2! {
+    ExpressionStatement<M> {
+        expression: Expression<M>,
         implicit_return: bool,
-        span: Span,
-    ) -> Self {
-        Self::Expression(ExpressionStatement::new(expression, implicit_return, span))
+        span,
+        ty_info,
     }
 }
 
-ast_node! {
-    typed struct ReturnStatement<TyInfo, FnIdentifier, IdentIdentifier> {
-        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
+ast_node2! {
+    Break<M> {
+        span,
+        ty_info,
     }
 }
 
-ast_node! {
-    typed struct LetStatement<TyInfo, FnIdentifier, IdentIdentifier> {
-        binding: IdentIdentifier,
-        value: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
-    }
-}
-
-ast_node! {
-    typed struct ExpressionStatement<TyInfo, FnIdentifier, IdentIdentifier> {
-        expression: Expression<TyInfo, FnIdentifier, IdentIdentifier>,
-        implicit_return: bool,
-    }
-}
-
-ast_node! {
-    typed struct BreakStatement<TyInfo> {
-    }
-}
-
-ast_node! {
-    typed struct ContinueStatement<TyInfo> {
+ast_node2! {
+    Continue<TyInfo> {
+        span,
+        ty_info,
     }
 }

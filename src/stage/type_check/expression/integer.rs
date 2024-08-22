@@ -23,7 +23,7 @@ mod test_integer {
     #[test]
     fn integer_infer() {
         assert_eq!(
-            Integer::new(0, Span::default())
+            Integer::new(0, Span::default(), Default::default())
                 .ty_solve()
                 .unwrap()
                 .ty_info
@@ -35,7 +35,7 @@ mod test_integer {
     #[test]
     fn integer_return() {
         assert_eq!(
-            Integer::new(0, Span::default())
+            Integer::new(0, Span::default(), Default::default())
                 .ty_solve()
                 .unwrap()
                 .ty_info

@@ -36,6 +36,7 @@ pub fn parse_if(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<If, P
         success,
         otherwise,
         span_start..span_end,
+        Default::default(),
     ))
 }
 

@@ -11,8 +11,8 @@ impl parse_ast::Statement {
         Ok(match self {
             parse_ast::Statement::Return(s) => Statement::Return(s.ty_solve(compiler, scope)?),
             parse_ast::Statement::Let(s) => Statement::Let(s.ty_solve(compiler, scope)?),
-            parse_ast::Statement::Expression(s) => {
-                Statement::Expression(s.ty_solve(compiler, scope)?)
+            parse_ast::Statement::ExpressionStatement(s) => {
+                Statement::ExpressionStatement(s.ty_solve(compiler, scope)?)
             }
             parse_ast::Statement::Break(s) => Statement::Break(s.ty_solve(compiler, scope)?),
             parse_ast::Statement::Continue(s) => Statement::Continue(s.ty_solve(compiler, scope)?),

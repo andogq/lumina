@@ -1,12 +1,13 @@
-use crate::{ast_node, repr::ty::Ty};
+use crate::{ast_node2, repr::ty::Ty};
 
 use super::*;
 
-ast_node! {
-    struct Function<TyInfo, FnIdentifier, IdentIdentifier> {
-        name: FnIdentifier,
-        parameters: Vec<(IdentIdentifier, Ty)>,
+ast_node2! {
+    Function<M> {
+        name: M::FnIdentifier,
+        parameters: Vec<(M::IdentIdentifier, Ty)>,
         return_ty: Ty,
-        body: Block<TyInfo, FnIdentifier, IdentIdentifier>,
+        body: Block<M>,
+        span,
     }
 }

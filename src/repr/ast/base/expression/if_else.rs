@@ -1,11 +1,13 @@
-use crate::ast_node;
+use crate::ast_node2;
 
 use super::*;
 
-ast_node! {
-    typed struct If<TyInfo, FnIdentifier, IdentIdentifier> {
-        condition: Box<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
-        success: Block<TyInfo, FnIdentifier, IdentIdentifier>,
-        otherwise: Option<Block<TyInfo, FnIdentifier, IdentIdentifier>>,
+ast_node2! {
+    If<M> {
+        condition: Box<Expression<M>>,
+        success: Block<M>,
+        otherwise: Option<Block<M>>,
+        span,
+        ty_info,
     }
 }

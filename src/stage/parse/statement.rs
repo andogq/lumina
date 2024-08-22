@@ -1,4 +1,4 @@
-use crate::repr::ast::base::{BreakStatement, ContinueStatement};
+use crate::repr::ast::base::{Break, Continue};
 
 use super::*;
 
@@ -19,7 +19,7 @@ pub fn parse_statement(
             // Build the span
             let span = return_span.start..value.span().end;
 
-            Statement::Return(ReturnStatement::new(value, span))
+            Statement::Return(ReturnStatement::new(value, span, Default::default()))
         }
         Token::Let => {
             // let token
@@ -57,24 +57,25 @@ pub fn parse_statement(
                 compiler.symbols.get_or_intern(name),
                 value,
                 span,
+                Default::default(),
             ))
         }
         Token::Break => {
             let (_, break_span) = tokens.next_spanned().unwrap();
 
-            Statement::Break(BreakStatement::new(break_span))
+            Statement::Break(Break::new(break_span, Default::default()))
         }
         Token::Continue => {
             let (_, continue_span) = tokens.next_spanned().unwrap();
 
-            Statement::Continue(ContinueStatement::new(continue_span))
+            Statement::Continue(Continue::new(continue_span, Default::default()))
         }
         _ => {
             // Parse expression
             let expression = parse_expression(compiler, tokens, Precedence::Lowest)?;
             let span = expression.span().clone();
 
-            Statement::Expression(ExpressionStatement::new(
+            Statement::ExpressionStatement(ExpressionStatement::new(
                 expression,
                 if matches!(tokens.peek_token().unwrap(), Token::SemiColon) {
                     false
@@ -84,6 +85,7 @@ pub fn parse_statement(
                     true
                 },
                 span,
+                Default::default(),
             ))
         }
     };

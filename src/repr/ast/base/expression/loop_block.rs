@@ -1,9 +1,11 @@
-use crate::ast_node;
+use crate::ast_node2;
 
 use super::*;
 
-ast_node! {
-    typed struct Loop<TyInfo, FnIdentifier, IdentIdentifier> {
-        body: Block<TyInfo, FnIdentifier, IdentIdentifier>,
+ast_node2! {
+    Loop<M> {
+        body: Block<M>,
+        span,
+        ty_info,
     }
 }

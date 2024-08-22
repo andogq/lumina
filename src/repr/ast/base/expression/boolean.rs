@@ -1,7 +1,9 @@
-use crate::ast_node;
+use crate::ast_node2;
 
-ast_node! {
-    typed struct Boolean<TyInfo> {
+ast_node2! {
+    Boolean<M> {
         value: bool,
+        span,
+        ty_info,
     }
 }

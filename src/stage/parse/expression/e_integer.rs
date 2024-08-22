@@ -5,7 +5,7 @@ pub fn parse_integer(
     tokens: &mut Lexer<'_>,
 ) -> Result<Integer, ParseError> {
     match tokens.next_spanned().unwrap() {
-        (Token::Integer(value), span) => Ok(Integer::new(value, span)),
+        (Token::Integer(value), span) => Ok(Integer::new(value, span, Default::default())),
         (token, _) => Err(ParseError::ExpectedToken {
             expected: Box::new(Token::Integer(0)),
             found: Box::new(token),

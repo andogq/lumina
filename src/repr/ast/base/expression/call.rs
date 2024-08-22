@@ -1,10 +1,12 @@
-use crate::ast_node;
+use crate::ast_node2;
 
 use super::*;
 
-ast_node! {
-    typed struct Call<TyInfo, FnIdentifier, IdentIdentifier> {
-        name: FnIdentifier,
-        args: Vec<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
+ast_node2! {
+    Call<M> {
+        name: M::FnIdentifier,
+        args: Vec<Expression<M>>,
+        span,
+        ty_info,
     }
 }

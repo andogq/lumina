@@ -1,9 +1,11 @@
 use super::*;
-use crate::ast_node;
+use crate::ast_node2;
 
-ast_node! {
-    typed struct Assign<TyInfo, FnIdentifier, IdentIdentifier> {
-        binding: IdentIdentifier,
-        value: Box<Expression<TyInfo, FnIdentifier, IdentIdentifier>>,
+ast_node2! {
+    Assign<M> {
+        binding: M::IdentIdentifier,
+        value: Box<Expression<M>>,
+        span,
+        ty_info,
     }
 }

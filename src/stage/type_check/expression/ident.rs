@@ -40,7 +40,7 @@ mod test_ident {
         let mut scope = Scope::new();
         scope.register(symbol, Ty::Int);
 
-        let i = Ident::new(symbol, Span::default());
+        let i = Ident::new(symbol, Span::default(), Default::default());
 
         // Run the type solve
         let ty_info = i
@@ -54,7 +54,11 @@ mod test_ident {
 
     #[test]
     fn ident_infer_missing() {
-        let i = Ident::new(Symbol::try_from_usize(0).unwrap(), Span::default());
+        let i = Ident::new(
+            Symbol::try_from_usize(0).unwrap(),
+            Span::default(),
+            Default::default(),
+        );
 
         let result = i.ty_solve(&mut Compiler::default(), &mut Scope::new());
 

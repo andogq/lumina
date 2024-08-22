@@ -1,8 +1,10 @@
 use super::*;
-use crate::ast_node;
+use crate::ast_node2;
 
-ast_node! {
-    typed struct Block<TyInfo, FnIdentifier, IdentIdentifier> {
-        statements: Vec<Statement<TyInfo, FnIdentifier, IdentIdentifier>>,
+ast_node2! {
+    Block<M> {
+        statements: Vec<Statement<M>>,
+        span,
+        ty_info,
     }
 }

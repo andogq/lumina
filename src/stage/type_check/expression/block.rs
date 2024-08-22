@@ -81,6 +81,7 @@ mod test {
                 Statement::_return(Expression::integer(1, Span::default()), Span::default()),
             ],
             Span::default(),
+            Default::default(),
         );
 
         let ty_info = b
@@ -116,6 +117,7 @@ mod test {
                 Statement::_return(Expression::boolean(true, Span::default()), Span::default()),
             ],
             Span::default(),
+            Default::default(),
         );
 
         let result = b.ty_solve(&mut Compiler::default(), &mut Scope::new());
@@ -143,6 +145,7 @@ mod test {
                 ),
             ],
             Span::default(),
+            Default::default(),
         );
 
         let ty_info = b

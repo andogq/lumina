@@ -6,6 +6,7 @@ mod statement;
 use itertools::Itertools;
 
 use crate::compiler::Symbol;
+use crate::repr::ast::base::AstMetadata;
 use crate::repr::ast::{base as base_ast, typed::*, untyped as parse_ast};
 use crate::repr::ty::Ty;
 
@@ -15,10 +16,8 @@ pub struct FunctionSignature {
     pub return_ty: Ty,
 }
 
-impl<TyInfo, FnIdentifier, IdentIdentifier>
-    From<&base_ast::Function<TyInfo, FnIdentifier, IdentIdentifier>> for FunctionSignature
-{
-    fn from(function: &base_ast::Function<TyInfo, FnIdentifier, IdentIdentifier>) -> Self {
+impl<M: AstMetadata> From<&base_ast::Function<M>> for FunctionSignature {
+    fn from(function: &base_ast::Function<M>) -> Self {
         Self {
             arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
             return_ty: function.return_ty,
