@@ -16,6 +16,14 @@ pub enum Token {
     DoubleEq,
     #[token("!=")]
     NotEq,
+    #[token("<")]
+    LeftAngle,
+    #[token(">")]
+    RightAngle,
+    #[token("<=")]
+    LeftAngleEq,
+    #[token(">=")]
+    RightAngleEq,
     #[token("&&")]
     And,
     #[token("||")]
@@ -120,6 +128,10 @@ impl Display for Token {
             Token::NotEq => write!(f, "!="),
             Token::And => write!(f, "&&"),
             Token::Or => write!(f, "||"),
+            Token::LeftAngle => write!(f, "<"),
+            Token::RightAngle => write!(f, ">"),
+            Token::LeftAngleEq => write!(f, "<="),
+            Token::RightAngleEq => write!(f, ">="),
             Token::Eq => write!(f, "="),
             Token::AddAssign => write!(f, "+="),
             Token::MinusAssign => write!(f, "-="),

@@ -30,7 +30,12 @@ impl Precedence {
         match token {
             Token::Minus | Token::Plus => Precedence::Sum,
             Token::And | Token::Or => Precedence::Binary,
-            Token::DoubleEq | Token::NotEq => Precedence::Equality,
+            Token::DoubleEq
+            | Token::NotEq
+            | Token::LeftAngle
+            | Token::RightAngle
+            | Token::LeftAngleEq
+            | Token::RightAngleEq => Precedence::Equality,
             Token::LeftParen => Precedence::Call,
             _ => Precedence::Lowest,
         }

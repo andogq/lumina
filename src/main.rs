@@ -24,7 +24,7 @@ fn main() {
         }
 
         fn fib2(n: int) -> int {
-            if n == 0 || n == 1 {
+            if n <= 1 {
                 return n;
             }
 
@@ -35,7 +35,7 @@ fn main() {
             let n = 0;
             let counter = 0;
             loop {
-                if counter == 20 {
+                if counter >= 20 {
                     break;
                 }
 

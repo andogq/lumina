@@ -273,6 +273,22 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
                 .unwrap(),
             BinaryOp::And => self.builder.build_and(lhs, rhs, "and_result").unwrap(),
             BinaryOp::Or => self.builder.build_or(lhs, rhs, "or_result").unwrap(),
+            BinaryOp::Greater => self
+                .builder
+                .build_int_compare(IntPredicate::SGT, lhs, rhs, "greater_result")
+                .unwrap(),
+            BinaryOp::Less => self
+                .builder
+                .build_int_compare(IntPredicate::SLT, lhs, rhs, "less_result")
+                .unwrap(),
+            BinaryOp::GreaterEq => self
+                .builder
+                .build_int_compare(IntPredicate::SGE, lhs, rhs, "greater_eq_result")
+                .unwrap(),
+            BinaryOp::LessEq => self
+                .builder
+                .build_int_compare(IntPredicate::SLE, lhs, rhs, "less_eq_result")
+                .unwrap(),
         }
     }
 

@@ -9,7 +9,11 @@ impl InfixOperation {
 
         match (self, left, right) {
             (Plus | Minus, Ty::Int, Ty::Int) => Ok(Ty::Int),
-            (Eq | NotEq, left, right) if left.check(right) => Ok(Ty::Boolean),
+            (Eq | NotEq | Greater | Less | GreaterEq | LessEq, left, right)
+                if left.check(right) =>
+            {
+                Ok(Ty::Boolean)
+            }
             (And | Or, Ty::Boolean, Ty::Boolean) => Ok(Ty::Boolean),
             (_, left, right) => Err(TyError::Mismatch(*left, *right)),
         }

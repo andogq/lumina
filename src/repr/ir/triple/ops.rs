@@ -6,6 +6,10 @@ pub enum BinaryOp {
     Sub,
     Eq,
     NotEq,
+    Greater,
+    Less,
+    GreaterEq,
+    LessEq,
     And,
     Or,
 }
@@ -17,6 +21,10 @@ impl From<&ast::InfixOperation> for BinaryOp {
             ast::InfixOperation::Minus => Self::Sub,
             ast::InfixOperation::Eq => Self::Eq,
             ast::InfixOperation::NotEq => Self::NotEq,
+            ast::InfixOperation::Greater => Self::Greater,
+            ast::InfixOperation::Less => Self::Less,
+            ast::InfixOperation::GreaterEq => Self::GreaterEq,
+            ast::InfixOperation::LessEq => Self::LessEq,
             ast::InfixOperation::And => Self::And,
             ast::InfixOperation::Or => Self::Or,
         }
