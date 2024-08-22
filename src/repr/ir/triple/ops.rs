@@ -4,6 +4,8 @@ use crate::repr::ast::typed as ast;
 pub enum BinaryOp {
     Add,
     Sub,
+    Multiply,
+    Divide,
     Eq,
     NotEq,
     Greater,
@@ -19,6 +21,8 @@ impl From<&ast::InfixOperation> for BinaryOp {
         match value {
             ast::InfixOperation::Plus => Self::Add,
             ast::InfixOperation::Minus => Self::Sub,
+            ast::InfixOperation::Multiply => Self::Multiply,
+            ast::InfixOperation::Divide => Self::Divide,
             ast::InfixOperation::Eq => Self::Eq,
             ast::InfixOperation::NotEq => Self::NotEq,
             ast::InfixOperation::Greater => Self::Greater,

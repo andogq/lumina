@@ -263,6 +263,11 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
         match op {
             BinaryOp::Add => self.builder.build_int_add(lhs, rhs, "add_result").unwrap(),
             BinaryOp::Sub => self.builder.build_int_sub(lhs, rhs, "sub_result").unwrap(),
+            BinaryOp::Multiply => self.builder.build_int_mul(lhs, rhs, "mul_result").unwrap(),
+            BinaryOp::Divide => self
+                .builder
+                .build_int_signed_div(lhs, rhs, "div_result")
+                .unwrap(),
             BinaryOp::Eq => self
                 .builder
                 .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq_result")

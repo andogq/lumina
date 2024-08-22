@@ -35,13 +35,13 @@ fn main() {
             let n = 0;
             let counter = 0;
             loop {
-                if counter >= 20 {
+                if counter >= 2 * 2 * 10 / 2 {
                     break;
                 }
 
                 counter += 1;
 
-                if counter == 10 {
+                if counter == 2 * 5 {
                     continue;
                 }
 
@@ -49,7 +49,7 @@ fn main() {
             }
 
             let result1 = fib1(n);
-            let result2 = fib2(19);
+            let result2 = fib2(38 / 2);
 
             if result1 == result2 {
                 return result1;

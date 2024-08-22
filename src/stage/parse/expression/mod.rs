@@ -22,6 +22,7 @@ pub enum Precedence {
     Binary,
     Equality,
     Sum,
+    Multiply,
     Call,
 }
 
@@ -29,6 +30,7 @@ impl Precedence {
     pub fn of(token: &Token) -> Self {
         match token {
             Token::Minus | Token::Plus => Precedence::Sum,
+            Token::Asterix | Token::ForwardSlash => Precedence::Multiply,
             Token::And | Token::Or => Precedence::Binary,
             Token::DoubleEq
             | Token::NotEq

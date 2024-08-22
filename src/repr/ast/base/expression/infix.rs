@@ -6,6 +6,8 @@ use super::Expression;
 pub enum InfixOperation {
     Minus,
     Plus,
+    Multiply,
+    Divide,
     Eq,
     NotEq,
     Greater,
@@ -33,6 +35,8 @@ impl TryFrom<Token> for InfixOperation {
         match token {
             Token::Plus => Ok(InfixOperation::Plus),
             Token::Minus => Ok(InfixOperation::Minus),
+            Token::Asterix => Ok(InfixOperation::Multiply),
+            Token::ForwardSlash => Ok(InfixOperation::Divide),
             Token::DoubleEq => Ok(InfixOperation::Eq),
             Token::NotEq => Ok(InfixOperation::NotEq),
             Token::LeftAngle => Ok(InfixOperation::Less),

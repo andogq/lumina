@@ -12,6 +12,10 @@ pub enum Token {
     Plus,
     #[token("-")]
     Minus,
+    #[token("*")]
+    Asterix,
+    #[token("/")]
+    ForwardSlash,
     #[token("==")]
     DoubleEq,
     #[token("!=")]
@@ -124,6 +128,8 @@ impl Display for Token {
         match self {
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
+            Token::Asterix => write!(f, "*"),
+            Token::ForwardSlash => write!(f, "/"),
             Token::DoubleEq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
             Token::And => write!(f, "&&"),

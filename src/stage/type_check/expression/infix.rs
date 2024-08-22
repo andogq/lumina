@@ -8,7 +8,7 @@ impl InfixOperation {
         use InfixOperation::*;
 
         match (self, left, right) {
-            (Plus | Minus, Ty::Int, Ty::Int) => Ok(Ty::Int),
+            (Plus | Minus | Multiply | Divide, Ty::Int, Ty::Int) => Ok(Ty::Int),
             (Eq | NotEq | Greater | Less | GreaterEq | LessEq, left, right)
                 if left.check(right) =>
             {
