@@ -55,6 +55,8 @@ pub fn parse_op_assign(
     let operation = match tokens.next_token().unwrap() {
         Token::AddAssign => InfixOperation::Plus,
         Token::MinusAssign => InfixOperation::Minus,
+        Token::MulAssign => InfixOperation::Multiply,
+        Token::DivAssign => InfixOperation::Divide,
         token => {
             return Err(ParseError::UnexpectedToken(token));
         }
