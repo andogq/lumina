@@ -57,6 +57,7 @@ fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expre
         Token::True => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
         Token::False => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
         Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, tokens)?)),
+        Token::LeftParen => parse_grouped(compiler, tokens),
         Token::If => Ok(Expression::If(parse_if(compiler, tokens)?)),
         Token::Loop => Ok(Expression::Loop(parse_loop(compiler, tokens)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
@@ -143,9 +144,40 @@ pub fn parse_expression(
     Ok(left)
 }
 
+fn parse_grouped(compiler: &mut Compiler, tokens: &mut Lexer) -> Result<Expression, ParseError> {
+    let span_start = match tokens.next_spanned().unwrap() {
+        (Token::LeftParen, span) => span.start,
+        (token, _) => {
+            return Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::LeftBrace),
+                found: Box::new(token),
+                reason: "open paren for grouped expression".to_string(),
+            });
+        }
+    };
+
+    let e = parse_expression(compiler, tokens, Precedence::Lowest)?;
+
+    let span_end = match tokens.next_spanned().unwrap() {
+        (Token::RightParen, span) => span.end,
+        (token, _) => {
+            return Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::RightBrace),
+                found: Box::new(token),
+                reason: "close paren must end grouped expression".to_string(),
+            });
+        }
+    };
+
+    // TODO: Need to somehow attach this span to the expression
+    #[allow(unused_variables)]
+    let e_span = span_start..span_end;
+
+    Ok(e)
+}
+
 #[cfg(test)]
 mod test {
-
     use super::*;
 
     use rstest::*;
@@ -678,6 +710,68 @@ mod test {
                     },
                 ),
                 span: 0..11,
+                ty_info: None,
+            },
+        )
+        "###);
+    }
+
+    #[rstest]
+    fn grouped_expression(mut mock_compiler: Compiler) {
+        let expression = parse_expression(
+            &mut mock_compiler,
+            &mut "1 * (2 + 3) * 4".into(),
+            Precedence::Lowest,
+        )
+        .unwrap();
+
+        insta::assert_debug_snapshot!(expression, @r###"
+        Infix(
+            Infix {
+                left: Infix(
+                    Infix {
+                        left: Integer(
+                            Integer {
+                                value: 1,
+                                span: 0..1,
+                                ty_info: None,
+                            },
+                        ),
+                        operation: Multiply,
+                        right: Infix(
+                            Infix {
+                                left: Integer(
+                                    Integer {
+                                        value: 2,
+                                        span: 5..6,
+                                        ty_info: None,
+                                    },
+                                ),
+                                operation: Plus,
+                                right: Integer(
+                                    Integer {
+                                        value: 3,
+                                        span: 9..10,
+                                        ty_info: None,
+                                    },
+                                ),
+                                span: 5..10,
+                                ty_info: None,
+                            },
+                        ),
+                        span: 0..10,
+                        ty_info: None,
+                    },
+                ),
+                operation: Multiply,
+                right: Integer(
+                    Integer {
+                        value: 4,
+                        span: 14..15,
+                        ty_info: None,
+                    },
+                ),
+                span: 0..15,
                 ty_info: None,
             },
         )
