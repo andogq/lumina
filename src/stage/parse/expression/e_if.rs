@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_if(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<If, ParseError> {
-    let span_start = match tokens.next_spanned().unwrap() {
+pub fn parse_if(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<If, ParseError> {
+    let span_start = match lexer.next_spanned().unwrap() {
         (Token::If, span) => span.start,
         (token, _) => {
             return Err(ParseError::ExpectedToken {
@@ -12,14 +12,14 @@ pub fn parse_if(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<If, P
         }
     };
 
-    let condition = parse_expression(compiler, tokens, Precedence::Lowest)?;
+    let condition = parse_expression(compiler, lexer, Precedence::Lowest)?;
 
-    let success = parse_block(compiler, tokens)?;
+    let success = parse_block(compiler, lexer)?;
 
-    let otherwise = if matches!(tokens.peek_token(), Some(Token::Else)) {
-        tokens.next_token().unwrap();
+    let otherwise = if matches!(lexer.peek_token(), Some(Token::Else)) {
+        lexer.next_token().unwrap();
 
-        let otherwise = parse_block(compiler, tokens)?;
+        let otherwise = parse_block(compiler, lexer)?;
 
         Some(otherwise)
     } else {

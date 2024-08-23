@@ -44,108 +44,129 @@ impl Precedence {
     }
 }
 
-fn parse_prefix(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Expression, ParseError> {
-    match tokens.peek_token().unwrap().clone() {
-        Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, tokens)?)),
-        Token::Ident(_) => match tokens.double_peek_token() {
-            Some(Token::Eq) => Ok(Expression::Assign(parse_assign(compiler, tokens)?)),
+fn parse_prefix(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Expression, ParseError> {
+    match lexer.peek_token().unwrap().clone() {
+        Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, lexer)?)),
+        Token::Ident(_) => match lexer.double_peek_token() {
+            Some(Token::Eq) => Ok(Expression::Assign(parse_assign(compiler, lexer)?)),
             Some(Token::AddAssign | Token::MinusAssign) => {
-                Ok(Expression::Assign(parse_op_assign(compiler, tokens)?))
+                Ok(Expression::Assign(parse_op_assign(compiler, lexer)?))
             }
-            _ => Ok(Expression::Ident(parse_ident(compiler, tokens)?)),
+            _ => Ok(Expression::Ident(parse_ident(compiler, lexer)?)),
         },
-        Token::True => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
-        Token::False => Ok(Expression::Boolean(parse_boolean(compiler, tokens)?)),
-        Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, tokens)?)),
-        Token::LeftParen => parse_grouped(compiler, tokens),
-        Token::If => Ok(Expression::If(parse_if(compiler, tokens)?)),
-        Token::Loop => Ok(Expression::Loop(parse_loop(compiler, tokens)?)),
+        Token::True => Ok(Expression::Boolean(parse_boolean(compiler, lexer)?)),
+        Token::False => Ok(Expression::Boolean(parse_boolean(compiler, lexer)?)),
+        Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, lexer)?)),
+        Token::LeftParen => parse_grouped(compiler, lexer),
+        Token::If => Ok(Expression::If(parse_if(compiler, lexer)?)),
+        Token::Loop => Ok(Expression::Loop(parse_loop(compiler, lexer)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
     }
 }
 
 pub fn parse_expression(
     compiler: &mut Compiler,
-    tokens: &mut Lexer<'_>,
+    lexer: &mut Lexer<'_>,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
-    let mut left = parse_prefix(compiler, tokens)?;
+    let mut left = parse_prefix(compiler, lexer)?;
 
-    while tokens.peek_token().is_some() && precedence < Precedence::of(tokens.peek_token().unwrap())
-    {
-        left = match (left, tokens.peek_token().unwrap()) {
+    while lexer.peek_token().is_some() && precedence < Precedence::of(lexer.peek_token().unwrap()) {
+        left = match (left, lexer.peek_token().unwrap()) {
             // Function call
-            (Expression::Ident(name), Token::LeftParen) => {
-                // Consume the args
-                let args = iter::from_fn(|| {
-                    match tokens.peek_token().unwrap() {
-                        Token::RightParen => None,
-                        Token::LeftParen | Token::Comma => {
-                            // Consume the opening paren or comma
-                            tokens.next_token();
-
-                            // If the closing parenthesis is encountered, stop parsing arguments
-                            if matches!(tokens.peek_token().unwrap(), Token::RightParen) {
-                                return None;
-                            }
-
-                            // Parse the next argument
-                            Some(parse_expression(compiler, tokens, Precedence::Lowest))
-                        }
-                        token => Some(Err(ParseError::ExpectedToken {
-                            expected: Box::new(Token::Comma),
-                            found: Box::new(token.clone()),
-                            reason: "function arguments must be separated by a comma".to_string(),
-                        })),
-                    }
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-
-                // Consume the closing paren
-                let end_span = match tokens.next_spanned().unwrap() {
-                    (Token::RightParen, span) => span,
-                    (token, _) => {
-                        return Err(ParseError::ExpectedToken {
-                            expected: Box::new(Token::RightParen),
-                            found: Box::new(token),
-                            reason: "argument list must end with right paren".to_string(),
-                        })
-                    }
-                };
-
-                let span = name.span.start..end_span.end;
-                Expression::Call(Call::new(name.binding, args, span, Default::default()))
+            (Expression::Ident(ident), Token::LeftParen) => {
+                parse_function_call(compiler, lexer, ident)?
             }
+
             // Regular infix operation
-            (left, token) => {
-                if let Ok(operation) = InfixOperation::try_from(token.clone()) {
-                    let token = tokens.next_token().unwrap();
-                    let precedence = Precedence::of(&token);
-
-                    let right = parse_expression(compiler, tokens, precedence)?;
-
-                    let span = left.span().start..right.span().end;
-
-                    Expression::Infix(Infix::new(
-                        Box::new(left),
-                        operation,
-                        Box::new(right),
-                        span,
-                        Default::default(),
-                    ))
-                } else {
-                    // Probably aren't in the expression any more
-                    return Ok(left);
-                }
-            }
+            (left, _) => parse_infix(compiler, lexer, left)?,
         };
     }
 
     Ok(left)
 }
 
-fn parse_grouped(compiler: &mut Compiler, tokens: &mut Lexer) -> Result<Expression, ParseError> {
-    let span_start = match tokens.next_spanned().unwrap() {
+fn parse_function_call(
+    compiler: &mut Compiler,
+    lexer: &mut Lexer,
+    ident: Ident,
+) -> Result<Expression, ParseError> {
+    // Consume the args
+    let args = iter::from_fn(|| {
+        match lexer.peek_token().unwrap() {
+            Token::RightParen => None,
+            Token::LeftParen | Token::Comma => {
+                // Consume the opening paren or comma
+                lexer.next_token();
+
+                // If the closing parenthesis is encountered, stop parsing arguments
+                if matches!(lexer.peek_token().unwrap(), Token::RightParen) {
+                    return None;
+                }
+
+                // Parse the next argument
+                Some(parse_expression(compiler, lexer, Precedence::Lowest))
+            }
+            token => Some(Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::Comma),
+                found: Box::new(token.clone()),
+                reason: "function arguments must be separated by a comma".to_string(),
+            })),
+        }
+    })
+    .collect::<Result<Vec<_>, _>>()?;
+
+    // Consume the closing paren
+    let end_span = match lexer.next_spanned().unwrap() {
+        (Token::RightParen, span) => span,
+        (token, _) => {
+            return Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::RightParen),
+                found: Box::new(token),
+                reason: "argument list must end with right paren".to_string(),
+            })
+        }
+    };
+
+    let span = ident.span.start..end_span.end;
+    Ok(Expression::Call(Call::new(
+        ident.binding,
+        args,
+        span,
+        Default::default(),
+    )))
+}
+
+fn parse_infix(
+    compiler: &mut Compiler,
+    lexer: &mut Lexer,
+    left: Expression,
+) -> Result<Expression, ParseError> {
+    let token = lexer.next_token().unwrap();
+
+    Ok(
+        if let Ok(operation) = InfixOperation::try_from(token.clone()) {
+            let precedence = Precedence::of(&token);
+
+            let right = parse_expression(compiler, lexer, precedence)?;
+
+            let span = left.span().start..right.span().end;
+
+            Expression::Infix(Infix::new(
+                Box::new(left),
+                operation,
+                Box::new(right),
+                span,
+                Default::default(),
+            ))
+        } else {
+            left
+        },
+    )
+}
+
+fn parse_grouped(compiler: &mut Compiler, lexer: &mut Lexer) -> Result<Expression, ParseError> {
+    let span_start = match lexer.next_spanned().unwrap() {
         (Token::LeftParen, span) => span.start,
         (token, _) => {
             return Err(ParseError::ExpectedToken {
@@ -156,9 +177,9 @@ fn parse_grouped(compiler: &mut Compiler, tokens: &mut Lexer) -> Result<Expressi
         }
     };
 
-    let e = parse_expression(compiler, tokens, Precedence::Lowest)?;
+    let e = parse_expression(compiler, lexer, Precedence::Lowest)?;
 
-    let span_end = match tokens.next_spanned().unwrap() {
+    let span_end = match lexer.next_spanned().unwrap() {
         (Token::RightParen, span) => span.end,
         (token, _) => {
             return Err(ParseError::ExpectedToken {

@@ -2,9 +2,9 @@ use super::*;
 
 pub fn parse_integer(
     _compiler: &mut Compiler,
-    tokens: &mut Lexer<'_>,
+    lexer: &mut Lexer<'_>,
 ) -> Result<Integer, ParseError> {
-    match tokens.next_spanned().unwrap() {
+    match lexer.next_spanned().unwrap() {
         (Token::Integer(value), span) => Ok(Integer::new(value, span, Default::default())),
         (token, _) => Err(ParseError::ExpectedToken {
             expected: Box::new(Token::Integer(0)),

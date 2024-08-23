@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_ident(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Ident, ParseError> {
-    match tokens.next_spanned().unwrap() {
+pub fn parse_ident(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Ident, ParseError> {
+    match lexer.next_spanned().unwrap() {
         (Token::Ident(ident), span) => Ok(Ident::new(
             compiler.symbols.get_or_intern(ident),
             span,

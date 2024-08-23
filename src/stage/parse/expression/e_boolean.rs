@@ -2,9 +2,9 @@ use super::*;
 
 pub fn parse_boolean(
     _compiler: &mut Compiler,
-    tokens: &mut Lexer<'_>,
+    lexer: &mut Lexer<'_>,
 ) -> Result<Boolean, ParseError> {
-    match tokens.next_spanned().unwrap() {
+    match lexer.next_spanned().unwrap() {
         (Token::True, span) => Ok(Boolean::new(true, span, Default::default())),
         (Token::False, span) => Ok(Boolean::new(false, span, Default::default())),
         (token, _) => {

@@ -1,7 +1,7 @@
 pub use super::*;
 
-pub fn parse_assign(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Assign, ParseError> {
-    let (binding, span_start) = match tokens.next_spanned().unwrap() {
+pub fn parse_assign(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Assign, ParseError> {
+    let (binding, span_start) = match lexer.next_spanned().unwrap() {
         (Token::Ident(ident), span) => (ident, span),
         (token, _) => {
             return Err(ParseError::ExpectedToken {
@@ -14,7 +14,7 @@ pub fn parse_assign(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<A
 
     let binding = compiler.symbols.get_or_intern(binding);
 
-    match tokens.next_token().unwrap() {
+    match lexer.next_token().unwrap() {
         Token::Eq => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -25,7 +25,7 @@ pub fn parse_assign(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<A
         }
     }
 
-    let value = parse_expression(compiler, tokens, Precedence::Lowest)?;
+    let value = parse_expression(compiler, lexer, Precedence::Lowest)?;
 
     Ok(Assign {
         span: span_start.start..value.span().end,
@@ -37,9 +37,9 @@ pub fn parse_assign(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<A
 
 pub fn parse_op_assign(
     compiler: &mut Compiler,
-    tokens: &mut Lexer<'_>,
+    lexer: &mut Lexer<'_>,
 ) -> Result<Assign, ParseError> {
-    let (binding, binding_span) = match tokens.next_spanned().unwrap() {
+    let (binding, binding_span) = match lexer.next_spanned().unwrap() {
         (Token::Ident(ident), span) => (ident, span),
         (token, _) => {
             return Err(ParseError::ExpectedToken {
@@ -52,7 +52,7 @@ pub fn parse_op_assign(
 
     let binding = compiler.symbols.get_or_intern(binding);
 
-    let operation = match tokens.next_token().unwrap() {
+    let operation = match lexer.next_token().unwrap() {
         Token::AddAssign => InfixOperation::Plus,
         Token::MinusAssign => InfixOperation::Minus,
         Token::MulAssign => InfixOperation::Multiply,
@@ -62,7 +62,7 @@ pub fn parse_op_assign(
         }
     };
 
-    let right = parse_expression(compiler, tokens, Precedence::Lowest)?;
+    let right = parse_expression(compiler, lexer, Precedence::Lowest)?;
 
     Ok(Assign {
         span: binding_span.start..right.span().end,

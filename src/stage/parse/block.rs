@@ -1,7 +1,7 @@
 use super::*;
 
-pub fn parse_block(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Block, ParseError> {
-    let span_start = match tokens.next_spanned().unwrap() {
+pub fn parse_block(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Block, ParseError> {
+    let span_start = match lexer.next_spanned().unwrap() {
         (Token::LeftBrace, span) => span.start,
         (token, _) => {
             return Err(ParseError::ExpectedToken {
@@ -12,14 +12,14 @@ pub fn parse_block(compiler: &mut Compiler, tokens: &mut Lexer<'_>) -> Result<Bl
         }
     };
 
-    let statements = std::iter::from_fn(|| match tokens.peek_token().unwrap() {
+    let statements = std::iter::from_fn(|| match lexer.peek_token().unwrap() {
         Token::RightBrace => None,
-        _ => Some(parse_statement(compiler, tokens)),
+        _ => Some(parse_statement(compiler, lexer)),
     })
     .collect::<Result<Vec<_>, _>>()?;
 
     // Consume the right brace that just stopped us
-    let span_end = match tokens.next_spanned().unwrap() {
+    let span_end = match lexer.next_spanned().unwrap() {
         (Token::RightBrace, span) => span.end,
         (token, _) => {
             return Err(ParseError::ExpectedToken {
