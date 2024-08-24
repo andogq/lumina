@@ -173,7 +173,7 @@ fn lower_block(
                 value,
                 ..
             }) => {
-                builder.register_scoped(*name, value.get_ty_info().ty);
+                builder.register_scoped(*name, value.get_ty_info().ty.clone());
 
                 let value = lower_expression(compiler, builder, value).unwrap();
                 builder.add_triple(Triple::Assign(*name, value));

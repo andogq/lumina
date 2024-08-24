@@ -16,7 +16,7 @@ impl parse_ast::Function {
         let parameters = self
             .parameters
             .iter()
-            .map(|(symbol, ty)| (scope.register(*symbol, *ty), *ty))
+            .map(|(symbol, ty)| (scope.register(*symbol, ty.clone()), ty.clone()))
             .collect();
 
         // Type check the body, allowing it to use the function's scope
@@ -34,9 +34,9 @@ impl parse_ast::Function {
             .for_each(|(binding, symbol, ty)| function.register_binding(binding, symbol, ty));
 
         // If the body contains any return statements, they must match the annotated return statement
-        if let Some(return_ty) = body.ty_info.return_ty {
-            if !self.return_ty.check(&return_ty) {
-                return Err(TyError::Mismatch(self.return_ty, return_ty));
+        if let Some(return_ty) = &body.ty_info.return_ty {
+            if !self.return_ty.check(return_ty) {
+                return Err(TyError::Mismatch(self.return_ty, return_ty.clone()));
             }
         }
 

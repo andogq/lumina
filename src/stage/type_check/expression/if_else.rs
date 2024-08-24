@@ -8,7 +8,7 @@ impl parse_ast::If {
         let condition = self.condition.ty_solve(compiler, scope)?;
         let condition_ty = condition.get_ty_info();
         if !condition_ty.ty.check(&Ty::Boolean) {
-            return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty));
+            return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty.clone()));
         }
 
         let success = self.success.ty_solve(compiler, scope)?;
@@ -20,19 +20,19 @@ impl parse_ast::If {
         let ty_info = TyInfo::try_from((
             // Branches must have the same type
             [
-                success.ty_info.ty,
+                success.ty_info.ty.clone(),
                 otherwise
                     .as_ref()
-                    .map(|otherwise| otherwise.ty_info.ty)
+                    .map(|otherwise| otherwise.ty_info.ty.clone())
                     .unwrap_or(Ty::Unit),
             ],
             // Any potential place for a return statement must be accounted for
             [
-                condition_ty.return_ty,
-                success.ty_info.return_ty,
+                condition_ty.return_ty.clone(),
+                success.ty_info.return_ty.clone(),
                 otherwise
                     .as_ref()
-                    .and_then(|otherwise| otherwise.ty_info.return_ty),
+                    .and_then(|otherwise| otherwise.ty_info.return_ty.clone()),
             ],
         ))?;
 

@@ -15,7 +15,7 @@ impl InfixOperation {
                 Ok(Ty::Boolean)
             }
             (And | Or, Ty::Boolean, Ty::Boolean) => Ok(Ty::Boolean),
-            (_, left, right) => Err(TyError::Mismatch(*left, *right)),
+            (_, left, right) => Err(TyError::Mismatch(left.clone(), right.clone())),
         }
     }
 }
@@ -32,7 +32,10 @@ impl parse_ast::Infix {
             // Resulting type is whatever the infix operator results in
             self.operation
                 .result_ty(&left_ty_info.ty, &right_ty_info.ty)?,
-            [left_ty_info.return_ty, right_ty_info.return_ty],
+            [
+                left_ty_info.return_ty.clone(),
+                right_ty_info.return_ty.clone(),
+            ],
         ))?;
 
         Ok(Infix {

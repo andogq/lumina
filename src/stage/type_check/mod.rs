@@ -19,8 +19,12 @@ pub struct FunctionSignature {
 impl<M: AstMetadata> From<&base_ast::Function<M>> for FunctionSignature {
     fn from(function: &base_ast::Function<M>) -> Self {
         Self {
-            arguments: function.parameters.iter().map(|(_, ty)| *ty).collect(),
-            return_ty: function.return_ty,
+            arguments: function
+                .parameters
+                .iter()
+                .map(|(_, ty)| ty.clone())
+                .collect(),
+            return_ty: function.return_ty.clone(),
         }
     }
 }

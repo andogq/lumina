@@ -33,17 +33,17 @@ impl parse_ast::LetStatement {
         if let Some(ty) = self.ty_info {
             let value_ty = value.get_ty_info();
             if !ty.check(&value_ty.ty) {
-                return Err(TyError::Mismatch(ty, value_ty.ty));
+                return Err(TyError::Mismatch(ty, value_ty.ty.clone()));
             }
         }
 
         // Record the type
-        let binding = scope.register(self.binding, value.get_ty_info().ty);
+        let binding = scope.register(self.binding, value.get_ty_info().ty.clone());
 
         Ok(LetStatement {
             ty_info: TyInfo {
                 ty: Ty::Unit,
-                return_ty: value.get_ty_info().return_ty,
+                return_ty: value.get_ty_info().return_ty.clone(),
             },
             binding,
             value,
@@ -63,7 +63,10 @@ impl parse_ast::ReturnStatement {
         Ok(ReturnStatement {
             ty_info: TyInfo::try_from((
                 Ty::Never,
-                [Some(value.get_ty_info().ty), value.get_ty_info().return_ty],
+                [
+                    Some(value.get_ty_info().ty.clone()),
+                    value.get_ty_info().return_ty.clone(),
+                ],
             ))?,
             value,
             span: self.span,

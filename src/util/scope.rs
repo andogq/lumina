@@ -100,14 +100,16 @@ impl Scope {
                     // Only consider bindings that match the symbol
                     .filter(|(_, (test_symbol, _))| *test_symbol == symbol)
                     // Generate the scoped binding representation to track which scope the binding originated from
-                    .map(move |(binding_idx, (_, ty))| (ScopedBinding(scope_idx, binding_idx), *ty))
+                    .map(move |(binding_idx, (_, ty))| {
+                        (ScopedBinding(scope_idx, binding_idx), ty.clone())
+                    })
             })
             .next_back()
     }
 
     /// Get the information for a binding.
     pub fn get_binding(&self, binding: &ScopedBinding) -> (Symbol, Ty) {
-        self.scopes[binding.0].bindings[binding.1]
+        self.scopes[binding.0].bindings[binding.1].clone()
     }
 
     /// Find the currently activated scope identifier.
@@ -164,13 +166,13 @@ mod test {
         // Convert all the identifier numbers into `Symbol`s.
         let variables = variables
             .iter()
-            .map(|(symbol, ty)| (Symbol::try_from_usize(*symbol).unwrap(), *ty))
+            .map(|(symbol, ty)| (Symbol::try_from_usize(*symbol).unwrap(), ty.clone()))
             .collect::<Vec<_>>();
 
         // Register all of the variables and capture the bindings
         let bindings = variables
             .iter()
-            .map(|(symbol, ty)| scope.register(*symbol, *ty))
+            .map(|(symbol, ty)| scope.register(*symbol, ty.clone()))
             .collect::<Vec<_>>();
 
         // Resolve each of the bindings and verify they match

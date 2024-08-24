@@ -29,7 +29,7 @@ impl parse_ast::Call {
 
         if !args
             .iter()
-            .map(|arg| arg.get_ty_info().ty)
+            .map(|arg| arg.get_ty_info().ty.clone())
             .zip(&signature.arguments)
             .all(|(call, signature)| call == *signature)
         {
@@ -40,9 +40,9 @@ impl parse_ast::Call {
         Ok(Call {
             ty_info: TyInfo::try_from((
                 // Function call's resulting type will be whatever the function returns
-                signature.return_ty,
+                signature.return_ty.clone(),
                 // Ensure all the return types from the arguments are correct
-                args.iter().map(|arg| arg.get_ty_info().return_ty),
+                args.iter().map(|arg| arg.get_ty_info().return_ty.clone()),
             ))?,
             name: function_idx,
             args,

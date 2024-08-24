@@ -11,7 +11,7 @@ impl parse_ast::Assign {
 
         let value = self.value.ty_solve(compiler, scope)?;
 
-        let value_ty = value.get_ty_info().ty;
+        let value_ty = value.get_ty_info().ty.clone();
 
         if value_ty != ty {
             return Err(TyError::Mismatch(ty, value_ty));
@@ -21,7 +21,7 @@ impl parse_ast::Assign {
             binding,
             ty_info: TyInfo {
                 ty: Ty::Unit,
-                return_ty: value.get_ty_info().return_ty,
+                return_ty: value.get_ty_info().return_ty.clone(),
             },
             value: Box::new(value),
             span: self.span,

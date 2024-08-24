@@ -27,11 +27,11 @@ impl parse_ast::Block {
                 //         })
                 //     )
                 // })
-                .map(|s| s.get_ty_info().ty)
+                .map(|s| s.get_ty_info().ty.clone())
                 .unwrap_or(Ty::Unit),
             statements
                 .iter()
-                .map(|statement| statement.get_ty_info().return_ty),
+                .map(|statement| statement.get_ty_info().return_ty.clone()),
         ))?;
 
         // Leave a scope

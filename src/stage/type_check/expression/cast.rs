@@ -5,7 +5,7 @@ impl parse_ast::Cast {
         let value = self.value.ty_solve(compiler, scope)?;
 
         // Make sure that the value can be cast to the desired type
-        match (value.get_ty_info().ty, self.target_ty) {
+        match (value.get_ty_info().ty.clone(), self.target_ty.clone()) {
             // Unsigned integer can become signed
             (Ty::Uint, Ty::Int) => (),
             // Signed integer can loose sign
@@ -14,11 +14,11 @@ impl parse_ast::Cast {
         }
 
         Ok(Cast {
-            target_ty: self.target_ty,
+            target_ty: self.target_ty.clone(),
             span: self.span,
             ty_info: TyInfo {
-                ty: self.target_ty,
-                return_ty: value.get_ty_info().return_ty,
+                ty: self.target_ty.clone(),
+                return_ty: value.get_ty_info().return_ty.clone(),
             },
             value: Box::new(value),
         })
