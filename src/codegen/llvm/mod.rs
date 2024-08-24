@@ -112,6 +112,7 @@ impl ContextExt for Context {
     fn get_ty(&self, ty: &Ty) -> BasicTypeEnum {
         match ty {
             Ty::Int => self.i64_type().into(),
+            Ty::Uint => self.i64_type().into(),
             Ty::Boolean => self.bool_type().into(),
             Ty::Unit => todo!(),
             Ty::Never => todo!(),
@@ -448,15 +449,7 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
         builder.position_at_end(entry);
 
         builder
-            .build_alloca(
-                match ty {
-                    Ty::Int => self.module.llvm_ctx.i64_type(),
-                    Ty::Boolean => self.module.llvm_ctx.bool_type(),
-                    Ty::Unit => todo!(),
-                    Ty::Never => unreachable!("cannot allocate stack space for never type"),
-                },
-                name,
-            )
+            .build_alloca(self.module.llvm_ctx.get_ty(&ty), name)
             .unwrap()
     }
 

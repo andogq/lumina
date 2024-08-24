@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Ty {
     Int,
+    Uint,
     Boolean,
     Unit,
     Never,

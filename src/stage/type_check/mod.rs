@@ -36,6 +36,9 @@ pub enum TyError {
         found: Option<Ty>,
     },
 
+    #[error("cannot cast {0:?} to {1:?}")]
+    Cast(Ty, Ty),
+
     #[error("symbol not found: {0:?}")]
     SymbolNotFound(Symbol),
 }

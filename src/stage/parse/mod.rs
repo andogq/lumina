@@ -2,6 +2,7 @@ mod block;
 mod expression;
 mod function;
 mod statement;
+mod ty;
 
 use std::collections::HashMap;
 use std::iter::Peekable;

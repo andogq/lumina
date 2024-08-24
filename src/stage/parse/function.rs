@@ -1,6 +1,6 @@
 use std::iter;
 
-use crate::repr::ty::Ty;
+use ty::parse_ty;
 
 use super::*;
 
@@ -91,16 +91,10 @@ pub fn parse_function(
                     }
 
                     // Extract the type
-                    let ty = match tokens.next_token().unwrap() {
-                        Token::Int => Ty::Int,
-                        Token::Bool => Ty::Boolean,
-                        token => {
-                            return Some(Err(ParseError::ExpectedToken {
-                                // WARN: This should be any of the primitive type tokens
-                                expected: Box::new(Token::Int),
-                                found: Box::new(token),
-                                reason: "parameter must have a type".to_string(),
-                            }));
+                    let ty = match parse_ty(tokens) {
+                        Ok(ty) => ty,
+                        Err(e) => {
+                            return Some(Err(e));
                         }
                     };
 
@@ -133,18 +127,7 @@ pub fn parse_function(
     }
 
     // return type
-    let return_ty = match tokens.next_token().unwrap() {
-        Token::Int => Ty::Int,
-        Token::Bool => Ty::Boolean,
-        token => {
-            return Err(ParseError::ExpectedToken {
-                // WARN: This should be any of the primitive type tokens
-                expected: Box::new(Token::Int),
-                found: Box::new(token),
-                reason: "return type must follow thin arrow".to_string(),
-            });
-        }
-    };
+    let return_ty = parse_ty(tokens)?;
 
     // Parse out the body
     let body = parse_block(compiler, tokens)?;

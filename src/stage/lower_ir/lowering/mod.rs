@@ -375,5 +375,9 @@ fn lower_expression(
 
             Some(Value::Unit)
         }
+        ast::Expression::Cast(ast::Cast { value, .. }) => {
+            // Directly lower the inner expression, cast is only for the compiler
+            lower_expression(compiler, builder, value)
+        }
     }
 }

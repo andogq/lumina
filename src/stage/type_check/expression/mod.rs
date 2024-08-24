@@ -6,6 +6,7 @@ mod assign;
 mod block;
 mod boolean;
 mod call;
+mod cast;
 mod e_loop;
 mod ident;
 mod if_else;
@@ -28,6 +29,7 @@ impl parse_ast::Expression {
             parse_ast::Expression::Loop(e) => Expression::Loop(e.ty_solve(compiler, scope)?),
             parse_ast::Expression::Call(e) => Expression::Call(e.ty_solve(compiler, scope)?),
             parse_ast::Expression::Assign(e) => Expression::Assign(e.ty_solve(compiler, scope)?),
+            parse_ast::Expression::Cast(e) => Expression::Cast(e.ty_solve(compiler, scope)?),
         })
     }
 }

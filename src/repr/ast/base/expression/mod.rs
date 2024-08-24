@@ -2,6 +2,7 @@ mod assign;
 mod block;
 mod boolean;
 mod call;
+mod cast;
 mod ident;
 mod if_else;
 mod infix;
@@ -12,6 +13,7 @@ pub use assign::*;
 pub use block::*;
 pub use boolean::*;
 pub use call::*;
+pub use cast::*;
 pub use ident::*;
 pub use if_else::*;
 pub use infix::*;
@@ -33,6 +35,7 @@ ast_node2! {
         Call,
         Loop,
         Assign,
+        Cast,
     )
 }
 

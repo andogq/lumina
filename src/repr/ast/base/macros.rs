@@ -151,6 +151,7 @@ macro_rules! generate_ast {
         pub type Infix = ast::Infix<$metadata>;
         pub type Integer = ast::Integer<$metadata>;
         pub type Assign = ast::Assign<$metadata>;
+        pub type Cast = ast::Cast<$metadata>;
         pub type Expression = ast::Expression<$metadata>;
         pub type Function = ast::Function<$metadata>;
         pub type Program = ast::Program<$metadata>;
