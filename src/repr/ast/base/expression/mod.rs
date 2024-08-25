@@ -1,3 +1,4 @@
+mod array;
 mod assign;
 mod block;
 mod boolean;
@@ -5,10 +6,12 @@ mod call;
 mod cast;
 mod ident;
 mod if_else;
+mod index;
 mod infix;
 mod integer;
 mod loop_block;
 
+pub use array::*;
 pub use assign::*;
 pub use block::*;
 pub use boolean::*;
@@ -16,6 +19,7 @@ pub use call::*;
 pub use cast::*;
 pub use ident::*;
 pub use if_else::*;
+pub use index::*;
 pub use infix::*;
 pub use integer::*;
 pub use loop_block::*;
@@ -26,12 +30,14 @@ use super::{AstMetadata, Statement};
 
 ast_node! {
     Expression<M>(
+        Array,
         Infix,
         Integer,
         Boolean,
         Ident,
         Block,
         If,
+        Index,
         Call,
         Loop,
         Assign,

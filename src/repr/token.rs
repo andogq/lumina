@@ -66,6 +66,10 @@ pub enum Token {
     LeftBrace,
     #[token("}")]
     RightBrace,
+    #[token("[")]
+    LeftSquare,
+    #[token("]")]
+    RightSquare,
 
     /*
      * Keywords
@@ -159,6 +163,8 @@ impl Display for Token {
             Token::RightParen => write!(f, "("),
             Token::LeftBrace => write!(f, "{{"),
             Token::RightBrace => write!(f, "}}"),
+            Token::LeftSquare => write!(f, "["),
+            Token::RightSquare => write!(f, "]"),
             Token::Fn => write!(f, "fn"),
             Token::Return => write!(f, "return"),
             Token::Let => write!(f, "let"),

@@ -105,7 +105,8 @@ impl FunctionBuilder {
         Function {
             identifier: self.idx,
             signature: self.signature,
-            basic_blocks: dbg!(self.basic_blocks)
+            basic_blocks: self
+                .basic_blocks
                 .into_iter()
                 .map(|builder| ir::BasicBlock {
                     triples: builder.triples,
@@ -378,6 +379,31 @@ fn lower_expression(
         ast::Expression::Cast(ast::Cast { value, .. }) => {
             // Directly lower the inner expression, cast is only for the compiler
             lower_expression(compiler, builder, value)
+        }
+        ast::Expression::Index(ast::Index { value, index, .. }) => {
+            let index = lower_expression(compiler, builder, index)?;
+
+            Some(Value::Triple(builder.add_triple(Triple::Index {
+                value: *value,
+                index,
+            })))
+        }
+        ast::Expression::Array(ast::Array { init, .. }) => {
+            // Allocate the memory
+            let ptr = builder.add_triple(Triple::AllocArray(init.len() as u32));
+
+            // Initialise each of the items into the memory
+            init.iter().enumerate().for_each(|(i, expression)| {
+                let value = lower_expression(compiler, builder, expression).unwrap();
+
+                builder.add_triple(Triple::SetIndex {
+                    array_ptr: ptr,
+                    index: Value::integer(i as i64),
+                    value,
+                });
+            });
+
+            Some(Value::Pointer(ptr))
         }
     }
 }

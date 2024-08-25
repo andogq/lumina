@@ -6,9 +6,11 @@ use e_loop::parse_loop;
 use super::*;
 
 use self::{
-    e_boolean::parse_boolean, e_ident::parse_ident, e_if::parse_if, e_integer::parse_integer,
+    e_array::parse_array, e_boolean::parse_boolean, e_ident::parse_ident, e_if::parse_if,
+    e_integer::parse_integer,
 };
 
+mod e_array;
 mod e_assign;
 mod e_boolean;
 mod e_ident;
@@ -38,7 +40,7 @@ impl Precedence {
             | Token::RightAngle
             | Token::LeftAngleEq
             | Token::RightAngleEq => Precedence::Equality,
-            Token::LeftParen => Precedence::Call,
+            Token::LeftParen | Token::LeftSquare => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
@@ -58,6 +60,7 @@ fn parse_prefix(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Expres
         Token::False => Ok(Expression::Boolean(parse_boolean(compiler, lexer)?)),
         Token::LeftBrace => Ok(Expression::Block(parse_block(compiler, lexer)?)),
         Token::LeftParen => parse_grouped(compiler, lexer),
+        Token::LeftSquare => Ok(Expression::Array(parse_array(compiler, lexer)?)),
         Token::If => Ok(Expression::If(parse_if(compiler, lexer)?)),
         Token::Loop => Ok(Expression::Loop(parse_loop(compiler, lexer)?)),
         token => Err(ParseError::UnexpectedToken(token.clone())),
@@ -78,12 +81,55 @@ pub fn parse_expression(
                 parse_function_call(compiler, lexer, ident)?
             }
 
+            // Index operation
+            (Expression::Ident(ident), Token::LeftSquare) => parse_index(compiler, lexer, ident)?,
+
             // Regular infix operation
             (left, _) => parse_infix(compiler, lexer, left)?,
         };
     }
 
     Ok(left)
+}
+
+fn parse_index(
+    compiler: &mut Compiler,
+    lexer: &mut Lexer,
+    ident: Ident,
+) -> Result<Expression, ParseError> {
+    // Parse out the left square bracket
+    match lexer.next_token().unwrap() {
+        Token::LeftSquare => (),
+        token => {
+            return Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::LeftSquare),
+                found: Box::new(token),
+                reason: "index must be performed with square bracket".to_string(),
+            });
+        }
+    }
+
+    // Pull out the index
+    let index = parse_expression(compiler, lexer, Precedence::Lowest)?;
+
+    // Pull out closing bracket
+    let end_span = match lexer.next_spanned().unwrap() {
+        (Token::RightSquare, span) => span.end,
+        (token, _) => {
+            return Err(ParseError::ExpectedToken {
+                expected: Box::new(Token::RightSquare),
+                found: Box::new(token),
+                reason: "index must be performed with square bracket".to_string(),
+            });
+        }
+    };
+
+    Ok(Expression::Index(Index {
+        span: ident.span.start..end_span,
+        value: ident.binding,
+        index: Box::new(index),
+        ty_info: None,
+    }))
 }
 
 fn parse_function_call(

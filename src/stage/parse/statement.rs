@@ -96,7 +96,7 @@ pub fn parse_statement(
             token => {
                 return Err(ParseError::ExpectedToken {
                     found: Box::new(token),
-                    expected: Box::new(Token::Eq),
+                    expected: Box::new(Token::SemiColon),
                     reason: "semicolon must follow statement".to_string(),
                 });
             }

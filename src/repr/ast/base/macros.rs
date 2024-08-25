@@ -74,12 +74,14 @@ macro_rules! generate_ast {
         // Re-export non-typed utilities
         pub use ast::InfixOperation;
 
+        pub type Array = ast::Array<$metadata>;
         pub type Block = ast::Block<$metadata>;
         pub type Boolean = ast::Boolean<$metadata>;
         pub type Call = ast::Call<$metadata>;
         pub type Ident = ast::Ident<$metadata>;
         pub type If = ast::If<$metadata>;
         pub type Loop = ast::Loop<$metadata>;
+        pub type Index = ast::Index<$metadata>;
         pub type Infix = ast::Infix<$metadata>;
         pub type Integer = ast::Integer<$metadata>;
         pub type Assign = ast::Assign<$metadata>;

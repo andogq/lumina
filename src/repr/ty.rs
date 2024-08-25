@@ -5,6 +5,7 @@ pub enum Ty {
     Boolean,
     Unit,
     Never,
+    Array { inner: Box<Ty>, size: u32 },
 }
 
 impl Ty {

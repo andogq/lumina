@@ -116,6 +116,7 @@ impl ContextExt for Context {
             Ty::Boolean => self.bool_type().into(),
             Ty::Unit => todo!(),
             Ty::Never => todo!(),
+            Ty::Array { inner, size } => self.get_ty(inner).array_type(*size).into(),
         }
     }
 }
@@ -131,6 +132,8 @@ pub struct FunctionGenerator<'module, 'compiler, 'ink> {
 
     /// Resulting values for each of the triples
     results: HashMap<TripleRef, Option<IntValue<'ink>>>,
+    /// WARN: Hack until pointers are better represented
+    pointers: HashMap<TripleRef, PointerValue<'ink>>,
     bindings: HashMap<ScopedBinding, PointerValue<'ink>>,
 
     blocks: HashMap<BasicBlockIdx, BasicBlock<'ink>>,
@@ -160,6 +163,7 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
             builder,
             function,
             bindings: HashMap::new(),
+            pointers: HashMap::new(),
             results: HashMap::new(),
             blocks: HashMap::new(),
         }
@@ -231,6 +235,21 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
                 }
                 Triple::Load(binding) => Some(self.gen_load(binding)),
                 Triple::Phi(values) => Some(self.gen_phi(values)),
+                Triple::Index { value, index } => Some(self.gen_index(*value, *index)),
+                Triple::SetIndex {
+                    array_ptr,
+                    index,
+                    value,
+                } => {
+                    self.gen_set_index(*array_ptr, *index, *value);
+                    None
+                }
+                Triple::AllocArray(size) => {
+                    let ptr = self.gen_alloc_array(*size);
+                    self.pointers.insert(TripleRef::new(*block_idx, idx), ptr);
+
+                    None
+                }
             };
             self.results.insert(TripleRef::new(*block_idx, idx), result);
         }
@@ -357,13 +376,19 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
             .unwrap();
     }
 
-    fn gen_assign(&self, ident: &ScopedBinding, value: &Value) {
-        let value = self
-            .retrieve_value(value)
-            .expect("unit value cannot be assigned");
-        let ptr = self.bindings.get(ident).unwrap();
+    fn gen_assign(&mut self, ident: &ScopedBinding, value: &Value) {
+        if let Value::Pointer(ptr) = value {
+            // HACK: Override the existing binding for the provided pointer
+            self.bindings
+                .insert(*ident, *self.pointers.get(ptr).unwrap());
+        } else {
+            let value = self
+                .retrieve_value(value)
+                .expect("unit value cannot be assigned");
+            let ptr = self.bindings.get(ident).unwrap();
 
-        self.builder.build_store(*ptr, value).unwrap();
+            self.builder.build_store(*ptr, value).unwrap();
+        }
     }
 
     fn gen_load(&self, binding: &ScopedBinding) -> IntValue<'ink> {
@@ -439,6 +464,56 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
             .into_int_value()
     }
 
+    fn gen_index(&mut self, value: ScopedBinding, index: Value) -> IntValue<'ink> {
+        let index = self.retrieve_value(&index).unwrap();
+
+        // WARN: BAD BAD BAD
+        let pointee_ty = self.module.llvm_ctx.i64_type();
+
+        let array_ptr = self.bindings.get(&value).expect("symbol to be defined");
+        let item_ptr = unsafe {
+            self.builder
+                .build_gep(pointee_ty, *array_ptr, &[index], "gep_result")
+        }
+        .unwrap();
+
+        self.builder
+            .build_load(pointee_ty, item_ptr, "item_fetch")
+            .unwrap()
+            .into_int_value()
+    }
+
+    fn gen_set_index(&mut self, array_ptr: TripleRef, index: Value, value: Value) {
+        let index = self.retrieve_value(&index).unwrap();
+
+        // WARN: BAD BAD BAD
+        let pointee_ty = self.module.llvm_ctx.i64_type();
+
+        let array_ptr = self.pointers.get(&array_ptr).unwrap();
+        let item_ptr = unsafe {
+            self.builder
+                .build_gep(pointee_ty, *array_ptr, &[index], "gep_result")
+        }
+        .unwrap();
+
+        let value = self.retrieve_value(&value).unwrap();
+
+        self.builder.build_store(item_ptr, value).unwrap();
+    }
+
+    fn gen_alloc_array(&mut self, size: u32) -> PointerValue<'ink> {
+        self.builder
+            .build_array_alloca(
+                self.module.llvm_ctx.i64_type(),
+                self.module
+                    .llvm_ctx
+                    .i64_type()
+                    .const_int(size as u64, false),
+                "array_alloca",
+            )
+            .unwrap()
+    }
+
     /// Emit an allocation instruction in the entry basic block
     fn alloca(&self, ty: Ty, name: &str) -> PointerValue<'ink> {
         // Find the entry for this function
@@ -477,6 +552,7 @@ impl<'module, 'compiler, 'ink> FunctionGenerator<'module, 'compiler, 'ink> {
                     .expect("triple must exist")
                     .expect("triple must produce value"),
             ),
+            Value::Pointer(_) => None,
             Value::Parameter(i) => Some(
                 self.llvm_function
                     .get_nth_param(*i as u32)
