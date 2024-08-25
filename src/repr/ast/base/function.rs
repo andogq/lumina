@@ -1,8 +1,8 @@
-use crate::{ast_node2, repr::ty::Ty};
+use crate::{ast_node, repr::ty::Ty};
 
 use super::*;
 
-ast_node2! {
+ast_node! {
     Function<M> {
         name: M::FnIdentifier,
         parameters: Vec<(M::IdentIdentifier, Ty)>,

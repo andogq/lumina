@@ -1,8 +1,8 @@
-use crate::ast_node2;
+use crate::ast_node;
 
 use super::*;
 
-ast_node2! {
+ast_node! {
     If<M> {
         condition: Box<Expression<M>>,
         success: Block<M>,

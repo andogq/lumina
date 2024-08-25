@@ -1,8 +1,8 @@
-use crate::ast_node2;
+use crate::ast_node;
 
 use super::*;
 
-ast_node2! {
+ast_node! {
     Statement<M>(
         Return,
         Let,
@@ -31,7 +31,7 @@ impl<M: AstMetadata<TyInfo: Default>> Statement<M> {
     }
 }
 
-ast_node2! {
+ast_node! {
     Return<M> {
         value: Expression<M>,
         span,
@@ -39,7 +39,7 @@ ast_node2! {
     }
 }
 
-ast_node2! {
+ast_node! {
     Let<M> {
         binding: M::IdentIdentifier,
         value: Expression<M>,
@@ -48,7 +48,7 @@ ast_node2! {
     }
 }
 
-ast_node2! {
+ast_node! {
     ExpressionStatement<M> {
         expression: Expression<M>,
         implicit_return: bool,
@@ -57,14 +57,14 @@ ast_node2! {
     }
 }
 
-ast_node2! {
+ast_node! {
     Break<M> {
         span,
         ty_info,
     }
 }
 
-ast_node2! {
+ast_node! {
     Continue<TyInfo> {
         span,
         ty_info,

@@ -1,7 +1,7 @@
 #[macro_export]
-macro_rules! ast_node2 {
+macro_rules! ast_node {
     ($name:ident<$metadata:ident> { $($tokens:tt)* }) => {
-        ast_node2! { @ $name<$metadata> { $($tokens)* } -> () }
+        ast_node! { @ $name<$metadata> { $($tokens)* } -> () }
     };
 
     ($name:ident<$metadata:ident>( $($variant:ident,)* )) => {
@@ -39,7 +39,7 @@ macro_rules! ast_node2 {
     };
 
     (@ $name:ident<$metadata:ident> { span, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
-        ast_node2! {
+        ast_node! {
             @ $name<$metadata> { $($tokens)* } -> (
                 $($result)*
                 span: $metadata::Span,
@@ -48,7 +48,7 @@ macro_rules! ast_node2 {
     };
 
     (@ $name:ident<$metadata:ident> { ty_info, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
-        ast_node2! {
+        ast_node! {
             @ $name<$metadata> { $($tokens)* } -> (
                 $($result)*
                 ty_info: $metadata::TyInfo,
@@ -57,79 +57,11 @@ macro_rules! ast_node2 {
     };
 
     (@ $name:ident<$metadata:ident> { $field:ident: $ty:ty, $($tokens:tt)* } -> ( $($result:tt)*) ) => {
-        ast_node2! {
+        ast_node! {
             @ $name<$metadata> { $($tokens)* } -> (
                 $($result)*
                 $field: $ty,
             )
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! ast_node {
-    // Common components for all variants of an AST node
-    (common struct $struct_name:ident$(<$($generic:ident),*>)? {  $($name:ident: $ty:ty,)* }) => {
-        #[derive(Debug, Clone)]
-        pub struct $struct_name$(<$($generic),*>)? {
-            pub span: $crate::util::span::Span,
-            $(pub $name: $ty,)*
-        }
-    };
-
-    // AST node that is typed
-    (typed struct $struct_name:ident<$ty_info:ident $(, $($generic:ident),*)?> { $($name:ident: $ty:ty,)* }) => {
-        ast_node!(common struct $struct_name<$ty_info $(, $($generic),*)?> {
-            $($name: $ty,)*
-            ty_info: $ty_info,
-        });
-
-        impl<$ty_info: Default $(, $($generic),*)?> $struct_name<$ty_info $(, $($generic),*)?> {
-            pub fn new($($name: $ty,)* span: $crate::util::span::Span) -> Self {
-                Self {
-                    span,
-                    ty_info: Default::default(),
-                    $($name,)*
-                }
-            }
-        }
-    };
-
-    // AST node that contains no type information
-    (struct $struct_name:ident$(<$($generic:ident),*>)? {  $($name:ident: $ty:ty,)* }) => {
-        ast_node!(common struct $struct_name$(<$($generic),*>)? {
-            $($name: $ty,)*
-        });
-
-        impl$(<$($generic),*>)? $struct_name$(<$($generic),*>)? {
-            pub fn new($($name: $ty,)* span: $crate::util::span::Span) -> Self {
-                Self {
-                    span,
-                    $($name,)*
-                }
-            }
-        }
-    };
-
-    // AST node that consists of other AST nodes
-    (enum $enum_name:ident<$ty_info:ident $(, $($generic:ident),*)?> { $($name:ident($ty:ty),)* }) => {
-        #[derive(Debug, Clone)]
-        pub enum $enum_name<$ty_info $(, $($generic),*)?> {
-            $($name($ty),)*
-        }
-
-        impl<$ty_info $(, $($generic),*)?> $enum_name<$ty_info $(, $($generic),*)?> {
-            pub fn get_ty_info(&self) -> &$ty_info {
-                match self {
-                    $(Self::$name(value) => &value.ty_info),*
-                }
-            }
-
-            pub fn span(&self) -> &$crate::util::span::Span {
-                match self {
-                    $(Self::$name(value) => &value.span),*
-                }
-            }
         }
     };
 }

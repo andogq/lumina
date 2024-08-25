@@ -1,7 +1,7 @@
 use super::*;
-use crate::ast_node2;
+use crate::ast_node;
 
-ast_node2! {
+ast_node! {
     Assign<M> {
         binding: M::IdentIdentifier,
         value: Box<Expression<M>>,

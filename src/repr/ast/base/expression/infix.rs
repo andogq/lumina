@@ -1,4 +1,4 @@
-use crate::{ast_node2, repr::token::Token};
+use crate::{ast_node, repr::token::Token};
 
 use super::Expression;
 
@@ -50,7 +50,7 @@ impl TryFrom<Token> for InfixOperation {
     }
 }
 
-ast_node2! {
+ast_node! {
     Infix<M> {
         left: Box<Expression<M>>,
         operation: InfixOperation,

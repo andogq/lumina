@@ -1,8 +1,8 @@
 use std::hash::Hash;
 
-use crate::{ast_node2, repr::ast::base::AstMetadata};
+use crate::{ast_node, repr::ast::base::AstMetadata};
 
-ast_node2! {
+ast_node! {
     Ident<M> {
         binding: M::IdentIdentifier,
         span,

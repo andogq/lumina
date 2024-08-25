@@ -1,6 +1,6 @@
-use crate::ast_node2;
+use crate::ast_node;
 
-ast_node2! {
+ast_node! {
     Boolean<M> {
         value: bool,
         span,

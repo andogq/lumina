@@ -20,11 +20,11 @@ pub use infix::*;
 pub use integer::*;
 pub use loop_block::*;
 
-use crate::{ast_node2, util::span::Span};
+use crate::{ast_node, util::span::Span};
 
 use super::{AstMetadata, Statement};
 
-ast_node2! {
+ast_node! {
     Expression<M>(
         Infix,
         Integer,
