@@ -1,20 +1,34 @@
-use crate::util::scope::Scope;
-
 use super::*;
 
-impl parse_ast::If {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<If, TyError> {
+ast_node! {
+    If<M> {
+        condition: Box<Expression<M>>,
+        success: Block<M>,
+        otherwise: Option<Block<M>>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for If<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
         // Make sure the condition is correctly typed
-        let condition = self.condition.ty_solve(compiler, scope)?;
+        let condition = self.condition.solve(compiler, state)?;
         let condition_ty = condition.get_ty_info();
         if !condition_ty.ty.check(&Ty::Boolean) {
             return Err(TyError::Mismatch(Ty::Boolean, condition_ty.ty.clone()));
         }
 
-        let success = self.success.ty_solve(compiler, scope)?;
+        let success = self.success.solve(compiler, state)?;
         let otherwise = self
             .otherwise
-            .map(|otherwise| otherwise.ty_solve(compiler, scope))
+            .map(|otherwise| otherwise.solve(compiler, state))
             .transpose()?;
 
         let ty_info = TyInfo::try_from((

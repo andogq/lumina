@@ -1,10 +1,24 @@
-use crate::util::scope::Scope;
-
 use super::*;
 
-impl parse_ast::Ident {
-    pub fn ty_solve(self, _compiler: &mut Compiler, scope: &mut Scope) -> Result<Ident, TyError> {
-        let (binding, ty) = scope
+use std::hash::Hash;
+
+ast_node! {
+    Ident<M> {
+        binding: M::IdentIdentifier,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Ident<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        _compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+        let (binding, ty) = state
             .resolve(self.binding)
             .ok_or(TyError::SymbolNotFound(self.binding))?;
 
@@ -19,17 +33,28 @@ impl parse_ast::Ident {
     }
 }
 
+impl<M: AstMetadata<IdentIdentifier: Hash>> Hash for Ident<M> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.binding.hash(state);
+    }
+}
+
+impl<M: AstMetadata<IdentIdentifier: PartialEq>> PartialEq for Ident<M>
+where
+    M::IdentIdentifier: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.binding == other.binding
+    }
+}
+
+impl<M: AstMetadata> Eq for Ident<M> where M::IdentIdentifier: Eq {}
+
 #[cfg(test)]
 mod test_ident {
     use string_interner::Symbol;
 
-    use crate::{
-        compiler::Compiler,
-        repr::ast::untyped::Ident,
-        util::{scope::Scope, span::Span},
-    };
-
-    use super::expression::Ty;
+    use super::*;
 
     #[test]
     fn ident_present() {
@@ -44,7 +69,7 @@ mod test_ident {
 
         // Run the type solve
         let ty_info = i
-            .ty_solve(&mut Compiler::default(), &mut scope)
+            .solve(&mut Compiler::default(), &mut scope)
             .unwrap()
             .ty_info;
 
@@ -60,7 +85,7 @@ mod test_ident {
             Default::default(),
         );
 
-        let result = i.ty_solve(&mut Compiler::default(), &mut Scope::new());
+        let result = i.solve(&mut Compiler::default(), &mut Scope::new());
 
         assert!(result.is_err());
     }

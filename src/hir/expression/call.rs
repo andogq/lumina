@@ -1,14 +1,27 @@
-use crate::util::scope::Scope;
-
 use super::*;
 
-impl parse_ast::Call {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Call, TyError> {
+ast_node! {
+    Call<M> {
+        name: M::FnIdentifier,
+        args: Vec<Expression<M>>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Call<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, TyError> {
         // Determine the types of all the arguments
         let args = self
             .args
             .into_iter()
-            .map(|arg| arg.ty_solve(compiler, scope))
+            .map(|arg| arg.solve(compiler, state))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Compare the arguments to the function types

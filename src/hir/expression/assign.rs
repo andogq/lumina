@@ -1,15 +1,28 @@
-use crate::{compiler::Compiler, util::scope::Scope};
-
 use super::*;
 
-impl parse_ast::Assign {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Assign, TyError> {
+ast_node! {
+    Assign<M> {
+        binding: M::IdentIdentifier,
+        value: Box<Expression<M>>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Assign<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
         // Work out what type the variable has to be
-        let (binding, ty) = scope
+        let (binding, ty) = state
             .resolve(self.binding)
             .ok_or(TyError::SymbolNotFound(self.binding))?;
 
-        let value = self.value.ty_solve(compiler, scope)?;
+        let value = self.value.solve(compiler, state)?;
 
         let value_ty = value.get_ty_info().ty.clone();
 

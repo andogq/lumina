@@ -1,3 +1,5 @@
+use super::*;
+
 mod array;
 mod assign;
 mod block;
@@ -23,10 +25,6 @@ pub use index::*;
 pub use infix::*;
 pub use integer::*;
 pub use loop_block::*;
-
-use crate::{ast_node, util::span::Span};
-
-use super::{AstMetadata, Statement};
 
 ast_node! {
     Expression<M>(
@@ -90,5 +88,30 @@ impl<M: AstMetadata<Span = Span, TyInfo: Default>> Expression<M> {
 
     pub fn call(identifier: M::FnIdentifier, args: Vec<Expression<M>>, span: Span) -> Self {
         Self::Call(Call::new(identifier, args, span, M::TyInfo::default()))
+    }
+}
+
+impl SolveType for Expression<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+        Ok(match self {
+            Expression::Infix(e) => Expression::Infix(e.solve(compiler, state)?),
+            Expression::Integer(e) => Expression::Integer(e.solve(compiler, state)?),
+            Expression::Boolean(e) => Expression::Boolean(e.solve(compiler, state)?),
+            Expression::Ident(e) => Expression::Ident(e.solve(compiler, state)?),
+            Expression::Block(e) => Expression::Block(e.solve(compiler, state)?),
+            Expression::If(e) => Expression::If(e.solve(compiler, state)?),
+            Expression::Index(e) => Expression::Index(e.solve(compiler, state)?),
+            Expression::Loop(e) => Expression::Loop(e.solve(compiler, state)?),
+            Expression::Call(e) => Expression::Call(e.solve(compiler, state)?),
+            Expression::Assign(e) => Expression::Assign(e.solve(compiler, state)?),
+            Expression::Cast(e) => Expression::Cast(e.solve(compiler, state)?),
+            Expression::Array(e) => Expression::Array(e.solve(compiler, state)?),
+        })
     }
 }

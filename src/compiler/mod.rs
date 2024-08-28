@@ -5,6 +5,7 @@ use string_interner::{DefaultBackend, DefaultSymbol, StringInterner};
 use self::function_manager::*;
 
 use crate::{
+    hir::SolveType,
     repr::ir,
     stage::{self, parse::ParseError, type_check::TyError},
 };
@@ -38,7 +39,7 @@ impl Compiler {
         let program = stage::parse::parse(self, source.as_ref())?;
 
         // Perform type checking
-        let program = program.ty_solve(self)?;
+        let program = program.solve(self, &mut ())?;
 
         // Lower into IR
         let ir = stage::lower_ir::lower(self, program);

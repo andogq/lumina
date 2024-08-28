@@ -1,4 +1,4 @@
-use crate::repr::ast::base::{Break, Continue};
+use crate::hir::{Break, Continue};
 
 use super::*;
 

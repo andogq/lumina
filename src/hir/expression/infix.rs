@@ -1,10 +1,32 @@
-use crate::util::scope::Scope;
-
 use super::*;
 
+#[derive(Debug, Clone)]
+pub enum InfixOperation {
+    Minus,
+    Plus,
+    Multiply,
+    Divide,
+    Eq,
+    NotEq,
+    Greater,
+    Less,
+    GreaterEq,
+    LessEq,
+    And,
+    Or,
+}
+
 impl InfixOperation {
+    pub fn plus() -> Self {
+        Self::Plus
+    }
+
+    pub fn minus() -> Self {
+        Self::Minus
+    }
+
     /// Determine the resulting type if this operator is applied to the provided parameters.
-    fn result_ty(&self, left: &Ty, right: &Ty) -> Result<Ty, TyError> {
+    pub fn result_ty(&self, left: &Ty, right: &Ty) -> Result<Ty, TyError> {
         use InfixOperation::*;
 
         match (self, left, right) {
@@ -20,10 +42,48 @@ impl InfixOperation {
     }
 }
 
-impl parse_ast::Infix {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Infix, TyError> {
-        let left = self.left.ty_solve(compiler, scope)?;
-        let right = self.right.ty_solve(compiler, scope)?;
+impl TryFrom<Token> for InfixOperation {
+    type Error = ();
+
+    fn try_from(token: Token) -> Result<Self, Self::Error> {
+        match token {
+            Token::Plus => Ok(InfixOperation::Plus),
+            Token::Minus => Ok(InfixOperation::Minus),
+            Token::Asterix => Ok(InfixOperation::Multiply),
+            Token::ForwardSlash => Ok(InfixOperation::Divide),
+            Token::DoubleEq => Ok(InfixOperation::Eq),
+            Token::NotEq => Ok(InfixOperation::NotEq),
+            Token::LeftAngle => Ok(InfixOperation::Less),
+            Token::RightAngle => Ok(InfixOperation::Greater),
+            Token::LeftAngleEq => Ok(InfixOperation::LessEq),
+            Token::RightAngleEq => Ok(InfixOperation::GreaterEq),
+            Token::And => Ok(InfixOperation::And),
+            Token::Or => Ok(InfixOperation::Or),
+            _ => Err(()),
+        }
+    }
+}
+
+ast_node! {
+    Infix<M> {
+        left: Box<Expression<M>>,
+        operation: InfixOperation,
+        right: Box<Expression<M>>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Infix<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, TyError> {
+        let left = self.left.solve(compiler, state)?;
+        let right = self.right.solve(compiler, state)?;
 
         let left_ty_info = left.get_ty_info();
         let right_ty_info = right.get_ty_info();
@@ -50,11 +110,7 @@ impl parse_ast::Infix {
 
 #[cfg(test)]
 mod test_infix {
-    use crate::{
-        compiler::Compiler,
-        repr::{ast::untyped::*, ty::Ty},
-        util::{scope::Scope, span::Span},
-    };
+    use super::*;
 
     #[test]
     fn infix_same() {
@@ -68,7 +124,7 @@ mod test_infix {
         );
 
         let ty_info = infix
-            .ty_solve(&mut Compiler::default(), &mut Scope::new())
+            .solve(&mut Compiler::default(), &mut Scope::new())
             .unwrap()
             .ty_info;
         assert_eq!(ty_info.ty, Ty::Int);
@@ -85,7 +141,7 @@ mod test_infix {
             Default::default(),
         );
 
-        let result = infix.ty_solve(&mut Compiler::default(), &mut Scope::new());
+        let result = infix.solve(&mut Compiler::default(), &mut Scope::new());
         assert!(result.is_err());
     }
 }

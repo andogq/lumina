@@ -1,12 +1,26 @@
 use super::*;
 
-impl parse_ast::Array {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Array, TyError> {
+ast_node! {
+    Array<M> {
+        init: Vec<Expression<M>>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Array<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
         // Type check each of the init items
         let init = self
             .init
             .into_iter()
-            .map(|i| i.ty_solve(compiler, scope))
+            .map(|i| i.solve(compiler, state))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Make sure all of the init items agree on the type

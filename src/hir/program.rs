@@ -1,9 +1,27 @@
-use crate::compiler::Compiler;
+use crate::{
+    ast_node,
+    repr::{ast::untyped::UntypedAstMetadata, ty::Ty},
+    stage::type_check::{FunctionSignature, TyError},
+};
 
-use super::*;
+use super::{function::Function, SolveType};
 
-impl parse_ast::Program {
-    pub fn ty_solve(self, compiler: &mut Compiler) -> Result<Program, TyError> {
+ast_node! {
+    Program<M> {
+        functions: Vec<Function<M>>,
+        main: Function<M>,
+        span,
+    }
+}
+
+impl SolveType for Program<UntypedAstMetadata> {
+    type State = ();
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        _state: &mut Self::State,
+    ) -> Result<Self::Typed, TyError> {
         // Main function must return int
         if !self.main.return_ty.check(&Ty::Int) {
             return Err(TyError::Mismatch(Ty::Int, self.main.return_ty));
@@ -21,12 +39,12 @@ impl parse_ast::Program {
         });
 
         // Make sure the type of the function is correct
-        let main = self.main.ty_solve(compiler)?;
+        let main = self.main.solve(compiler, &mut ())?;
 
         let functions = self
             .functions
             .into_iter()
-            .map(|function| function.ty_solve(compiler))
+            .map(|function| function.solve(compiler, &mut ()))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Program {

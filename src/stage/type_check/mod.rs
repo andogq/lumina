@@ -1,13 +1,9 @@
-mod expression;
-mod function;
-mod program;
-mod statement;
-
 use itertools::Itertools;
 
 use crate::compiler::Symbol;
-use crate::repr::ast::base::AstMetadata;
-use crate::repr::ast::{base as base_ast, typed::*, untyped as parse_ast};
+use crate::hir;
+use crate::repr::ast::typed::*;
+use crate::repr::ast::AstMetadata;
 use crate::repr::ty::Ty;
 
 #[derive(Clone, Debug)]
@@ -16,8 +12,8 @@ pub struct FunctionSignature {
     pub return_ty: Ty,
 }
 
-impl<M: AstMetadata> From<&base_ast::Function<M>> for FunctionSignature {
-    fn from(function: &base_ast::Function<M>) -> Self {
+impl<M: AstMetadata> From<&hir::Function<M>> for FunctionSignature {
+    fn from(function: &hir::Function<M>) -> Self {
         Self {
             arguments: function
                 .parameters

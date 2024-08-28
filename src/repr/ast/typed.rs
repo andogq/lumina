@@ -7,7 +7,7 @@ use crate::{
     util::span::Span,
 };
 
-use super::base::AstMetadata;
+use super::AstMetadata;
 
 #[derive(Clone, Debug)]
 pub struct TyInfo {
@@ -15,12 +15,12 @@ pub struct TyInfo {
     pub return_ty: Option<Ty>,
 }
 
-pub struct TypedAstMetdata;
-impl AstMetadata for TypedAstMetdata {
+pub struct TypedAstMetadata;
+impl AstMetadata for TypedAstMetadata {
     type FnIdentifier = FunctionIdx;
     type IdentIdentifier = ScopedBinding;
     type TyInfo = TyInfo;
     type Span = Span;
 }
 
-generate_ast!(TypedAstMetdata);
+generate_ast!(TypedAstMetadata);

@@ -1,7 +1,21 @@
 use super::*;
 
-impl parse_ast::Boolean {
-    pub fn ty_solve(self) -> Result<Boolean, TyError> {
+ast_node! {
+    Boolean<M> {
+        value: bool,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Boolean<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        _compiler: &mut crate::compiler::Compiler,
+        _state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
         Ok(Boolean {
             value: self.value,
             span: self.span,
@@ -15,16 +29,13 @@ impl parse_ast::Boolean {
 
 #[cfg(test)]
 mod test_boolean {
-    use crate::{
-        repr::{ast::untyped::*, ty::Ty},
-        util::span::Span,
-    };
+    use super::*;
 
     #[test]
     fn boolean_infer() {
         assert_eq!(
             Boolean::new(false, Span::default(), Default::default())
-                .ty_solve()
+                .solve(&mut Compiler::default(), &mut Scope::new())
                 .unwrap()
                 .ty_info
                 .ty,
@@ -36,7 +47,7 @@ mod test_boolean {
     fn boolean_return() {
         assert_eq!(
             Boolean::new(false, Span::default(), Default::default())
-                .ty_solve()
+                .solve(&mut Compiler::default(), &mut Scope::new())
                 .unwrap()
                 .ty_info
                 .return_ty,

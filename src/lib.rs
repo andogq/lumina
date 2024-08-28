@@ -9,6 +9,7 @@ use inkwell::{
 
 pub mod codegen;
 pub mod compiler;
+mod hir;
 pub mod repr;
 pub mod stage;
 pub mod util;

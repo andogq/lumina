@@ -1,6 +1,6 @@
 use crate::{compiler::Symbol, generate_ast, repr::ty::Ty, util::span::Span};
 
-use super::base::AstMetadata;
+use super::AstMetadata;
 
 #[derive(Debug)]
 pub struct UntypedAstMetadata;

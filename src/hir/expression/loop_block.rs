@@ -1,11 +1,23 @@
-use crate::util::scope::Scope;
-
 use super::*;
 
-impl parse_ast::Loop {
-    pub fn ty_solve(self, compiler: &mut Compiler, scope: &mut Scope) -> Result<Loop, TyError> {
+ast_node! {
+    Loop<M> {
+        body: Block<M>,
+        span,
+        ty_info,
+    }
+}
+
+impl SolveType for Loop<UntypedAstMetadata> {
+    type State = Scope;
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        state: &mut Self::State,
+    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
         // Type check the body
-        let body = self.body.ty_solve(compiler, scope)?;
+        let body = self.body.solve(compiler, state)?;
 
         // TODO: Temporary whilst can't break expression
         match body.ty_info.ty {

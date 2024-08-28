@@ -1,9 +1,30 @@
-use crate::{compiler::Compiler, util::scope::Scope};
+use crate::{
+    ast_node,
+    repr::{ast::untyped::UntypedAstMetadata, ty::Ty},
+    stage::type_check::TyError,
+    util::scope::Scope,
+};
 
-use super::*;
+use super::{expression::Block, SolveType};
 
-impl parse_ast::Function {
-    pub fn ty_solve(self, compiler: &mut Compiler) -> Result<Function, TyError> {
+ast_node! {
+    Function<M> {
+        name: M::FnIdentifier,
+        parameters: Vec<(M::IdentIdentifier, Ty)>,
+        return_ty: Ty,
+        body: Block<M>,
+        span,
+    }
+}
+
+impl SolveType for Function<UntypedAstMetadata> {
+    type State = ();
+
+    fn solve(
+        self,
+        compiler: &mut crate::compiler::Compiler,
+        _state: &mut Self::State,
+    ) -> Result<Self::Typed, TyError> {
         let idx = compiler
             .functions
             .get_idx(self.name)
@@ -20,7 +41,7 @@ impl parse_ast::Function {
             .collect();
 
         // Type check the body, allowing it to use the function's scope
-        let body = self.body.ty_solve(compiler, &mut scope)?;
+        let body = self.body.solve(compiler, &mut scope)?;
 
         // Access this function's registration
         let function = compiler
