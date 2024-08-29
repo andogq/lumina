@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use logos::{Lexer, Logos};
 
-#[derive(Clone, Debug, Logos, PartialEq, Eq)]
+#[derive(Clone, Debug, Logos, PartialEq, Eq, Hash)]
 #[logos(skip r"[ \t\r\n\f]+")]
 pub enum Token {
     /*

@@ -46,6 +46,12 @@ impl Precedence {
     }
 }
 
+impl From<Token> for Precedence {
+    fn from(token: Token) -> Self {
+        Self::of(&token)
+    }
+}
+
 fn parse_prefix(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Expression, ParseError> {
     match lexer.peek_token().unwrap().clone() {
         Token::Integer(_) => Ok(Expression::Integer(parse_integer(compiler, lexer)?)),

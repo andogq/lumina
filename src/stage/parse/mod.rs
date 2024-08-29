@@ -1,6 +1,7 @@
 mod block;
 mod expression;
 mod function;
+mod parser;
 mod statement;
 mod ty;
 
