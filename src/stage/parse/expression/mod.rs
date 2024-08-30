@@ -21,6 +21,7 @@ mod e_loop;
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     Lowest,
+    Assign,
     Binary,
     Equality,
     Sum,
@@ -41,6 +42,11 @@ impl Precedence {
             | Token::LeftAngleEq
             | Token::RightAngleEq => Precedence::Equality,
             Token::LeftParen | Token::LeftSquare => Precedence::Call,
+            Token::Eq
+            | Token::AddAssign
+            | Token::MinusAssign
+            | Token::DivAssign
+            | Token::MulAssign => Precedence::Assign,
             _ => Precedence::Lowest,
         }
     }

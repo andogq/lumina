@@ -1,6 +1,3 @@
-// Temporary until this is integrated
-#![allow(dead_code)]
-
 use std::collections::HashMap;
 
 use crate::{compiler::Compiler, repr::ast::untyped::Expression};
@@ -8,7 +5,7 @@ use crate::{compiler::Compiler, repr::ast::untyped::Expression};
 use super::{Lexer, ParseError, Token};
 
 /// Function capable of parsing an infix expression out of the provided lexer.
-type InfixParser = fn(
+pub type InfixParser = fn(
     parser: &Parser,
     compiler: &mut Compiler,
     lexer: &mut Lexer,
@@ -16,17 +13,18 @@ type InfixParser = fn(
 ) -> Result<Expression, ParseError>;
 
 /// Function capable of parsing a prefix expression out of the provided lexer.
-type PrefixParser = fn(
+pub type PrefixParser = fn(
     parser: &Parser,
     compiler: &mut Compiler,
     lexer: &mut Lexer,
 ) -> Result<Expression, ParseError>;
 
 /// Function to test whether a token is a match to parse.
-type TokenTest = fn(token: &Token) -> bool;
+pub type TokenTest = fn(token: &Token) -> bool;
 
 /// Composable parser, allowing for components of the parser to be dynamically registered.
-struct Parser {
+#[derive(Default)]
+pub struct Parser {
     /// Infix parse function to run when a given token is presented during infix parsing.
     infix: HashMap<Token, InfixParser>,
     /// Dynamic tests to run on a token during infix parsing. These will be run after the infix map is checked.
@@ -40,12 +38,7 @@ struct Parser {
 impl Parser {
     /// Create a new instance of the parser.
     pub fn new() -> Self {
-        Self {
-            infix: HashMap::new(),
-            infix_tests: Vec::new(),
-            prefix: HashMap::new(),
-            prefix_tests: Vec::new(),
-        }
+        Self::default()
     }
 
     /// Register a new prefix parser against a token. Will return `false` if the token has already

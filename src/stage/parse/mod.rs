@@ -1,7 +1,7 @@
 mod block;
 mod expression;
 mod function;
-mod parser;
+pub mod parser;
 mod statement;
 mod ty;
 
@@ -17,7 +17,7 @@ use crate::repr::token::*;
 use crate::util::span::*;
 
 use self::block::*;
-use self::expression::*;
+pub use self::expression::*;
 use self::function::*;
 use self::statement::*;
 
@@ -32,6 +32,12 @@ pub enum ParseError {
     ExpectedToken {
         expected: Box<Token>,
         found: Box<Token>,
+        reason: String,
+    },
+
+    #[error("invalid infix left hand side: {reason} ({found:?})")]
+    InvalidInfixLhs {
+        found: Box<Expression>,
         reason: String,
     },
 
@@ -80,7 +86,7 @@ pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseErro
     Ok(program)
 }
 
-struct Lexer<'source> {
+pub struct Lexer<'source> {
     next: Option<(Token, Span)>,
     lexer: Peekable<logos::SpannedIter<'source, Token>>,
 }
@@ -93,19 +99,19 @@ impl<'source> Lexer<'source> {
         }
     }
 
-    fn next_token(&mut self) -> Option<Token> {
+    pub fn next_token(&mut self) -> Option<Token> {
         self.next_spanned().map(|(token, _)| token)
     }
 
-    fn peek_token(&mut self) -> Option<&Token> {
+    pub fn peek_token(&mut self) -> Option<&Token> {
         self.peek_spanned().map(|(token, _)| token)
     }
 
-    fn next_spanned(&mut self) -> Option<(Token, Span)> {
+    pub fn next_spanned(&mut self) -> Option<(Token, Span)> {
         self.next.take().or_else(|| self.next())
     }
 
-    fn peek_spanned(&mut self) -> Option<(&Token, &Span)> {
+    pub fn peek_spanned(&mut self) -> Option<(&Token, &Span)> {
         self.next
             .as_ref()
             .map(|(token, span)| (token, span))
@@ -116,7 +122,7 @@ impl<'source> Lexer<'source> {
             })
     }
 
-    fn double_peek_token(&mut self) -> Option<&Token> {
+    pub fn double_peek_token(&mut self) -> Option<&Token> {
         if self.next.is_none() {
             self.next = self.next();
         }

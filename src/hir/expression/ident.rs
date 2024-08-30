@@ -1,3 +1,5 @@
+use crate::stage::parse::ParseError;
+
 use super::*;
 
 use std::hash::Hash;
@@ -7,6 +9,34 @@ ast_node! {
         binding: M::IdentIdentifier,
         span,
         ty_info,
+    }
+}
+
+impl<M: AstMetadata> Parsable for Ident<M> {
+    fn register(parser: &mut Parser) {
+        parser.register_prefix_test(
+            |token| matches!(token, Token::Ident(_)),
+            |_, compiler, lexer| {
+                let (value, span) = match lexer.next_spanned().unwrap() {
+                    (Token::Ident(value), span) => (value, span),
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::Ident(String::new())),
+                            found: Box::new(token),
+                            reason: "expected ident".to_string(),
+                        });
+                    }
+                };
+
+                let binding = compiler.symbols.get_or_intern(value);
+
+                Ok(Expression::Ident(Ident {
+                    binding,
+                    span,
+                    ty_info: None,
+                }))
+            },
+        );
     }
 }
 
@@ -56,37 +86,73 @@ mod test_ident {
 
     use super::*;
 
-    #[test]
-    fn ident_present() {
-        // Set up a reference symbol
-        let symbol = Symbol::try_from_usize(0).unwrap();
+    mod parse {
+        use crate::stage::parse::{Lexer, Precedence};
 
-        // Create a scope and add the symbol to it
-        let mut scope = Scope::new();
-        scope.register(symbol, Ty::Int);
+        use super::*;
 
-        let i = Ident::new(symbol, Span::default(), Default::default());
+        #[test]
+        fn success() {
+            let mut parser = Parser::new();
 
-        // Run the type solve
-        let ty_info = i
-            .solve(&mut Compiler::default(), &mut scope)
-            .unwrap()
-            .ty_info;
+            Ident::<UntypedAstMetadata>::register(&mut parser);
 
-        assert_eq!(ty_info.ty, Ty::Int);
-        assert_eq!(ty_info.return_ty, None);
+            let mut compiler = Compiler::default();
+
+            let ident = parser
+                .parse(
+                    &mut compiler,
+                    &mut Lexer::from("someident"),
+                    Precedence::Lowest,
+                )
+                .unwrap();
+
+            let Expression::Ident(ident) = ident else {
+                panic!("expected ident to be parsed");
+            };
+
+            assert_eq!(
+                compiler.symbols.resolve(ident.binding).unwrap(),
+                "someident"
+            );
+        }
     }
 
-    #[test]
-    fn ident_infer_missing() {
-        let i = Ident::new(
-            Symbol::try_from_usize(0).unwrap(),
-            Span::default(),
-            Default::default(),
-        );
+    mod ty {
+        use super::*;
 
-        let result = i.solve(&mut Compiler::default(), &mut Scope::new());
+        #[test]
+        fn ident_present() {
+            // Set up a reference symbol
+            let symbol = Symbol::try_from_usize(0).unwrap();
 
-        assert!(result.is_err());
+            // Create a scope and add the symbol to it
+            let mut scope = Scope::new();
+            scope.register(symbol, Ty::Int);
+
+            let i = Ident::new(symbol, Span::default(), Default::default());
+
+            // Run the type solve
+            let ty_info = i
+                .solve(&mut Compiler::default(), &mut scope)
+                .unwrap()
+                .ty_info;
+
+            assert_eq!(ty_info.ty, Ty::Int);
+            assert_eq!(ty_info.return_ty, None);
+        }
+
+        #[test]
+        fn ident_infer_missing() {
+            let i = Ident::new(
+                Symbol::try_from_usize(0).unwrap(),
+                Span::default(),
+                Default::default(),
+            );
+
+            let result = i.solve(&mut Compiler::default(), &mut Scope::new());
+
+            assert!(result.is_err());
+        }
     }
 }
