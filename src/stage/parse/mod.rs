@@ -20,6 +20,7 @@ use self::block::*;
 pub use self::expression::*;
 use self::function::*;
 use self::statement::*;
+pub use self::ty::parse_ty;
 
 use crate::repr::ast::untyped::*;
 

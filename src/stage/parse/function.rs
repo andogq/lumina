@@ -91,7 +91,7 @@ pub fn parse_function(
                     }
 
                     // Extract the type
-                    let ty = match parse_ty(tokens) {
+                    let (ty, _) = match parse_ty(tokens) {
                         Ok(ty) => ty,
                         Err(e) => {
                             return Some(Err(e));
@@ -127,7 +127,7 @@ pub fn parse_function(
     }
 
     // return type
-    let return_ty = parse_ty(tokens)?;
+    let (return_ty, _) = parse_ty(tokens)?;
 
     // Parse out the body
     let body = parse_block(compiler, tokens)?;

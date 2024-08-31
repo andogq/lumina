@@ -26,6 +26,7 @@ pub enum Precedence {
     Equality,
     Sum,
     Multiply,
+    Cast,
     Call,
 }
 
@@ -47,6 +48,7 @@ impl Precedence {
             | Token::MinusAssign
             | Token::DivAssign
             | Token::MulAssign => Precedence::Assign,
+            Token::As => Precedence::Cast,
             _ => Precedence::Lowest,
         }
     }
