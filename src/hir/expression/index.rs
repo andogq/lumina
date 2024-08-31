@@ -158,7 +158,7 @@ mod test {
         #[case::non_ident_lhs("1[3]")]
         fn fail(parser: Parser, #[case] source: &str) {
             assert!(parser
-                .parse(
+                .parse::<Expression<UntypedAstMetadata>, _>(
                     &mut Compiler::default(),
                     &mut Lexer::from(source),
                     Precedence::Lowest

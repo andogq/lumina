@@ -13,8 +13,9 @@ ast_node! {
 
 impl<M: AstMetadata> Parsable for Assign<M> {
     fn register(parser: &mut Parser) {
-        assert!(
-            parser.register_infix(Token::Eq, |parser, compiler, lexer, left| {
+        assert!(parser.register_infix::<Expression<UntypedAstMetadata>>(
+            Token::Eq,
+            |parser, compiler, lexer, left| {
                 let (binding, binding_span) = match left {
                     Expression::Ident(Ident { binding, span, .. }) => (binding, span),
                     lhs => {
@@ -36,7 +37,8 @@ impl<M: AstMetadata> Parsable for Assign<M> {
                     }
                 }
 
-                let value = parser.parse(compiler, lexer, Precedence::Lowest)?;
+                let value: Expression<UntypedAstMetadata> =
+                    parser.parse(compiler, lexer, Precedence::Lowest)?;
 
                 Ok(Expression::Assign(Assign {
                     span: binding_span.start..value.span().end,
@@ -44,8 +46,8 @@ impl<M: AstMetadata> Parsable for Assign<M> {
                     value: Box::new(value),
                     ty_info: None,
                 }))
-            })
-        );
+            }
+        ));
     }
 }
 
@@ -111,7 +113,7 @@ mod test {
         fn success(parser: Parser, #[case] lhs: &str, #[case] rhs: &str) {
             let mut compiler = Compiler::default();
 
-            let assign = parser
+            let assign: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut compiler,
                     &mut Lexer::from(format!("{lhs} = {rhs}").as_str()),
@@ -128,7 +130,7 @@ mod test {
 
         #[rstest]
         fn invalid(parser: Parser) {
-            let result = parser.parse(
+            let result: Result<Expression<UntypedAstMetadata>, _> = parser.parse(
                 &mut Compiler::default(),
                 &mut Lexer::from("1 = otherident"),
                 Precedence::Lowest,

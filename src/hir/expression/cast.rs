@@ -13,28 +13,31 @@ ast_node! {
 
 impl<M: AstMetadata> Parsable for Cast<M> {
     fn register(parser: &mut Parser) {
-        assert!(parser.register_infix(Token::As, |_, _, lexer, left| {
-            let as_span = match lexer.next_spanned().unwrap() {
-                (Token::As, span) => span,
-                (token, _) => {
-                    return Err(ParseError::ExpectedToken {
-                        expected: Box::new(Token::As),
-                        found: Box::new(token),
-                        reason: "expected to find cast expression".to_string(),
-                    });
-                }
-            };
+        assert!(parser.register_infix::<Expression<UntypedAstMetadata>>(
+            Token::As,
+            |_, _, lexer, left| {
+                let as_span = match lexer.next_spanned().unwrap() {
+                    (Token::As, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::As),
+                            found: Box::new(token),
+                            reason: "expected to find cast expression".to_string(),
+                        });
+                    }
+                };
 
-            // Parse out type from right hand side
-            let (target_ty, target_ty_span) = parse_ty(lexer)?;
+                // Parse out type from right hand side
+                let (target_ty, target_ty_span) = parse_ty(lexer)?;
 
-            Ok(Expression::Cast(Cast {
-                value: Box::new(left),
-                target_ty,
-                span: as_span.start..target_ty_span.end,
-                ty_info: None,
-            }))
-        }));
+                Ok(Expression::Cast(Cast {
+                    value: Box::new(left),
+                    target_ty,
+                    span: as_span.start..target_ty_span.end,
+                    ty_info: None,
+                }))
+            }
+        ));
     }
 }
 
@@ -115,7 +118,7 @@ mod test {
     #[case::missing_type("1 as")]
     #[case::repeated_as("1 as as")]
     fn fail(parser: Parser, #[case] source: &str) {
-        let result = parser.parse(
+        let result: Result<Expression<UntypedAstMetadata>, _> = parser.parse(
             &mut Compiler::default(),
             &mut Lexer::from(source),
             Precedence::Lowest,

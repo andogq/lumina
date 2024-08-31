@@ -51,8 +51,14 @@ pub enum ParseError {
     #[error("the function must have a return statement")]
     MissingReturn,
 
+    #[error("expected to parse a block")]
+    ExpectedBlock,
+
     #[error("unexpectedly encountered end of file")]
     UnexpectedEOF,
+
+    #[error("no parsers registered for type: {0}")]
+    NoRegisteredParsers(String),
 }
 
 pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseError> {

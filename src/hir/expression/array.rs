@@ -12,8 +12,9 @@ ast_node! {
 
 impl<M: AstMetadata> Parsable for Array<M> {
     fn register(parser: &mut Parser) {
-        assert!(
-            parser.register_prefix(Token::LeftSquare, |parser, compiler, lexer| {
+        assert!(parser.register_prefix::<Expression<UntypedAstMetadata>>(
+            Token::LeftSquare,
+            |parser, compiler, lexer| {
                 // Parse opening square bracket
                 let span_start = match lexer.next_spanned().unwrap() {
                     (Token::LeftSquare, span) => span.start,
@@ -30,7 +31,6 @@ impl<M: AstMetadata> Parsable for Array<M> {
                 let mut init = Vec::new();
                 let mut expect_item = true;
                 let span_end = loop {
-                    dbg!("loop");
                     match (lexer.peek_token().unwrap(), expect_item) {
                         (Token::Comma, false) => {
                             expect_item = true;
@@ -58,8 +58,8 @@ impl<M: AstMetadata> Parsable for Array<M> {
                     span: span_start..span_end,
                     ty_info: None,
                 }))
-            })
-        );
+            }
+        ));
     }
 }
 
@@ -129,7 +129,7 @@ mod test {
         #[case::triple("[1, 2, 3]", 3)]
         #[case::triple_trailing("[1, 2, 3,]", 3)]
         fn flat(parser: Parser, #[case] source: &str, #[case] items: usize) {
-            let array = parser
+            let array: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
                     &mut Lexer::from(source),
@@ -142,7 +142,7 @@ mod test {
 
         #[rstest]
         fn nested(parser: Parser) {
-            let array = parser
+            let array: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
                     &mut Lexer::from("[[1,], [1, 2,], [1, 2, 3,],]"),

@@ -165,7 +165,7 @@ mod test {
         fn success(parser: Parser, #[case] source: &str, #[case] arg_count: usize) {
             let mut compiler = Compiler::default();
 
-            let call = parser
+            let call: Expression<UntypedAstMetadata> = parser
                 .parse(&mut compiler, &mut Lexer::from(source), Precedence::Lowest)
                 .unwrap();
 
@@ -183,7 +183,7 @@ mod test {
         #[case::single_comma_no_args("myfn(,)")]
         fn fail(parser: Parser, #[case] source: &str) {
             assert!(parser
-                .parse(
+                .parse::<Expression<UntypedAstMetadata>, _>(
                     &mut Compiler::default(),
                     &mut Lexer::from(source),
                     Precedence::Lowest

@@ -14,7 +14,7 @@ ast_node! {
 
 impl<M: AstMetadata> Parsable for Ident<M> {
     fn register(parser: &mut Parser) {
-        parser.register_prefix_test(
+        parser.register_prefix_test::<Expression<UntypedAstMetadata>>(
             |token| matches!(token, Token::Ident(_)),
             |_, compiler, lexer| {
                 let (value, span) = match lexer.next_spanned().unwrap() {
@@ -99,7 +99,7 @@ mod test_ident {
 
             let mut compiler = Compiler::default();
 
-            let ident = parser
+            let ident: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut compiler,
                     &mut Lexer::from("someident"),

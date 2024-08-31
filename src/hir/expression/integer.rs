@@ -12,7 +12,7 @@ ast_node! {
 
 impl<M: AstMetadata> Parsable for Integer<M> {
     fn register(parser: &mut Parser) {
-        parser.register_prefix_test(
+        parser.register_prefix_test::<Expression<UntypedAstMetadata>>(
             |token| matches!(token, Token::Integer(_)),
             |_, _, lexer| {
                 let (value, span) = match lexer.next_spanned().unwrap() {
@@ -70,7 +70,7 @@ mod test_integer {
 
             Integer::<UntypedAstMetadata>::register(&mut parser);
 
-            let integer = parser
+            let integer: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
                     &mut Lexer::from(value.to_string().as_str()),

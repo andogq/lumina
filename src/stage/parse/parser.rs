@@ -1,49 +1,40 @@
-use std::collections::HashMap;
+use std::{any::TypeId, collections::HashMap};
 
-use crate::{compiler::Compiler, repr::ast::untyped::Expression};
+use crate::compiler::Compiler;
 
 use super::{Lexer, ParseError, Token};
 
 /// Function capable of parsing an infix expression out of the provided lexer.
-pub type InfixParser = fn(
+pub type InfixParser<T> = fn(
     parser: &Parser,
     compiler: &mut Compiler,
     lexer: &mut Lexer,
-    left: Expression,
-) -> Result<Expression, ParseError>;
+    left: T,
+) -> Result<T, ParseError>;
 
 /// Function capable of parsing a prefix expression out of the provided lexer.
-pub type PrefixParser = fn(
-    parser: &Parser,
-    compiler: &mut Compiler,
-    lexer: &mut Lexer,
-) -> Result<Expression, ParseError>;
+pub type PrefixParser<T> =
+    fn(parser: &Parser, compiler: &mut Compiler, lexer: &mut Lexer) -> Result<T, ParseError>;
 
 /// Function to test whether a token is a match to parse.
 pub type TokenTest = fn(token: &Token) -> bool;
 
 /// Composable parser, allowing for components of the parser to be dynamically registered.
-#[derive(Default)]
-pub struct Parser {
+pub struct ParserRules<T> {
     /// Infix parse function to run when a given token is presented during infix parsing.
-    infix: HashMap<Token, InfixParser>,
+    infix: HashMap<Token, InfixParser<T>>,
     /// Dynamic tests to run on a token during infix parsing. These will be run after the infix map is checked.
-    infix_tests: Vec<(TokenTest, InfixParser)>,
+    infix_tests: Vec<(TokenTest, InfixParser<T>)>,
     /// Prefix parse function to run when a given token is presented durign prefix parsing.
-    prefix: HashMap<Token, PrefixParser>,
+    prefix: HashMap<Token, PrefixParser<T>>,
     /// Dynamic tests to run on a token during prefix parsing. These will be run after the prefix map is checked.
-    prefix_tests: Vec<(TokenTest, PrefixParser)>,
+    prefix_tests: Vec<(TokenTest, PrefixParser<T>)>,
 }
 
-impl Parser {
-    /// Create a new instance of the parser.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
+impl<T> ParserRules<T> {
     /// Register a new prefix parser against a token. Will return `false` if the token has already
     /// been registered.
-    pub fn register_prefix(&mut self, token: Token, parser: PrefixParser) -> bool {
+    pub fn register_prefix(&mut self, token: Token, parser: PrefixParser<T>) -> bool {
         // If the token has already been registered, bail
         if self.prefix.contains_key(&token) {
             return false;
@@ -55,13 +46,13 @@ impl Parser {
     }
 
     /// Register a test for a prefix parser.
-    pub fn register_prefix_test(&mut self, token_test: TokenTest, parser: PrefixParser) {
+    pub fn register_prefix_test(&mut self, token_test: TokenTest, parser: PrefixParser<T>) {
         self.prefix_tests.push((token_test, parser));
     }
 
-    /// Register a new infix parser against a token. Will return `fasle` if the token has already
+    /// Register a new infix parser against a token. Will return `false` if the token has already
     /// been registered.
-    pub fn register_infix(&mut self, token: Token, parser: InfixParser) -> bool {
+    pub fn register_infix(&mut self, token: Token, parser: InfixParser<T>) -> bool {
         // If the token has already been registered, bail
         if self.infix.contains_key(&token) {
             return false;
@@ -73,30 +64,31 @@ impl Parser {
     }
 
     /// Register a test for an infix parser.
-    pub fn register_infix_test(&mut self, token_test: TokenTest, parser: InfixParser) {
+    pub fn register_infix_test(&mut self, token_test: TokenTest, parser: InfixParser<T>) {
         self.infix_tests.push((token_test, parser));
     }
 
     /// Parse an expression starting with the given precedence out of the lexer.
     pub fn parse<P: From<Token> + PartialOrd>(
         &self,
+        parser: &Parser,
         compiler: &mut Compiler,
         lexer: &mut Lexer,
         precedence: P,
-    ) -> Result<Expression, ParseError> {
+    ) -> Result<T, ParseError> {
         // Parse a prefix for this expression
-        let mut left = self.parse_prefix(compiler, lexer)?;
+        let mut left = self.parse_prefix(parser, compiler, lexer)?;
 
         while let Some(token) = lexer
             .peek_token()
             .filter(|t| precedence < P::from((*t).clone()))
         {
-            let Some(parser) = self.get_infix_parser(token) else {
+            let Some(infix_parser) = self.get_infix_parser(token) else {
                 // Can't find an infix parser for the next token, likely finished this expression
                 return Ok(left);
             };
 
-            left = parser(self, compiler, lexer, left)?;
+            left = infix_parser(parser, compiler, lexer, left)?;
         }
 
         Ok(left)
@@ -105,25 +97,26 @@ impl Parser {
     /// Parse a prefix expression
     fn parse_prefix(
         &self,
+        parser: &Parser,
         compiler: &mut Compiler,
         lexer: &mut Lexer,
-    ) -> Result<Expression, ParseError> {
+    ) -> Result<T, ParseError> {
         let token = lexer.peek_token().unwrap();
 
-        let parser = self
+        let prefix_parser = self
             .get_prefix_parser(token)
             .ok_or_else(|| ParseError::UnexpectedToken(token.clone()))?;
 
-        parser(self, compiler, lexer)
+        prefix_parser(parser, compiler, lexer)
     }
 
     /// Attempt to find a prefix parser for a given token.
-    fn get_prefix_parser<'a>(&'a self, token: &'a Token) -> Option<&'a PrefixParser> {
+    fn get_prefix_parser<'a>(&'a self, token: &'a Token) -> Option<&'a PrefixParser<T>> {
         self.get_parser(&self.prefix, &self.prefix_tests, token)
     }
 
     /// Attempt to find an infix parser for a given token.
-    fn get_infix_parser<'a>(&'a self, token: &'a Token) -> Option<&'a InfixParser> {
+    fn get_infix_parser<'a>(&'a self, token: &'a Token) -> Option<&'a InfixParser<T>> {
         self.get_parser(&self.infix, &self.infix_tests, token)
     }
 
@@ -143,28 +136,113 @@ impl Parser {
     }
 }
 
+impl<T> Default for ParserRules<T> {
+    fn default() -> Self {
+        Self {
+            infix: HashMap::new(),
+            infix_tests: Vec::new(),
+            prefix: HashMap::new(),
+            prefix_tests: Vec::new(),
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Parser(HashMap<TypeId, Box<dyn std::any::Any>>);
+
+impl Parser {
+    /// Create a new instance of the parser.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Parse tokens from the provided lexer in order to produce values of `T`. Will produce an
+    /// error if no parser exists for `T`.
+    pub fn parse<T: 'static, P: From<Token> + PartialOrd>(
+        &self,
+        compiler: &mut Compiler,
+        lexer: &mut Lexer,
+        precedence: P,
+    ) -> Result<T, ParseError> {
+        self.get::<T>()
+            .ok_or_else(|| ParseError::NoRegisteredParsers(std::any::type_name::<T>().to_string()))?
+            .parse(self, compiler, lexer, precedence)
+    }
+
+    /// Register a new prefix parser against a token. Will return `false` if the token has already
+    /// been registered.
+    pub fn register_prefix<T: 'static>(&mut self, token: Token, parser: PrefixParser<T>) -> bool {
+        self.get_mut::<T>().register_prefix(token, parser)
+    }
+
+    /// Register a test for a prefix parser.
+    pub fn register_prefix_test<T: 'static>(
+        &mut self,
+        token_test: TokenTest,
+        parser: PrefixParser<T>,
+    ) {
+        self.get_mut::<T>().register_prefix_test(token_test, parser);
+    }
+
+    /// Register a new infix parser against a token. Will return `false` if the token has already
+    /// been registered.
+    pub fn register_infix<T: 'static>(&mut self, token: Token, parser: InfixParser<T>) -> bool {
+        self.get_mut::<T>().register_infix(token, parser)
+    }
+
+    /// Register a test for an infix parser.
+    pub fn register_infix_test<T: 'static>(
+        &mut self,
+        token_test: TokenTest,
+        parser: InfixParser<T>,
+    ) {
+        self.get_mut::<T>().register_infix_test(token_test, parser);
+    }
+
+    /// Get a reference to the parser rules associated with some type.
+    fn get<T: 'static>(&self) -> Option<&ParserRules<T>> {
+        Some(
+            self.0
+                .get(&TypeId::of::<ParserRules<T>>())?
+                .downcast_ref::<ParserRules<T>>()
+                .expect("correct type stored against type ID"),
+        )
+    }
+
+    /// Get a mutable reference to the parser rules associated with some type, creating it if it doesn't exist.
+    fn get_mut<T: 'static>(&mut self) -> &mut ParserRules<T> {
+        self.0
+            .entry(TypeId::of::<ParserRules<T>>())
+            .or_insert_with(|| Box::new(ParserRules::<T>::default()))
+            .downcast_mut::<ParserRules<T>>()
+            .expect("correct type stored against type ID")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{
-        hir::{Boolean, Expression, Integer},
-        stage::parse::Precedence,
+        hir::*,
+        stage::parse::{Precedence, UntypedAstMetadata},
     };
 
     use super::*;
     use rstest::*;
+
+    type Expression = crate::hir::Expression<UntypedAstMetadata>;
 
     /// Ensure parsing fails when no parsers are registered.
     #[rstest]
     fn parse_no_match() {
         let parser = Parser::new();
 
-        let result = parser.parse(
+        let result = parser.parse::<(), _>(
             &mut Compiler::default(),
             &mut Lexer::from("true"),
             Precedence::Lowest,
         );
 
-        assert!(matches!(result, Err(ParseError::UnexpectedToken(_))));
+        assert!(matches!(result, Err(ParseError::NoRegisteredParsers(_))));
     }
 
     mod prefix {
@@ -400,8 +478,6 @@ mod test {
     }
 
     mod infix {
-        use crate::hir::{Expression, Infix, InfixOperation};
-
         use super::*;
 
         #[fixture]
@@ -462,13 +538,13 @@ mod test {
         /// Ensire that multiple (nested) infix expressions can be parsed from infix tokens.
         #[rstest]
         fn parse_two_infix(parser: Parser) {
-            let expression = dbg!(parser
+            let expression = parser
                 .parse(
                     &mut Compiler::default(),
                     &mut Lexer::from("true + true + true"),
                     Precedence::Lowest,
                 )
-                .unwrap());
+                .unwrap();
 
             assert!(matches!(expression, Expression::Infix(_)));
 

@@ -82,7 +82,7 @@ mod test {
 
             Boolean::<UntypedAstMetadata>::register(&mut parser);
 
-            let boolean = parser
+            let boolean: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
                     &mut Lexer::from(source),
