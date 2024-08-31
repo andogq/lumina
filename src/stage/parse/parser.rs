@@ -101,7 +101,7 @@ impl<T> ParserRules<T> {
         compiler: &mut Compiler,
         lexer: &mut Lexer,
     ) -> Result<T, ParseError> {
-        let token = lexer.peek_token().unwrap();
+        let token = lexer.peek_token().ok_or(ParseError::UnexpectedEOF)?;
 
         let prefix_parser = self
             .get_prefix_parser(token)
