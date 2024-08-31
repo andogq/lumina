@@ -49,6 +49,9 @@ pub enum ParseError {
 
     #[error("the function must have a return statement")]
     MissingReturn,
+
+    #[error("unexpectedly encountered end of file")]
+    UnexpectedEOF,
 }
 
 pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseError> {
