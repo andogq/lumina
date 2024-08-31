@@ -1,3 +1,5 @@
+use crate::stage::parse::{ParseError, Precedence};
+
 use super::*;
 
 ast_node! {
@@ -6,6 +8,59 @@ ast_node! {
         index: Box<Expression<M>>,
         span,
         ty_info,
+    }
+}
+
+impl<M: AstMetadata> Parsable for Index<M> {
+    fn register(parser: &mut Parser) {
+        assert!(
+            parser.register_infix(Token::LeftSquare, |parser, compiler, lexer, left| {
+                // Ensure that left is an ident
+                let (binding, binding_span) = match left {
+                    Expression::Ident(Ident { binding, span, .. }) => (binding, span),
+                    lhs => {
+                        return Err(ParseError::InvalidInfixLhs {
+                            found: Box::new(lhs),
+                            reason: "index must start with an ident".to_string(),
+                        });
+                    }
+                };
+
+                // Parse out opening bracket
+                match lexer.next_token().ok_or(ParseError::UnexpectedEOF)? {
+                    Token::LeftSquare => (),
+                    token => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::LeftSquare),
+                            found: Box::new(token),
+                            reason: "expected index operation".to_string(),
+                        })
+                    }
+                }
+
+                // Parse index
+                let index = parser.parse(compiler, lexer, Precedence::Lowest)?;
+
+                // Parse closing bracket
+                let closing_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::RightSquare, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::RightSquare),
+                            found: Box::new(token),
+                            reason: "expected closing bracket for index".to_string(),
+                        })
+                    }
+                };
+
+                Ok(Expression::Index(Index {
+                    value: binding,
+                    index: Box::new(index),
+                    span: binding_span.start..closing_span.end,
+                    ty_info: None,
+                }))
+            })
+        );
     }
 }
 
@@ -49,5 +104,66 @@ impl SolveType for Index<UntypedAstMetadata> {
             },
             index: Box::new(index),
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rstest::*;
+
+    mod parse {
+        use super::*;
+        use crate::stage::parse::Lexer;
+
+        #[fixture]
+        fn parser() -> Parser {
+            let mut parser = Parser::new();
+
+            Index::<UntypedAstMetadata>::register(&mut parser);
+
+            // Register helper parsers
+            Integer::<UntypedAstMetadata>::register(&mut parser);
+            Ident::<UntypedAstMetadata>::register(&mut parser);
+
+            parser
+        }
+
+        #[rstest]
+        #[case::normal("a[1]", |e| matches!(e, Expression::Integer(_)))]
+        #[case::nested("a[b[2]]", |e| matches!(e, Expression::Index(_)))]
+        fn success(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] index_test: fn(Expression<UntypedAstMetadata>) -> bool,
+        ) {
+            let index = parser
+                .parse(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest,
+                )
+                .unwrap();
+
+            let Expression::Index(index) = index else {
+                panic!("expected to parse index");
+            };
+
+            assert!(index_test(*index.index));
+        }
+
+        #[rstest]
+        #[case::missing_closing_bracket("a[1")]
+        #[case::missing_index("a[]")]
+        #[case::non_ident_lhs("1[3]")]
+        fn fail(parser: Parser, #[case] source: &str) {
+            assert!(parser
+                .parse(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest
+                )
+                .is_err());
+        }
     }
 }
