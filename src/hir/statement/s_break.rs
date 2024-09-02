@@ -14,7 +14,7 @@ impl<M: AstMetadata> Parsable for Break<M> {
         assert!(parser.register_prefix::<Statement<UntypedAstMetadata>>(
             Token::Break,
             |_, _, lexer| {
-                let span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                let break_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
                     (Token::Break, span) => span,
                     (token, _) => {
                         return Err(ParseError::ExpectedToken {
@@ -25,8 +25,20 @@ impl<M: AstMetadata> Parsable for Break<M> {
                     }
                 };
 
+                // Parse out the semicolon
+                let semicolon_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::SemiColon, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::SemiColon),
+                            found: Box::new(token),
+                            reason: "expected break statement to finish with semicolon".to_string(),
+                        });
+                    }
+                };
+
                 Ok(Statement::Break(Break {
-                    span,
+                    span: break_span.start..semicolon_span.end,
                     ty_info: None,
                 }))
             }
@@ -62,12 +74,16 @@ mod test {
 
         use super::*;
 
-        #[rstest]
-        #[case("break")]
-        fn success(#[case] source: &str) {
+        #[fixture]
+        fn parser() -> Parser {
             let mut parser = Parser::new();
             Break::<UntypedAstMetadata>::register(&mut parser);
+            parser
+        }
 
+        #[rstest]
+        #[case("break;")]
+        fn success(parser: Parser, #[case] source: &str) {
             let b: Statement<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
@@ -77,6 +93,18 @@ mod test {
                 .unwrap();
 
             assert!(matches!(b, Statement::Break(_)));
+        }
+
+        #[rstest]
+        #[case::missing_semicolon("break")]
+        fn fail(parser: Parser, #[case] source: &str) {
+            assert!(parser
+                .parse::<Statement<UntypedAstMetadata>, _>(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest,
+                )
+                .is_err());
         }
     }
 }

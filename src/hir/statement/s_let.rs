@@ -56,9 +56,21 @@ impl<M: AstMetadata> Parsable for Let<M> {
                 let value: Expression<UntypedAstMetadata> =
                     parser.parse(compiler, lexer, Precedence::Lowest)?;
 
+                // Parse out the semicolon
+                let semicolon_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::SemiColon, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::SemiColon),
+                            found: Box::new(token),
+                            reason: "expected let statement to finish with semicolon".to_string(),
+                        });
+                    }
+                };
+
                 Ok(Statement::Let(Let {
                     binding,
-                    span: start_span.start..value.span().end,
+                    span: start_span.start..semicolon_span.end,
                     value,
                     ty_info: None,
                 }))
@@ -124,7 +136,7 @@ mod test {
         }
 
         #[rstest]
-        #[case::regular("let a = 1")]
+        #[case::regular("let a = 1;")]
         fn success(parser: Parser, #[case] source: &str) {
             let mut compiler = Compiler::default();
 
@@ -145,9 +157,10 @@ mod test {
         }
 
         #[rstest]
-        #[case::missing_binding("let = 1")]
-        #[case::missing_equals("let a 1")]
-        #[case::missing_value("let a =")]
+        #[case::missing_binding("let = 1;")]
+        #[case::missing_equals("let a 1;")]
+        #[case::missing_value("let a =;")]
+        #[case::missing_semicolon("let a = 1")]
         fn fail(parser: Parser, #[case] source: &str) {
             assert!(parser
                 .parse::<Statement<UntypedAstMetadata>, _>(

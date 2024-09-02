@@ -5,6 +5,7 @@ use super::*;
 ast_node! {
     ExpressionStatement<M> {
         expression: Expression<M>,
+        terminated: bool,
         span,
         ty_info,
     }
@@ -17,8 +18,20 @@ impl<M: AstMetadata> Parsable for ExpressionStatement<M> {
                 let expression: Expression<UntypedAstMetadata> =
                     parser.parse(compiler, lexer, Precedence::Lowest)?;
 
+                let terminating_span = lexer
+                    .next_if(|(token, _)| matches!(token, Ok(Token::SemiColon)))
+                    .map(|(_, span)| span);
+
+                let expression_span = expression.span().clone();
+                let span = expression_span.start
+                    ..terminating_span
+                        .as_ref()
+                        .map(|span| span.end)
+                        .unwrap_or(expression_span.end);
+
                 Ok(Statement::ExpressionStatement(ExpressionStatement {
-                    span: expression.span().clone(),
+                    span,
+                    terminated: terminating_span.is_some(),
                     expression,
                     ty_info: None,
                 }))
@@ -41,8 +54,16 @@ impl SolveType for ExpressionStatement<UntypedAstMetadata> {
         let ty_info = expression.get_ty_info().clone();
 
         Ok(ExpressionStatement {
-            ty_info,
+            ty_info: TyInfo {
+                ty: if self.terminated {
+                    Ty::Unit
+                } else {
+                    ty_info.ty
+                },
+                return_ty: ty_info.return_ty,
+            },
             expression,
+            terminated: self.terminated,
             span: self.span,
         })
     }
@@ -71,10 +92,12 @@ mod test {
         }
 
         #[rstest]
-        #[case::integer("1", |e| matches!(e, Expression::Integer(_)))]
+        #[case::integer_unterminated("1", false, |e| matches!(e, Expression::Integer(_)))]
+        #[case::integer_unterminated("1;", true, |e| matches!(e, Expression::Integer(_)))]
         fn success(
             parser: Parser,
             #[case] source: &str,
+            #[case] expect_terminated: bool,
             #[case] tester: fn(Expression<UntypedAstMetadata>) -> bool,
         ) {
             let s: Statement<UntypedAstMetadata> = parser
@@ -85,9 +108,16 @@ mod test {
                 )
                 .unwrap();
 
-            let Statement::ExpressionStatement(ExpressionStatement { expression, .. }) = s else {
+            let Statement::ExpressionStatement(ExpressionStatement {
+                expression,
+                terminated,
+                ..
+            }) = s
+            else {
                 panic!("expected expression statement");
             };
+
+            assert_eq!(terminated, expect_terminated);
 
             assert!(tester(expression));
         }
@@ -97,9 +127,14 @@ mod test {
         use super::*;
 
         #[rstest]
-        #[case(Ty::Int)]
-        fn infer(#[case] ty: Ty) {
-            let s = Statement::expression(Expression::integer(0, Span::default()), Span::default());
+        #[case(Ty::Int, false)]
+        #[case(Ty::Unit, true)]
+        fn infer(#[case] ty: Ty, #[case] terminated: bool) {
+            let s = Statement::expression(
+                Expression::integer(0, Span::default()),
+                terminated,
+                Span::default(),
+            );
 
             let ty_info = s
                 .solve(&mut Compiler::default(), &mut Scope::new())

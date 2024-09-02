@@ -67,13 +67,8 @@ impl<M: AstMetadata<Span = Span, TyInfo: Default>> Expression<M> {
         Self::Ident(Ident::new(name, span, M::TyInfo::default()))
     }
 
-    pub fn block(statements: Vec<Statement<M>>, terminated: bool, span: Span) -> Self {
-        Self::Block(Block::new(
-            statements,
-            terminated,
-            span,
-            M::TyInfo::default(),
-        ))
+    pub fn block(statements: Vec<Statement<M>>, span: Span) -> Self {
+        Self::Block(Block::new(statements, span, M::TyInfo::default()))
     }
 
     pub fn _if(

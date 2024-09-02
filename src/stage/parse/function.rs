@@ -5,11 +5,12 @@ use ty::parse_ty;
 use super::*;
 
 pub fn parse_function(
+    parser: &Parser,
     compiler: &mut Compiler,
-    tokens: &mut Lexer<'_>,
+    lexer: &mut Lexer<'_>,
 ) -> Result<Function, ParseError> {
     // `fn` keyword
-    let span_start = match tokens.next_spanned().unwrap() {
+    let span_start = match lexer.next_spanned().unwrap() {
         // `fn` keyword
         (Token::Fn, span) => span.start,
         // Some other token
@@ -23,7 +24,7 @@ pub fn parse_function(
     };
 
     // function name
-    let fn_name = match tokens.next_token().unwrap() {
+    let fn_name = match lexer.next_token().unwrap() {
         Token::Ident(fn_name) => fn_name,
         token => {
             return Err(ParseError::ExpectedToken {
@@ -35,7 +36,7 @@ pub fn parse_function(
     };
 
     // opening paren for argument list
-    match tokens.next_token().unwrap() {
+    match lexer.next_token().unwrap() {
         Token::LeftParen => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -56,7 +57,7 @@ pub fn parse_function(
 
     let parameters = iter::from_fn(|| {
         loop {
-            match (&parse_state, tokens.next_token().unwrap()) {
+            match (&parse_state, lexer.next_token().unwrap()) {
                 // Parameter list finished
                 (_, Token::RightParen) => {
                     return None;
@@ -78,7 +79,7 @@ pub fn parse_function(
                     let ident = compiler.symbols.get_or_intern(ident);
 
                     // Ensure a colon follows it
-                    match tokens.next_token().unwrap() {
+                    match lexer.next_token().unwrap() {
                         Token::Colon => (),
                         token => {
                             return Some(Err(ParseError::ExpectedToken {
@@ -91,7 +92,7 @@ pub fn parse_function(
                     }
 
                     // Extract the type
-                    let (ty, _) = match parse_ty(tokens) {
+                    let (ty, _) = match parse_ty(lexer) {
                         Ok(ty) => ty,
                         Err(e) => {
                             return Some(Err(e));
@@ -115,7 +116,7 @@ pub fn parse_function(
     .collect::<Result<Vec<_>, _>>()?;
 
     // arrow for return type
-    match tokens.next_token().unwrap() {
+    match lexer.next_token().unwrap() {
         Token::ThinArrow => (),
         token => {
             return Err(ParseError::ExpectedToken {
@@ -127,10 +128,14 @@ pub fn parse_function(
     }
 
     // return type
-    let (return_ty, _) = parse_ty(tokens)?;
+    let (return_ty, _) = parse_ty(lexer)?;
 
     // Parse out the body
-    let body = parse_block(compiler, tokens)?;
+    let Expression::<UntypedAstMetadata>::Block(body) =
+        parser.parse(compiler, lexer, Precedence::Lowest)?
+    else {
+        return Err(ParseError::ExpectedBlock);
+    };
 
     // Construct the function span to the end of the body
     let span = span_start..body.span.end;

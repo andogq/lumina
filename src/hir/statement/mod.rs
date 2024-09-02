@@ -41,6 +41,16 @@ impl SolveType for Statement<UntypedAstMetadata> {
     }
 }
 
+impl<M: AstMetadata> Parsable for Statement<M> {
+    fn register(parser: &mut Parser) {
+        Return::<UntypedAstMetadata>::register(parser);
+        Let::<UntypedAstMetadata>::register(parser);
+        ExpressionStatement::<UntypedAstMetadata>::register(parser);
+        Break::<UntypedAstMetadata>::register(parser);
+        Continue::<UntypedAstMetadata>::register(parser);
+    }
+}
+
 impl<M: AstMetadata<TyInfo: Default>> Statement<M> {
     pub fn _return(expression: Expression<M>, span: M::Span) -> Self {
         Self::Return(Return::new(expression, span, M::TyInfo::default()))
@@ -50,9 +60,10 @@ impl<M: AstMetadata<TyInfo: Default>> Statement<M> {
         Self::Let(Let::new(name, value, span, M::TyInfo::default()))
     }
 
-    pub fn expression(expression: Expression<M>, span: M::Span) -> Self {
+    pub fn expression(expression: Expression<M>, terminated: bool, span: M::Span) -> Self {
         Self::ExpressionStatement(ExpressionStatement::new(
             expression,
+            terminated,
             span,
             M::TyInfo::default(),
         ))

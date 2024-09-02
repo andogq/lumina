@@ -1,8 +1,5 @@
-mod block;
-mod expression;
 mod function;
 pub mod parser;
-mod statement;
 mod ty;
 
 use std::collections::HashMap;
@@ -11,15 +8,14 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 use logos::Logos;
+use parser::Parser;
 
 use crate::compiler::Compiler;
+use crate::hir::{Expression, Parsable, Statement};
 use crate::repr::token::*;
 use crate::util::span::*;
 
-use self::block::*;
-pub use self::expression::*;
 use self::function::*;
-use self::statement::*;
 pub use self::ty::parse_ty;
 
 use crate::repr::ast::untyped::*;
@@ -38,7 +34,7 @@ pub enum ParseError {
 
     #[error("invalid infix left hand side: {reason} ({found:?})")]
     InvalidInfixLhs {
-        found: Box<Expression>,
+        found: Box<Expression<UntypedAstMetadata>>,
         reason: String,
     },
 
@@ -61,18 +57,82 @@ pub enum ParseError {
     NoRegisteredParsers(String),
 }
 
+#[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Precedence {
+    #[default]
+    Lowest,
+    Assign,
+    Binary,
+    Equality,
+    Sum,
+    Multiply,
+    Cast,
+    Call,
+}
+
+impl Precedence {
+    pub fn of(token: &Token) -> Self {
+        match token {
+            Token::Minus | Token::Plus => Precedence::Sum,
+            Token::Asterix | Token::ForwardSlash => Precedence::Multiply,
+            Token::And | Token::Or => Precedence::Binary,
+            Token::DoubleEq
+            | Token::NotEq
+            | Token::LeftAngle
+            | Token::RightAngle
+            | Token::LeftAngleEq
+            | Token::RightAngleEq => Precedence::Equality,
+            Token::LeftParen | Token::LeftSquare => Precedence::Call,
+            Token::Eq
+            | Token::AddAssign
+            | Token::MinusAssign
+            | Token::DivAssign
+            | Token::MulAssign => Precedence::Assign,
+            Token::As => Precedence::Cast,
+            _ => Precedence::Lowest,
+        }
+    }
+}
+
+impl From<InfixOperation> for Precedence {
+    fn from(op: InfixOperation) -> Self {
+        use InfixOperation::*;
+
+        match op {
+            Minus | Plus => Precedence::Sum,
+            Multiply | Divide => Precedence::Multiply,
+            And | Or => Precedence::Binary,
+            Eq | NotEq | Greater | Less | GreaterEq | LessEq => Precedence::Equality,
+        }
+    }
+}
+
+impl From<Token> for Precedence {
+    fn from(token: Token) -> Self {
+        Self::of(&token)
+    }
+}
+
 pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseError> {
-    let mut tokens: Lexer = source.into();
+    let mut lexer: Lexer = source.into();
+
+    let parser = {
+        let mut parser = Parser::new();
+
+        Statement::<UntypedAstMetadata>::register(&mut parser);
+        Expression::<UntypedAstMetadata>::register(&mut parser);
+
+        parser
+    };
 
     // WARN: wacky af
     let main = compiler.symbols.get_or_intern("main");
 
     // Parse each expression which should be followed by a semicolon
     let mut functions = std::iter::from_fn(|| {
-        Some(match tokens.peek_token()? {
-            Token::Fn => {
-                parse_function(compiler, &mut tokens).map(|function| (function.name, function))
-            }
+        Some(match lexer.peek_token()? {
+            Token::Fn => parse_function(&parser, compiler, &mut lexer)
+                .map(|function| (function.name, function)),
             token => Err(ParseError::ExpectedToken {
                 expected: Box::new(Token::Fn),
                 found: Box::new(token.clone()),

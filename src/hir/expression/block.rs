@@ -5,7 +5,6 @@ use super::*;
 ast_node! {
     Block<M> {
         statements: Vec<Statement<M>>,
-        terminated: bool,
         span,
         ty_info,
     }
@@ -29,14 +28,14 @@ impl<M: AstMetadata> Parsable for Block<M> {
                 };
 
                 // Parse statements
-                let (statements, terminated) = parser
-                    .parse_delimited::<Statement<UntypedAstMetadata>, Precedence>(
-                        compiler,
-                        lexer,
-                        Token::SemiColon,
-                    );
-
-                dbg!(&statements, terminated);
+                let mut statements = Vec::new();
+                while lexer
+                    .peek_token()
+                    .map(|t| !matches!(t, Token::RightBrace))
+                    .unwrap_or(false)
+                {
+                    statements.push(parser.parse(compiler, lexer, Precedence::Lowest)?);
+                }
 
                 // Parse ending bracket
                 let end_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
@@ -52,7 +51,6 @@ impl<M: AstMetadata> Parsable for Block<M> {
 
                 Ok(Expression::Block(Block {
                     statements,
-                    terminated,
                     span: start_span.start..end_span.end,
                     ty_info: None,
                 }))
@@ -108,7 +106,6 @@ impl SolveType for Block<UntypedAstMetadata> {
 
         Ok(Block {
             span: self.span,
-            terminated: self.terminated,
             statements,
             ty_info,
         })
@@ -139,19 +136,14 @@ mod test {
         }
 
         #[rstest]
-        #[case::empty("{ }", false, 0)]
-        #[case::single_terminated("{ true; }", true, 1)]
-        #[case::single_unterminated("{ true }", false, 1)]
-        #[case::double_terminated("{ true; true; }", true, 2)]
-        #[case::double_unterminated("{ true; true }", false, 2)]
-        #[case::triple_terminated("{ true; true; true; }", true, 3)]
-        #[case::triple_unterminated("{ true; true; true }", false, 3)]
-        fn success(
-            parser: Parser,
-            #[case] source: &str,
-            #[case] terminated: bool,
-            #[case] count: usize,
-        ) {
+        #[case::empty("{ }", 0)]
+        #[case::single_terminated("{ true; }", 1)]
+        #[case::single_unterminated("{ true }", 1)]
+        #[case::double_terminated("{ true; true; }", 2)]
+        #[case::double_unterminated("{ true; true }", 2)]
+        #[case::triple_terminated("{ true; true; true; }", 3)]
+        #[case::triple_unterminated("{ true; true; true }", 3)]
+        fn success(parser: Parser, #[case] source: &str, #[case] count: usize) {
             let b: Expression<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
@@ -164,7 +156,6 @@ mod test {
                 panic!("expected to parse block");
             };
 
-            assert_eq!(b.terminated, terminated);
             assert_eq!(b.statements.len(), count);
         }
     }

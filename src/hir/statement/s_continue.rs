@@ -14,7 +14,7 @@ impl<M: AstMetadata> Parsable for Continue<M> {
         assert!(parser.register_prefix::<Statement<UntypedAstMetadata>>(
             Token::Continue,
             |_, _, lexer| {
-                let span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                let continue_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
                     (Token::Continue, span) => span,
                     (token, _) => {
                         return Err(ParseError::ExpectedToken {
@@ -25,8 +25,21 @@ impl<M: AstMetadata> Parsable for Continue<M> {
                     }
                 };
 
+                // Parse out the semicolon
+                let semicolon_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::SemiColon, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::SemiColon),
+                            found: Box::new(token),
+                            reason: "expected continue statement to finish with semicolon"
+                                .to_string(),
+                        });
+                    }
+                };
+
                 Ok(Statement::Continue(Continue {
-                    span,
+                    span: continue_span.start..semicolon_span.end,
                     ty_info: None,
                 }))
             }
@@ -62,8 +75,15 @@ mod test {
 
         use super::*;
 
+        #[fixture]
+        fn parser() -> Parser {
+            let mut parser = Parser::new();
+            Continue::<UntypedAstMetadata>::register(&mut parser);
+            parser
+        }
+
         #[rstest]
-        #[case("continue")]
+        #[case("continue;")]
         fn success(#[case] source: &str) {
             let mut parser = Parser::new();
             Continue::<UntypedAstMetadata>::register(&mut parser);
@@ -77,6 +97,18 @@ mod test {
                 .unwrap();
 
             assert!(matches!(c, Statement::Continue(_)));
+        }
+
+        #[rstest]
+        #[case::missing_semicolon("continue")]
+        fn fail(parser: Parser, #[case] source: &str) {
+            assert!(parser
+                .parse::<Statement<UntypedAstMetadata>, _>(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest,
+                )
+                .is_err());
         }
     }
 }

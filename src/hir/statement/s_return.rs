@@ -31,8 +31,21 @@ impl<M: AstMetadata> Parsable for Return<M> {
                 let value: Expression<UntypedAstMetadata> =
                     parser.parse(compiler, lexer, Precedence::Lowest)?;
 
+                // Parse out the semicolon
+                let semicolon_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::SemiColon, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::SemiColon),
+                            found: Box::new(token),
+                            reason: "expected return statement to finish with semicolon"
+                                .to_string(),
+                        });
+                    }
+                };
+
                 Ok(Statement::Return(Return {
-                    span: span.start..value.span().end,
+                    span: span.start..semicolon_span.end,
                     value,
                     ty_info: None,
                 }))
@@ -82,35 +95,48 @@ mod test {
             Return::<UntypedAstMetadata>::register(&mut parser);
 
             // Helper parser for testing
-            Integer::<UntypedAstMetadata>::register(&mut parser);
+            Expression::<UntypedAstMetadata>::register(&mut parser);
 
             parser
         }
 
         #[rstest]
-        fn success(parser: Parser) {
+        #[case::simple("return 1;", |e| matches!(e, Expression::Integer(Integer { value: 1, .. })))]
+        #[case::expression("return 1 + 1;", |e| matches!(e, Expression::Infix(_)))]
+        #[case::expression_call("return fib(n - 1) + fib(n - 2);", |e| {
+            let Expression::Infix(Infix { left, right, .. }) = e else {
+                return false;
+            };
+
+            matches!(*left, Expression::Call(_)) && matches!(*right, Expression::Call(_))
+        })]
+        fn success(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] tester: fn(Expression<UntypedAstMetadata>) -> bool,
+        ) {
             let r: Statement<UntypedAstMetadata> = parser
                 .parse(
                     &mut Compiler::default(),
-                    &mut Lexer::from("return 1"),
+                    &mut Lexer::from(source),
                     Precedence::Lowest,
                 )
                 .unwrap();
 
-            assert!(matches!(
-                r,
-                Statement::Return(Return {
-                    value: Expression::Integer(Integer { value: 1, .. }),
-                    ..
-                })
-            ));
+            let Statement::Return(r) = r else {
+                panic!("expected to parse return statement");
+            };
+
+            assert!(tester(r.value));
         }
 
         #[rstest]
-        fn fail(parser: Parser) {
+        #[case::no_expression("return;")]
+        #[case::no_semicolon("return 1")]
+        fn fail(parser: Parser, #[case] source: &str) {
             let result: Result<Statement<UntypedAstMetadata>, _> = parser.parse(
                 &mut Compiler::default(),
-                &mut Lexer::from("return"),
+                &mut Lexer::from(source),
                 Precedence::Lowest,
             );
 

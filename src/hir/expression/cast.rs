@@ -107,7 +107,7 @@ mod test {
             )
             .unwrap();
 
-        let Expression::Cast(cast) = dbg!(cast) else {
+        let Expression::Cast(cast) = cast else {
             panic!("expected to parse cast");
         };
 

@@ -121,7 +121,7 @@ mod test {
                 )
                 .unwrap();
 
-            let Expression::Assign(assign) = dbg!(assign) else {
+            let Expression::Assign(assign) = assign else {
                 panic!("expected to parse assignment")
             };
 
