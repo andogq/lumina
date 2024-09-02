@@ -23,12 +23,18 @@ pub type TokenTest = fn(token: &Token) -> bool;
 pub struct ParserRules<T> {
     /// Infix parse function to run when a given token is presented during infix parsing.
     infix: HashMap<Token, InfixParser<T>>,
+
     /// Dynamic tests to run on a token during infix parsing. These will be run after the infix map is checked.
     infix_tests: Vec<(TokenTest, InfixParser<T>)>,
+
     /// Prefix parse function to run when a given token is presented durign prefix parsing.
     prefix: HashMap<Token, PrefixParser<T>>,
+
     /// Dynamic tests to run on a token during prefix parsing. These will be run after the prefix map is checked.
     prefix_tests: Vec<(TokenTest, PrefixParser<T>)>,
+
+    /// Fallback parser to use if no other parsers match.
+    fallback: Option<PrefixParser<T>>,
 }
 
 impl<T> ParserRules<T> {
@@ -68,6 +74,18 @@ impl<T> ParserRules<T> {
         self.infix_tests.push((token_test, parser));
     }
 
+    /// Register a fallback parser if no other parsers match the token. Will return `false` if
+    /// there is already a fallback registered.
+    pub fn register_fallback(&mut self, parser: PrefixParser<T>) -> bool {
+        if self.fallback.is_some() {
+            return false;
+        }
+
+        self.fallback = Some(parser);
+
+        true
+    }
+
     /// Parse an expression starting with the given precedence out of the lexer.
     pub fn parse<P: From<Token> + PartialOrd>(
         &self,
@@ -105,6 +123,7 @@ impl<T> ParserRules<T> {
 
         let prefix_parser = self
             .get_prefix_parser(token)
+            .or(self.fallback.as_ref())
             .ok_or_else(|| ParseError::UnexpectedToken(token.clone()))?;
 
         prefix_parser(parser, compiler, lexer)
@@ -143,6 +162,7 @@ impl<T> Default for ParserRules<T> {
             infix_tests: Vec::new(),
             prefix: HashMap::new(),
             prefix_tests: Vec::new(),
+            fallback: None,
         }
     }
 }
@@ -167,6 +187,59 @@ impl Parser {
         self.get::<T>()
             .ok_or_else(|| ParseError::NoRegisteredParsers(std::any::type_name::<T>().to_string()))?
             .parse(self, compiler, lexer, precedence)
+    }
+
+    /// Parse a sequence of items delimited by some token. Returns a [`Vec`] of the items in the
+    /// order they were found, and a [`bool`] indicating whether the sequence was terminated with
+    /// a delimiter.
+    pub fn parse_delimited<T: 'static, P: From<Token> + PartialOrd + Default>(
+        &self,
+        compiler: &mut Compiler,
+        lexer: &mut Lexer,
+        delimiter: Token,
+    ) -> (Vec<T>, bool) {
+        let mut items = Vec::new();
+        let mut terminated = false;
+
+        enum ParseState {
+            Item,
+            Delimiter,
+        }
+
+        let mut state = ParseState::Item;
+
+        loop {
+            match state {
+                ParseState::Item => {
+                    // Attempt to parse an item
+                    let Ok(item) = self.parse(compiler, lexer, P::default()) else {
+                        break;
+                    };
+
+                    terminated = false;
+                    items.push(item);
+
+                    state = ParseState::Delimiter;
+                }
+                ParseState::Delimiter => {
+                    if lexer
+                        .peek_token()
+                        .map(|token| *token != delimiter)
+                        .unwrap_or(true)
+                    {
+                        break;
+                    };
+
+                    // Take the deliminator and mark this list as terminated
+                    lexer.next_token();
+                    terminated = true;
+
+                    state = ParseState::Item;
+                }
+            }
+        }
+
+        (items, terminated)
     }
 
     /// Register a new prefix parser against a token. Will return `false` if the token has already
@@ -197,6 +270,12 @@ impl Parser {
         parser: InfixParser<T>,
     ) {
         self.get_mut::<T>().register_infix_test(token_test, parser);
+    }
+
+    /// Register a fallback parser if no other parsers match the token. Will return `false` if
+    /// there is already a fallback registered.
+    pub fn register_fallback<T: 'static>(&mut self, parser: PrefixParser<T>) -> bool {
+        self.get_mut::<T>().register_fallback(parser)
     }
 
     /// Get a reference to the parser rules associated with some type.
@@ -243,6 +322,79 @@ mod test {
         );
 
         assert!(matches!(result, Err(ParseError::NoRegisteredParsers(_))));
+    }
+
+    mod delimited {
+        use super::*;
+
+        #[fixture]
+        fn parser() -> Parser {
+            let mut parser = Parser::new();
+
+            parser.register_prefix(Token::True, |_, _, lexer| {
+                lexer.next_token().unwrap();
+
+                Ok(())
+            });
+
+            parser
+        }
+
+        #[rstest]
+        #[case::empty("", 0, false)]
+        #[case::single_unterminated("true", 1, false)]
+        #[case::single_terminated("true;", 1, true)]
+        #[case::double_unterminated("true; true", 2, false)]
+        #[case::double_terminated("true; true;", 2, true)]
+        #[case::triple_unterminated("true; true; true", 3, false)]
+        #[case::triple_terminated("true; true; true;", 3, true)]
+        fn success(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] expected_length: usize,
+            #[case] expected_terminated: bool,
+        ) {
+            let (items, terminated) = parser.parse_delimited::<(), Precedence>(
+                &mut Compiler::default(),
+                &mut Lexer::from(source),
+                Token::SemiColon,
+            );
+
+            assert_eq!(items.len(), expected_length);
+            assert_eq!(terminated, expected_terminated);
+        }
+
+        #[rstest]
+        #[case::delimiter(";", 0, false, &[Token::SemiColon])]
+        #[case::single_trailing_token("true true", 1, false, &[Token::True])]
+        #[case::double_trailing_token("true; true true", 2, false, &[Token::True])]
+        #[case::single_trailing_delimiter("true;;", 1, true, &[Token::SemiColon])]
+        #[case::double_trailing_delimiter("true; true;;", 2, true, &[Token::SemiColon])]
+        fn handle_trailing_tokens(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] expected_length: usize,
+            #[case] expected_terminated: bool,
+            #[case] trailing_tokens: &[Token],
+        ) {
+            let mut lexer = Lexer::from(source);
+            let (items, terminated) = parser.parse_delimited::<(), Precedence>(
+                &mut Compiler::default(),
+                &mut lexer,
+                Token::SemiColon,
+            );
+
+            assert_eq!(items.len(), expected_length);
+            assert_eq!(terminated, expected_terminated);
+
+            assert_eq!(
+                lexer
+                    .clone()
+                    .filter_map(|(t, _)| t.ok())
+                    .collect::<Vec<_>>(),
+                trailing_tokens
+            )
+        }
     }
 
     mod prefix {

@@ -6,8 +6,6 @@ pub fn parse_statement(
     compiler: &mut Compiler,
     tokens: &mut Lexer<'_>,
 ) -> Result<Statement, ParseError> {
-    let mut expecting_semicolon = true;
-
     let statement = match tokens.peek_token().unwrap() {
         Token::Return => {
             // Parse as return statement
@@ -77,31 +75,22 @@ pub fn parse_statement(
 
             Statement::ExpressionStatement(ExpressionStatement::new(
                 expression,
-                if matches!(tokens.peek_token().unwrap(), Token::SemiColon) {
-                    false
-                } else {
-                    expecting_semicolon = false;
-
-                    true
-                },
                 span,
                 Default::default(),
             ))
         }
     };
 
-    if expecting_semicolon {
-        match tokens.next_token().unwrap() {
-            Token::SemiColon => (),
-            token => {
-                return Err(ParseError::ExpectedToken {
-                    found: Box::new(token),
-                    expected: Box::new(Token::SemiColon),
-                    reason: "semicolon must follow statement".to_string(),
-                });
-            }
-        };
-    }
+    match tokens.next_token().unwrap() {
+        Token::SemiColon => (),
+        token => {
+            return Err(ParseError::ExpectedToken {
+                found: Box::new(token),
+                expected: Box::new(Token::SemiColon),
+                reason: "semicolon must follow statement".to_string(),
+            });
+        }
+    };
 
     Ok(statement)
 }

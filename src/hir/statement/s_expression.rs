@@ -1,15 +1,31 @@
+use crate::stage::parse::Precedence;
+
 use super::*;
 
 ast_node! {
     ExpressionStatement<M> {
         expression: Expression<M>,
-        implicit_return: bool,
         span,
         ty_info,
     }
 }
 
-// TODO: Need a 'fallback' parser option when registering
+impl<M: AstMetadata> Parsable for ExpressionStatement<M> {
+    fn register(parser: &mut Parser) {
+        assert!(parser.register_fallback::<Statement<UntypedAstMetadata>>(
+            |parser, compiler, lexer| {
+                let expression: Expression<UntypedAstMetadata> =
+                    parser.parse(compiler, lexer, Precedence::Lowest)?;
+
+                Ok(Statement::ExpressionStatement(ExpressionStatement {
+                    span: expression.span().clone(),
+                    expression,
+                    ty_info: None,
+                }))
+            }
+        ));
+    }
+}
 
 impl SolveType for ExpressionStatement<UntypedAstMetadata> {
     type State = Scope;
@@ -22,15 +38,11 @@ impl SolveType for ExpressionStatement<UntypedAstMetadata> {
         let expression = self.expression.solve(compiler, state)?;
 
         // Expression statement has same type as the underlying expression
-        let mut ty_info = expression.get_ty_info().clone();
-        if !self.implicit_return {
-            ty_info.ty = Ty::Unit;
-        }
+        let ty_info = expression.get_ty_info().clone();
 
         Ok(ExpressionStatement {
             ty_info,
             expression,
-            implicit_return: self.implicit_return,
             span: self.span,
         })
     }
@@ -42,21 +54,52 @@ mod test {
     use rstest::*;
 
     mod parse {
+        use crate::stage::parse::Lexer;
+
         use super::*;
+
+        #[fixture]
+        fn parser() -> Parser {
+            let mut parser = Parser::new();
+
+            ExpressionStatement::<UntypedAstMetadata>::register(&mut parser);
+
+            // Register some helpers
+            Integer::<UntypedAstMetadata>::register(&mut parser);
+
+            parser
+        }
+
+        #[rstest]
+        #[case::integer("1", |e| matches!(e, Expression::Integer(_)))]
+        fn success(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] tester: fn(Expression<UntypedAstMetadata>) -> bool,
+        ) {
+            let s: Statement<UntypedAstMetadata> = parser
+                .parse(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest,
+                )
+                .unwrap();
+
+            let Statement::ExpressionStatement(ExpressionStatement { expression, .. }) = s else {
+                panic!("expected expression statement");
+            };
+
+            assert!(tester(expression));
+        }
     }
 
     mod ty {
         use super::*;
 
         #[rstest]
-        #[case(false, Ty::Unit)]
-        #[case(true, Ty::Int)]
-        fn infer(#[case] implicit: bool, #[case] ty: Ty) {
-            let s = Statement::expression(
-                Expression::integer(0, Span::default()),
-                implicit,
-                Span::default(),
-            );
+        #[case(Ty::Int)]
+        fn infer(#[case] ty: Ty) {
+            let s = Statement::expression(Expression::integer(0, Span::default()), Span::default());
 
             let ty_info = s
                 .solve(&mut Compiler::default(), &mut Scope::new())

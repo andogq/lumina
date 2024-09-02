@@ -18,8 +18,9 @@ mod e_if;
 mod e_integer;
 mod e_loop;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
+    #[default]
     Lowest,
     Assign,
     Binary,
@@ -50,6 +51,19 @@ impl Precedence {
             | Token::MulAssign => Precedence::Assign,
             Token::As => Precedence::Cast,
             _ => Precedence::Lowest,
+        }
+    }
+}
+
+impl From<InfixOperation> for Precedence {
+    fn from(op: InfixOperation) -> Self {
+        use InfixOperation::*;
+
+        match op {
+            Minus | Plus => Precedence::Sum,
+            Multiply | Divide => Precedence::Multiply,
+            And | Or => Precedence::Binary,
+            Eq | NotEq | Greater | Less | GreaterEq | LessEq => Precedence::Equality,
         }
     }
 }

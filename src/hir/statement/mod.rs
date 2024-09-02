@@ -50,10 +50,9 @@ impl<M: AstMetadata<TyInfo: Default>> Statement<M> {
         Self::Let(Let::new(name, value, span, M::TyInfo::default()))
     }
 
-    pub fn expression(expression: Expression<M>, implicit_return: bool, span: M::Span) -> Self {
+    pub fn expression(expression: Expression<M>, span: M::Span) -> Self {
         Self::ExpressionStatement(ExpressionStatement::new(
             expression,
-            implicit_return,
             span,
             M::TyInfo::default(),
         ))

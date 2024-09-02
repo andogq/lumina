@@ -1,10 +1,63 @@
+use crate::stage::parse::{ParseError, Precedence};
+
 use super::*;
 
 ast_node! {
     Block<M> {
         statements: Vec<Statement<M>>,
+        terminated: bool,
         span,
         ty_info,
+    }
+}
+
+impl<M: AstMetadata> Parsable for Block<M> {
+    fn register(parser: &mut Parser) {
+        assert!(parser.register_prefix::<Expression<UntypedAstMetadata>>(
+            Token::LeftBrace,
+            |parser, compiler, lexer| {
+                // Parse opening bracket
+                let start_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::LeftBrace, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::LeftBrace),
+                            found: Box::new(token),
+                            reason: "block must start with opening brace".to_string(),
+                        });
+                    }
+                };
+
+                // Parse statements
+                let (statements, terminated) = parser
+                    .parse_delimited::<Statement<UntypedAstMetadata>, Precedence>(
+                        compiler,
+                        lexer,
+                        Token::SemiColon,
+                    );
+
+                dbg!(&statements, terminated);
+
+                // Parse ending bracket
+                let end_span = match lexer.next_spanned().ok_or(ParseError::UnexpectedEOF)? {
+                    (Token::RightBrace, span) => span,
+                    (token, _) => {
+                        return Err(ParseError::ExpectedToken {
+                            expected: Box::new(Token::RightBrace),
+                            found: Box::new(token),
+                            reason: "block must end with closing brace".to_string(),
+                        });
+                    }
+                };
+
+                Ok(Expression::Block(Block {
+                    statements,
+                    terminated,
+                    span: start_span.start..end_span.end,
+                    ty_info: None,
+                }))
+            }
+        ));
     }
 }
 
@@ -55,8 +108,64 @@ impl SolveType for Block<UntypedAstMetadata> {
 
         Ok(Block {
             span: self.span,
+            terminated: self.terminated,
             statements,
             ty_info,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rstest::*;
+
+    mod parse {
+        use crate::stage::parse::Lexer;
+
+        use super::*;
+
+        #[fixture]
+        fn parser() -> Parser {
+            let mut parser = Parser::new();
+
+            Block::<UntypedAstMetadata>::register(&mut parser);
+
+            // Helpers
+            ExpressionStatement::<UntypedAstMetadata>::register(&mut parser);
+            Boolean::<UntypedAstMetadata>::register(&mut parser);
+
+            parser
+        }
+
+        #[rstest]
+        #[case::empty("{ }", false, 0)]
+        #[case::single_terminated("{ true; }", true, 1)]
+        #[case::single_unterminated("{ true }", false, 1)]
+        #[case::double_terminated("{ true; true; }", true, 2)]
+        #[case::double_unterminated("{ true; true }", false, 2)]
+        #[case::triple_terminated("{ true; true; true; }", true, 3)]
+        #[case::triple_unterminated("{ true; true; true }", false, 3)]
+        fn success(
+            parser: Parser,
+            #[case] source: &str,
+            #[case] terminated: bool,
+            #[case] count: usize,
+        ) {
+            let b: Expression<UntypedAstMetadata> = parser
+                .parse(
+                    &mut Compiler::default(),
+                    &mut Lexer::from(source),
+                    Precedence::Lowest,
+                )
+                .unwrap();
+
+            let Expression::Block(b) = b else {
+                panic!("expected to parse block");
+            };
+
+            assert_eq!(b.terminated, terminated);
+            assert_eq!(b.statements.len(), count);
+        }
     }
 }

@@ -67,8 +67,13 @@ impl<M: AstMetadata<Span = Span, TyInfo: Default>> Expression<M> {
         Self::Ident(Ident::new(name, span, M::TyInfo::default()))
     }
 
-    pub fn block(statements: Vec<Statement<M>>, span: Span) -> Self {
-        Self::Block(Block::new(statements, span, M::TyInfo::default()))
+    pub fn block(statements: Vec<Statement<M>>, terminated: bool, span: Span) -> Self {
+        Self::Block(Block::new(
+            statements,
+            terminated,
+            span,
+            M::TyInfo::default(),
+        ))
     }
 
     pub fn _if(
@@ -88,6 +93,24 @@ impl<M: AstMetadata<Span = Span, TyInfo: Default>> Expression<M> {
 
     pub fn call(identifier: M::FnIdentifier, args: Vec<Expression<M>>, span: Span) -> Self {
         Self::Call(Call::new(identifier, args, span, M::TyInfo::default()))
+    }
+}
+
+impl<M: AstMetadata> Parsable for Expression<M> {
+    fn register(parser: &mut Parser) {
+        // Register all variant parsers
+        Array::<UntypedAstMetadata>::register(parser);
+        Assign::<UntypedAstMetadata>::register(parser);
+        Block::<UntypedAstMetadata>::register(parser);
+        Boolean::<UntypedAstMetadata>::register(parser);
+        Call::<UntypedAstMetadata>::register(parser);
+        Cast::<UntypedAstMetadata>::register(parser);
+        Ident::<UntypedAstMetadata>::register(parser);
+        If::<UntypedAstMetadata>::register(parser);
+        Index::<UntypedAstMetadata>::register(parser);
+        Infix::<UntypedAstMetadata>::register(parser);
+        Integer::<UntypedAstMetadata>::register(parser);
+        Loop::<UntypedAstMetadata>::register(parser);
     }
 }
 

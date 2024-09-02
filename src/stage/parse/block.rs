@@ -32,5 +32,5 @@ pub fn parse_block(compiler: &mut Compiler, lexer: &mut Lexer<'_>) -> Result<Blo
 
     let span = span_start..span_end;
 
-    Ok(Block::new(statements, span, Default::default()))
+    Ok(Block::new(statements, true, span, Default::default()))
 }
