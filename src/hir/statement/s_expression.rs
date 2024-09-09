@@ -1,5 +1,3 @@
-use crate::stage::parse::Precedence;
-
 use super::*;
 
 ast_node! {

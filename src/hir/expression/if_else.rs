@@ -1,5 +1,3 @@
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -75,7 +73,7 @@ impl SolveType for If<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         // Make sure the condition is correctly typed
         let condition = self.condition.solve(compiler, state)?;
         let condition_ty = condition.get_ty_info();

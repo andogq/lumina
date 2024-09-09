@@ -1,6 +1,6 @@
 use std::iter;
 
-use ty::parse_ty;
+use crate::ty::TySpanned;
 
 use super::*;
 
@@ -92,12 +92,13 @@ pub fn parse_function(
                     }
 
                     // Extract the type
-                    let (ty, _) = match parse_ty(lexer) {
-                        Ok(ty) => ty,
-                        Err(e) => {
-                            return Some(Err(e));
-                        }
-                    };
+                    let TySpanned { ty, .. } =
+                        match parser.parse(compiler, lexer, Precedence::Lowest) {
+                            Ok(ty) => ty,
+                            Err(e) => {
+                                return Some(Err(e));
+                            }
+                        };
 
                     parse_state = ParseState::Comma;
 
@@ -128,7 +129,7 @@ pub fn parse_function(
     }
 
     // return type
-    let (return_ty, _) = parse_ty(lexer)?;
+    let ty: TySpanned = parser.parse(compiler, lexer, Precedence::Lowest)?;
 
     // Parse out the body
     let Expression::<UntypedAstMetadata>::Block(body) =
@@ -143,7 +144,7 @@ pub fn parse_function(
     Ok(Function::new(
         compiler.symbols.get_or_intern(fn_name),
         parameters,
-        return_ty,
+        ty.ty,
         body,
         span,
     ))

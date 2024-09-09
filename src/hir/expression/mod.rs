@@ -116,7 +116,7 @@ impl SolveType for Expression<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         Ok(match self {
             Expression::Infix(e) => Expression::Infix(e.solve(compiler, state)?),
             Expression::Integer(e) => Expression::Integer(e.solve(compiler, state)?),

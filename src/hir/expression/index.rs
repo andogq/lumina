@@ -1,5 +1,3 @@
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -71,7 +69,7 @@ impl SolveType for Index<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         // Ensure the inner parts are correct
         let index = self.index.solve(compiler, state)?;
 

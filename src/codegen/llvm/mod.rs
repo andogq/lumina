@@ -6,7 +6,7 @@ use inkwell::{
     builder::Builder,
     context::Context,
     module::Module as LlvmModule,
-    types::{BasicType, BasicTypeEnum},
+    types::{BasicType as _, BasicTypeEnum},
     values::{BasicValue, FunctionValue, IntValue, PointerValue},
     IntPredicate,
 };
@@ -19,8 +19,8 @@ use crate::{
             BasicBlockIdx, BinaryOp, ConstantValue, Function, Terminator, Triple, TripleRef,
             UnaryOp, Value,
         },
-        ty::Ty,
     },
+    ty::Ty,
 };
 
 /// A single LLVM module.

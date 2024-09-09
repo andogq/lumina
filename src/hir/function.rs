@@ -1,11 +1,4 @@
-use crate::{
-    ast_node,
-    repr::{ast::untyped::UntypedAstMetadata, ty::Ty},
-    stage::type_check::TyError,
-    util::scope::Scope,
-};
-
-use super::{expression::Block, SolveType};
+use super::*;
 
 ast_node! {
     Function<M> {

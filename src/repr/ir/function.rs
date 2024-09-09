@@ -4,7 +4,7 @@ use index_vec::IndexVec;
 
 use crate::{
     repr::identifier::{FunctionIdx, ScopedBinding},
-    stage::type_check::FunctionSignature,
+    ty::FunctionSignature,
 };
 
 use super::BasicBlock;

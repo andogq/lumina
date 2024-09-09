@@ -1,6 +1,5 @@
 mod function;
 pub mod parser;
-mod ty;
 
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -13,10 +12,10 @@ use parser::Parser;
 use crate::compiler::Compiler;
 use crate::hir::{Expression, Parsable, Statement};
 use crate::repr::token::*;
+use crate::ty::TySpanned;
 use crate::util::span::*;
 
 use self::function::*;
-pub use self::ty::parse_ty;
 
 use crate::repr::ast::untyped::*;
 
@@ -119,6 +118,7 @@ pub fn parse(compiler: &mut Compiler, source: &str) -> Result<Program, ParseErro
     let parser = {
         let mut parser = Parser::new();
 
+        TySpanned::register(&mut parser);
         Statement::<UntypedAstMetadata>::register(&mut parser);
         Expression::<UntypedAstMetadata>::register(&mut parser);
 

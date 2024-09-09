@@ -1,49 +1,11 @@
 use itertools::Itertools;
 
-use crate::compiler::Symbol;
-use crate::hir;
-use crate::repr::ast::typed::*;
-use crate::repr::ast::AstMetadata;
-use crate::repr::ty::Ty;
+use super::*;
 
 #[derive(Clone, Debug)]
-pub struct FunctionSignature {
-    pub arguments: Vec<Ty>,
-    pub return_ty: Ty,
-}
-
-impl<M: AstMetadata> From<&hir::Function<M>> for FunctionSignature {
-    fn from(function: &hir::Function<M>) -> Self {
-        Self {
-            arguments: function
-                .parameters
-                .iter()
-                .map(|(_, ty)| ty.clone())
-                .collect(),
-            return_ty: function.return_ty.clone(),
-        }
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TyError {
-    #[error("mismatched types: {0:?} and {1:?}")]
-    Mismatch(Ty, Ty),
-
-    #[error("invalid return type, expected {expected:?} but found {found:?}")]
-    Return {
-        expected: Option<Ty>,
-        found: Option<Ty>,
-    },
-
-    #[error("cannot cast {0:?} to {1:?}")]
-    Cast(Ty, Ty),
-
-    #[error("cannot perform index on {0:?}")]
-    Index(Ty),
-
-    #[error("symbol not found: {0:?}")]
-    SymbolNotFound(Symbol),
+pub struct TyInfo {
+    pub ty: Ty,
+    pub return_ty: Option<Ty>,
 }
 
 impl TyInfo {

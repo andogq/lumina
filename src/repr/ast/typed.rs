@@ -1,19 +1,11 @@
 use crate::{
     generate_ast,
-    repr::{
-        identifier::{FunctionIdx, ScopedBinding},
-        ty::Ty,
-    },
+    repr::identifier::{FunctionIdx, ScopedBinding},
+    ty::TyInfo,
     util::span::Span,
 };
 
 use super::AstMetadata;
-
-#[derive(Clone, Debug)]
-pub struct TyInfo {
-    pub ty: Ty,
-    pub return_ty: Option<Ty>,
-}
 
 pub struct TypedAstMetadata;
 impl AstMetadata for TypedAstMetadata {

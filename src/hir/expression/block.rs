@@ -1,5 +1,3 @@
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -66,7 +64,7 @@ impl SolveType for Block<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         // Enter a new scope
         let block_scope = state.enter();
 

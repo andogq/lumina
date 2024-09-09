@@ -7,11 +7,11 @@ use crate::{
     ast_node,
     compiler::Compiler,
     repr::{
-        ast::{typed::TyInfo, untyped::UntypedAstMetadata, AstMetadata},
+        ast::{untyped::UntypedAstMetadata, AstMetadata},
         token::Token,
-        ty::Ty,
     },
-    stage::{parse::parser::Parser, type_check::TyError},
+    stage::parse::{parser::Parser, Lexer, ParseError, Precedence},
+    ty::{Ty, TyError, TyInfo},
     util::{scope::Scope, span::Span},
 };
 

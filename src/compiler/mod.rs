@@ -7,7 +7,8 @@ use self::function_manager::*;
 use crate::{
     hir::SolveType,
     repr::ir,
-    stage::{self, parse::ParseError, type_check::TyError},
+    stage::{self, parse::ParseError},
+    ty::TyError,
 };
 
 /// A symbol represents an interned string.

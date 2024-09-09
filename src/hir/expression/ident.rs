@@ -1,5 +1,3 @@
-use crate::stage::parse::ParseError;
-
 use super::*;
 
 use std::hash::Hash;
@@ -47,7 +45,7 @@ impl SolveType for Ident<UntypedAstMetadata> {
         self,
         _compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         let (binding, ty) = state
             .resolve(self.binding)
             .ok_or(TyError::SymbolNotFound(self.binding))?;

@@ -2,10 +2,7 @@ use std::vec;
 
 use index_vec::IndexVec;
 
-use crate::{
-    compiler::Symbol,
-    repr::{identifier::*, ty::Ty},
-};
+use crate::{compiler::Symbol, repr::identifier::*, ty::Ty};
 
 pub struct ScopePart {
     /// Indicates that this scope (and potentially a descendant) is active.

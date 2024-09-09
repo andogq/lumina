@@ -1,5 +1,3 @@
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -53,7 +51,7 @@ impl SolveType for Loop<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, TyError> {
         // Type check the body
         let body = self.body.solve(compiler, state)?;
 

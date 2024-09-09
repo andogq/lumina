@@ -1,5 +1,3 @@
-use crate::stage::parse::{Lexer, ParseError};
-
 use super::*;
 
 ast_node! {
@@ -52,7 +50,7 @@ impl SolveType for Boolean<UntypedAstMetadata> {
         self,
         _compiler: &mut crate::compiler::Compiler,
         _state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         Ok(Boolean {
             value: self.value,
             span: self.span,

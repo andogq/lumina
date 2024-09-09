@@ -1,10 +1,6 @@
-use crate::{
-    ast_node,
-    repr::{ast::untyped::UntypedAstMetadata, ty::Ty},
-    stage::type_check::{FunctionSignature, TyError},
-};
+use crate::ty::FunctionSignature;
 
-use super::{function::Function, SolveType};
+use super::*;
 
 ast_node! {
     Program<M> {

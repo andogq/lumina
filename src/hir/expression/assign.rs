@@ -1,5 +1,3 @@
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -58,7 +56,7 @@ impl SolveType for Assign<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         // Work out what type the variable has to be
         let (binding, ty) = state
             .resolve(self.binding)

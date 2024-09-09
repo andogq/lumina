@@ -1,5 +1,3 @@
-use crate::stage::parse::ParseError;
-
 use super::*;
 
 ast_node! {

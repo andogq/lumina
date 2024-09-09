@@ -1,4 +1,4 @@
-use crate::stage::parse::{parse_ty, ParseError};
+use crate::ty::TySpanned;
 
 use super::*;
 
@@ -15,7 +15,7 @@ impl<M: AstMetadata> Parsable for Cast<M> {
     fn register(parser: &mut Parser) {
         assert!(parser.register_infix::<Expression<UntypedAstMetadata>>(
             Token::As,
-            |_, _, lexer, left| {
+            |parser, compiler, lexer, left| {
                 let as_span = match lexer.next_spanned().unwrap() {
                     (Token::As, span) => span,
                     (token, _) => {
@@ -28,12 +28,12 @@ impl<M: AstMetadata> Parsable for Cast<M> {
                 };
 
                 // Parse out type from right hand side
-                let (target_ty, target_ty_span) = parse_ty(lexer)?;
+                let ty: TySpanned = parser.parse(compiler, lexer, Precedence::Lowest)?;
 
                 Ok(Expression::Cast(Cast {
                     value: Box::new(left),
-                    target_ty,
-                    span: as_span.start..target_ty_span.end,
+                    target_ty: ty.ty,
+                    span: as_span.start..ty.span.end,
                     ty_info: None,
                 }))
             }
@@ -48,7 +48,7 @@ impl SolveType for Cast<UntypedAstMetadata> {
         self,
         compiler: &mut crate::compiler::Compiler,
         state: &mut Self::State,
-    ) -> Result<Self::Typed, crate::stage::type_check::TyError> {
+    ) -> Result<Self::Typed, crate::ty::TyError> {
         let value = self.value.solve(compiler, state)?;
 
         // Make sure that the value can be cast to the desired type
@@ -87,6 +87,7 @@ mod test {
 
         // Helper parsers
         Integer::<UntypedAstMetadata>::register(&mut parser);
+        TySpanned::register(&mut parser);
 
         parser
     }

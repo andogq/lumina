@@ -1,13 +1,11 @@
+use crate::ty::Ty;
 use std::collections::HashMap;
 
 use index_vec::IndexVec;
 
 use crate::{
-    repr::{
-        identifier::{FunctionIdx, ScopedBinding},
-        ty::Ty,
-    },
-    stage::type_check::FunctionSignature,
+    repr::identifier::{FunctionIdx, ScopedBinding},
+    ty::FunctionSignature,
 };
 
 use super::Symbol;

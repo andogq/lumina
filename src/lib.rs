@@ -12,6 +12,7 @@ pub mod compiler;
 mod hir;
 pub mod repr;
 pub mod stage;
+mod ty;
 pub mod util;
 
 pub fn compile_and_run(source: &'static str, debug: bool) -> i64 {

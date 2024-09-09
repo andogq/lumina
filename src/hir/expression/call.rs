@@ -1,7 +1,3 @@
-use std::iter;
-
-use crate::stage::parse::{ParseError, Precedence};
-
 use super::*;
 
 ast_node! {
@@ -29,7 +25,7 @@ impl<M: AstMetadata> Parsable for Call<M> {
                 };
 
                 // Consume the args
-                let args = iter::from_fn(|| {
+                let args = std::iter::from_fn(|| {
                     match lexer.peek_token()? {
                         Token::RightParen => None,
                         Token::LeftParen | Token::Comma => {

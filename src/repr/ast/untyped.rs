@@ -1,4 +1,4 @@
-use crate::{compiler::Symbol, generate_ast, repr::ty::Ty, util::span::Span};
+use crate::{compiler::Symbol, generate_ast, ty::Ty, util::span::Span};
 
 use super::AstMetadata;
 

@@ -6,9 +6,8 @@ use crate::{
         ast::typed as ast,
         identifier::{FunctionIdx, ScopedBinding},
         ir::{self, *},
-        ty::Ty,
     },
-    stage::type_check::FunctionSignature,
+    ty::{FunctionSignature, Ty},
 };
 
 pub fn lower(compiler: &mut Compiler, program: ast::Program) -> Vec<Function> {
