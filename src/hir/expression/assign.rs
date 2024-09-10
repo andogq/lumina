@@ -46,6 +46,63 @@ impl<M: AstMetadata> Parsable for Assign<M> {
                 }))
             }
         ));
+
+        [
+            (Token::AddAssign, InfixOperation::Plus),
+            (Token::MinusAssign, InfixOperation::Minus),
+            (Token::MulAssign, InfixOperation::Multiply),
+            (Token::DivAssign, InfixOperation::Divide),
+        ]
+        .into_iter()
+        .for_each(|(token, operation)| {
+            assert!(parser.register_infix::<Expression<UntypedAstMetadata>>(
+                token.clone(),
+                move |parser, compiler, lexer, left| {
+                    let (binding, binding_span) = match left {
+                        Expression::Ident(Ident { binding, span, .. }) => (binding, span),
+                        lhs => {
+                            return Err(ParseError::InvalidInfixLhs {
+                                found: Box::new(lhs),
+                                reason: "assign must start with ident".to_string(),
+                            });
+                        }
+                    };
+
+                    let token_span = match lexer.next_spanned().unwrap() {
+                        (t, span) if t == token => span,
+                        (token, _) => {
+                            return Err(ParseError::ExpectedToken {
+                                expected: Box::new(Token::Eq),
+                                found: Box::new(token),
+                                reason: "equals sign following binding for assign".to_string(),
+                            });
+                        }
+                    };
+
+                    let value: Expression<UntypedAstMetadata> =
+                        parser.parse(compiler, lexer, Precedence::Lowest)?;
+                    let value_span = value.span();
+
+                    Ok(Expression::Assign(Assign {
+                        span: binding_span.start..value_span.end,
+                        binding,
+                        // Manually build an infix operation (not great, but it'll do)
+                        value: Box::new(Expression::Infix(Infix {
+                            left: Box::new(Expression::Ident(Ident {
+                                binding,
+                                span: binding_span,
+                                ty_info: None,
+                            })),
+                            operation,
+                            span: token_span.start..value_span.end,
+                            right: Box::new(value),
+                            ty_info: None,
+                        })),
+                        ty_info: None,
+                    }))
+                }
+            ));
+        });
     }
 }
 
@@ -124,6 +181,32 @@ mod test {
             };
 
             assert_eq!(lhs, compiler.symbols.resolve(assign.binding).unwrap());
+        }
+
+        #[rstest]
+        #[case::add_assign("+=", InfixOperation::Plus)]
+        #[case::minus_assign("-=", InfixOperation::Minus)]
+        #[case::mul_assign("*=", InfixOperation::Multiply)]
+        #[case::div_assign("/=", InfixOperation::Divide)]
+        fn op_assign(parser: Parser, #[case] op: &str, #[case] expected: InfixOperation) {
+            let mut compiler = Compiler::default();
+
+            let assign: Expression<UntypedAstMetadata> = parser
+                .parse(
+                    &mut compiler,
+                    &mut Lexer::from(format!("ident {op} 1").as_str()),
+                    Precedence::Lowest,
+                )
+                .unwrap();
+
+            let Expression::Assign(Assign { value, .. }) = assign else {
+                panic!("expected to parse assignment")
+            };
+            let Expression::Infix(Infix { operation, .. }) = *value else {
+                panic!("expected assignment to contain infix operation");
+            };
+
+            assert_eq!(operation, expected);
         }
 
         #[rstest]
